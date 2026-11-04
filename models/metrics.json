@@ -1,0 +1,20 @@
+{
+  "A_same_period_random_20pct": {
+    "rows": 89044,
+    "MAE_inr": 1500,
+    "accuracy_pct": 93.04,
+    "within_10pct": 77.6
+  },
+  "E_2022_plus_10pct_of_2023": {
+    "rows": 400049,
+    "MAE_inr": 2717,
+    "accuracy_pct": 87.0,
+    "within_10pct": 55.1
+  },
+  "C_train_2022_test_2023": {
+    "rows": 445222,
+    "MAE_inr": 5889,
+    "accuracy_pct": 66.17,
+    "within_10pct": 19.9
+  }
+}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Fare Predictor: Configuration{% endblock %}
+{% block head %}
+<style>
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  .tabs button { background:var(--card); color:var(--muted); border:1px solid var(--line); font-weight:500; padding:8px 14px; }
+  .tabs button.on { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
+  .pane { display:none; } .pane.on { display:block; }
+  .field { margin-bottom:14px; } .field .help { font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .two { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:0 24px; }
+  .barrow { display:grid; grid-template-columns:minmax(150px,1.1fr) 3fr 56px; gap:10px; align-items:center; padding:4px 0; font-size:13.5px; }
+  .barrow .track { height:10px; } .bar.alt { background:var(--good); }
+  ol.steps { padding-left:20px; margin:6px 0; } ol.steps li { margin-bottom:6px; }
+  .tag { font-size:11px; padding:1px 7px; border-radius:99px; background:var(--line); color:var(--muted); }
+  .tag.used { background:var(--goodbg); color:var(--good); } .tag.no { background:var(--line); }
+</style>
+{% endblock %}
+{% block content %}
+  <h1>Configuration &amp; metrics</h1>
+  <p class="sub">Change how the demo behaves, and see exactly how the model was built and how its score was measured.</p>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="pane" id="p-settings">
+    <div class="card">
+      <h2>Demo settings</h2>
+      <p class="meta">Saved to <code>config.json</code> and applied to the next search in the Demo. The model itself is not retrained by these settings.</p>
+      <div class="two" style="margin-top:12px">
+        <div class="field"><label>Predicted price horizon (days before departure)</label><input type="number" id="c_pred" min="1" max="45">
+          <div class="help">The predicted price is the model's estimate this many days before departure. 1 means the last-minute fare.</div></div>
+        <div class="field"><label>Price level</label><select id="c_period"><option value="2023">2023 scrape (latest, higher fares)</option><option value="2022">2022 scrape</option></select>
+          <div class="help">Fares differ by about 55% between the two scrapes, so this shifts every prediction.</div></div>
+        <div class="field"><label>Listed price window (± days)</label><input type="number" id="c_win" min="0" max="10">
+          <div class="help">Listed price is the median real scraped fare of the flight within this many days of the search's booking window.</div></div>
+        <div class="field"><label>Highlight changes of at least (%)</label><input type="number" id="c_flag" min="1" max="100">
+          <div class="help">Rows whose predicted change is at least this big get a bold outline.</div></div>
+        <div class="field"><label>Default sort</label><select id="c_sort"></select></div>
+        <div class="field"><label>Price curve points (days before departure, comma separated)</label><input type="text" id="c_curve">
+          <div class="help">3 to 12 values between 1 and 50. Day 50 is sparse in the data, so predictions there are less reliable.</div></div>
+        <div class="field"><label><input type="checkbox" id="c_show" style="width:auto"> Show the price curve in flight details</label></div>
+        <div class="field"><label>Flights per page</label><input type="text" id="c_page" disabled><div class="help">Fixed at 10.</div></div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:6px"><button id="save">Save settings</button><button class="plain" id="reset">Reset to defaults</button><a href="/"><button class="ghost" type="button">Open demo</button></a></div>
+      <div id="msg" hidden></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-metrics"></div>
+  <div class="pane" id="p-how"></div>
+  <div class="pane" id="p-model"></div>
+  <div class="pane" id="p-data"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const TABS = [['settings','Settings'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources']];
+let M = null;
+const tabs = document.getElementById('tabs');
+tabs.innerHTML = TABS.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('');
+function show(k) {
+  TABS.forEach(([t]) => document.getElementById('p-' + t).classList.toggle('on', t === k));
+  tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === k)); history.replaceState(null, '', '#' + k);
+}
+tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.t); });
+
+const bar = (v, max, alt) => `<div class="track"><div class="bar ${alt ? 'alt' : ''}" style="width:${Math.max(1, v / max * 100)}%"></div></div>`;
+
+function fillSettings(c) {
+  c_pred.value = c.predict_at_days_left; c_period.value = c.price_period; c_win.value = c.listed_window_days; c_flag.value = c.flag_threshold_pct;
+  c_sort.value = c.default_sort; c_curve.value = c.curve_days.join(', '); c_show.checked = c.show_curve; c_page.value = M.page_size + ' (fixed)';
+}
+function readSettings() {
+  return { predict_at_days_left: +c_pred.value, price_period: +c_period.value, listed_window_days: +c_win.value, flag_threshold_pct: +c_flag.value,
+    default_sort: c_sort.value, curve_days: c_curve.value.split(',').map(s => s.trim()).filter(Boolean).map(Number), show_curve: c_show.checked };
+}
+async function post(body) {
+  const r = await fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); return [r.ok, await r.json()];
+}
+function note(ok, text) { const m = document.getElementById('msg'); m.hidden = false; m.className = ok ? 'ok' : 'warn'; m.innerHTML = text; }
+save.onclick = async () => { const [ok, j] = await post(readSettings()); ok ? (fillSettings(j.config), note(true, 'Saved. The next search in the Demo uses these settings.')) : note(false, j.errors.map(esc).join('<br>')); };
+reset.onclick = async () => { const [ok, j] = await post({ reset: true }); fillSettings(j.config); note(true, 'Reset to defaults.'); };
+
+const acc = x => x.toFixed(1) + '%';
+function metrics() {
+  const m = M.metrics, S = [
+    ['A_same_period_random_20pct', 'Same period', 'A random 20% of the 2023 rows is held out. Other days of the same flights are in training, so this is an interpolation score.'],
+    ['E_2022_plus_10pct_of_2023', 'Recalibrated', 'Train on the 2022 scrape plus a random 10% of 2023 flight-days, test on the other 90%. This mimics having a small recent sample.'],
+    ['C_train_2022_test_2023', 'Unseen period', 'Train on 2022 only and test on all of 2023. No 2023 flight or price level is seen. The hardest and most honest test of forecasting a new period.']];
+  document.getElementById('p-metrics').innerHTML = `
+    <div class="card"><h2>Held-out accuracy</h2>
+      <p class="meta">Target: 95%. Accuracy = 100 minus the mean absolute percentage error between predicted and actual fare on rows the model never trained on.</p>
+      <div class="grid g3" style="margin-top:10px">${S.map(([k, n]) => { const r = m[k]; return `<div class="kpi"><div class="meta">${n}</div><b style="color:${r.accuracy_pct >= 95 ? 'var(--good)' : 'var(--ink)'}">${acc(r.accuracy_pct)}</b>
+        <div class="meta">${r.within_10pct}% of fares within ±10%</div><div class="meta">Average miss ${inr(r.MAE_inr)}</div><div class="meta">${r.rows.toLocaleString()} test rows</div></div>`; }).join('')}</div></div>
+    <div class="card"><h2>What each test means</h2><table><tr><th>Test</th><th>Setup</th><th class="num">Accuracy</th><th class="num">Within ±10%</th></tr>
+      ${S.map(([k, n, d]) => `<tr><td><b>${n}</b></td><td>${d}</td><td class="num">${acc(m[k].accuracy_pct)}</td><td class="num">${m[k].within_10pct}%</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>How the metrics are defined</h2><table>
+      <tr><td><b>Accuracy</b></td><td>100 − MAPE, where MAPE is the average of |predicted − actual| ÷ actual over the test rows.</td></tr>
+      <tr><td><b>Within ±10%</b></td><td>Share of test fares where the prediction is within 10% of the actual fare.</td></tr>
+      <tr><td><b>Average miss (MAE)</b></td><td>Average absolute error in rupees.</td></tr>
+      <tr><td><b>Target</b></td><td>The model predicts log(price) so a ₹500 miss on a ₹3,000 fare counts more than on a ₹50,000 business fare. Predictions are converted back to rupees before scoring.</td></tr></table></div>
+    <div class="card"><h2>Reading these numbers honestly</h2><ul style="margin:6px 0; padding-left:20px">${M.experiments.findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
+}
+
+function how() {
+  const X = M.experiments, imp = M.importance;
+  const ladder = X.feature_ladder.map(r => `<div style="margin-bottom:10px"><div style="font-size:13.5px">${esc(r.step)}</div>
+    <div class="barrow"><span class="meta">Same period</span>${bar(r.same_period - 75, 20)}<b>${acc(r.same_period)}</b></div>
+    <div class="barrow"><span class="meta">Recalibrated</span>${bar(r.recalibrated - 75, 20, true)}<b>${acc(r.recalibrated)}</b></div></div>`).join('');
+  document.getElementById('p-how').innerHTML = `
+    <div class="card"><h2>The path from 86.9% to 93.0%</h2>
+      <ol class="steps"><li><b>First model.</b> A gradient boosting model on basic fare attributes scored 86.9% on a random split inside 2023.</li>
+        <li><b>Add real signal.</b> Exact departure and arrival hour (recovered from the raw scrape), route distance, route supply, and the typical price level of each flight and airline-route. Same-period accuracy rose to 89.6%.</li>
+        <li><b>Make the model bigger and tune it.</b> More boosting rounds, more leaves, smaller steps, L2 regularisation and early stopping. This was the biggest single gain, up to 93.0%.</li>
+        <li><b>Test more honestly.</b> The recalibrated and unseen-period tests show how much of the score survives outside the training period.</li></ol></div>
+    <div class="card"><h2>Step 1: features added, one at a time</h2><p class="meta">Bars start at 75% to make the differences visible. Model size was held fixed (400 rounds).</p>${ladder}</div>
+    <div class="card"><h2>Step 2: model size and tuning (same-period test)</h2><table><tr><th>Setting</th><th class="num">Accuracy</th><th class="num">Recalibrated</th></tr>
+      ${X.tuning.map(r => `<tr><td>${esc(r.step)}</td><td class="num">${acc(r.same_period)}</td><td class="num">${r.recalibrated == null ? 'not run' : acc(r.recalibrated)}</td></tr>`).join('')}</table>
+      <p class="meta">The final model hit the 3,500-round cap while still improving, so a little more is possible, with diminishing returns.</p></div>
+    <div class="card"><h2>What the model relies on</h2>
+      <p class="meta">Permutation importance on ${imp ? imp.sample_rows.toLocaleString() : '?'} fares: accuracy points lost when one feature is shuffled. These rows were part of the shipped model's training data (baseline ${imp ? acc(imp.baseline_accuracy_pct) : '?'}, higher than the held-out scores), and target-encoded features use the full training set, so read this as a ranking of what the model uses, not as out-of-sample effect sizes.</p>
+      ${imp ? imp.features.map(f => `<div class="barrow"><span>${esc(f.feature)}</span>${bar(f.accuracy_drop_pts, imp.features[0].accuracy_drop_pts)}<b>${f.accuracy_drop_pts.toFixed(1)}</b></div>`).join('') : '<div class="meta">Importance file not found. Run <code>src/importance.py</code>.</div>'}</div>
+    <div class="card"><h2>First-version tests, for the record</h2><table><tr><th>Split</th><th class="num">Accuracy</th></tr>
+      ${X.first_version.map(r => `<tr><td>${esc(r.split)}${r.caveat ? `<div class="meta">${esc(r.caveat)}</div>` : ''}</td><td class="num">${acc(r.accuracy)}</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Why not 95%</h2><ul style="margin:6px 0; padding-left:20px">
+      <li>Each scrape is a single day. The model sees a flight's price once, never moving over time, so it cannot learn repricing or festival effects.</li>
+      <li>The unseen-period score (66%) is limited by the price level shift between 2022 and 2023.</li>
+      <li>The next real gain needs repeated daily prices for the same flights, for example a scheduled capture on the target routes, so that "yesterday's price for this flight" becomes a feature.</li></ul></div>`;
+}
+
+const HP_DOC = { loss:'Squared error on log price', max_iter:'Maximum boosting rounds (trees)', learning_rate:'Step size for each tree', max_leaf_nodes:'Leaves per tree (model complexity)',
+  min_samples_leaf:'Minimum rows in a leaf', l2_regularization:'Penalty on large leaf values', early_stopping:'Stop when the validation score stops improving',
+  validation_fraction:'Share of training rows used to decide when to stop', n_iter_no_change:'Rounds without improvement before stopping', random_state:'Seed for reproducibility' };
+function model() {
+  const mo = M.model, imp = M.importance, impMap = imp ? Object.fromEntries(imp.features.map(f => [f.feature, f.accuracy_drop_pts])) : {};
+  document.getElementById('p-model').innerHTML = `
+    <div class="card"><h2>Model</h2><div class="grid g3" style="margin-top:8px">
+      <div class="kpi"><div class="meta">Algorithm</div><b style="font-size:16px">${esc(mo.type)}</b></div>
+      <div class="kpi"><div class="meta">Predicts</div><b style="font-size:16px">${esc(mo.target)}</b></div>
+      <div class="kpi"><div class="meta">Rounds fitted</div><b>${mo.rounds_fitted.toLocaleString()}</b></div>
+      <div class="kpi"><div class="meta">Features</div><b>${mo.n_features}</b></div></div></div>
+    <div class="card"><h2>Hyperparameters</h2><table><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+      ${Object.entries(mo.hyperparameters).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(v)}</td><td>${esc(HP_DOC[k] || '')}</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Features used (${mo.n_features})</h2><table><tr><th>Feature</th><th>Kind</th><th>Description</th><th class="num">Importance</th></tr>
+      ${mo.features.map(f => `<tr><td><code>${esc(f.name)}</code></td><td>${esc(f.kind)}</td><td>${esc(f.doc)}</td><td class="num">${impMap[f.name] != null ? impMap[f.name].toFixed(1) + ' pts' : ''}</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Training details</h2><ul style="margin:6px 0; padding-left:20px">
+      <li>Target encodings (typical price of a flight, of an airline on a route) are computed out-of-fold with 5 folds on the training rows, so a row never sees its own price.</li>
+      <li>Categorical features are handled natively by the model, not one-hot encoded.</li>
+      <li>The shipped model is trained on all real rows (2022 and 2023). The scores above come from separate runs with rows held out.</li>
+      <li>Training takes about 5 minutes per model on a laptop CPU. No GPU is needed.</li>
+      <li>Reproduce with <code>python src/build_dataset.py</code>, <code>python src/train.py</code>, <code>python src/importance.py</code>.</li></ul></div>`;
+}
+
+function data() {
+  const d = M.data;
+  document.getElementById('p-data').innerHTML = `
+    <div class="card"><h2>Training data</h2><p class="meta">${d.total_rows.toLocaleString()} real fares after cleaning. No synthetic data is used.</p>
+      <table><tr><th>Scrape</th><th class="num">Rows</th><th class="num">Flights</th><th class="num">Routes</th><th class="num">Airlines</th><th>Journey dates</th><th>Exact times</th><th>Median price (₹)</th></tr>
+      ${d.periods.map(p => `<tr><td><b>${p.period}</b></td><td class="num">${p.rows.toLocaleString()}</td><td class="num">${p.flights.toLocaleString()}</td><td class="num">${p.routes}</td><td class="num">${p.airlines}</td>
+        <td>${p.first_journey} to ${p.last_journey}</td><td>${p.has_exact_times ? 'yes' : 'no'}</td><td>${Object.entries(p.median_price).map(([c, v]) => esc(c) + ' ' + v.toLocaleString('en-IN')).join('<br>')}</td></tr>`).join('')}</table>
+      <p class="meta" style="margin-top:8px">Cities: ${d.cities.join(', ')}.</p></div>
+    <div class="card"><h2>Sources</h2><table><tr><th>Dataset</th><th>Role</th><th>Status</th></tr>
+      ${d.sources.map(s => `<tr><td><b>${esc(s.name)}</b><div class="meta"><code>${esc(s.slug)}</code></div></td><td>${esc(s.role)}</td><td><span class="tag ${s.used ? 'used' : 'no'}">${s.used ? 'used' : 'not used'}</span></td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Rows per airline</h2><table><tr><th>Airline</th><th class="num">2022</th><th class="num">2023</th></tr>
+      ${d.airlines.map(a => `<tr><td>${esc(a.airline)}</td><td class="num">${(a['2022'] || 0).toLocaleString()}</td><td class="num">${(a['2023'] || 0).toLocaleString()}</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Cleaning and assumptions</h2><ul style="margin:6px 0; padding-left:20px">
+      <li>Only exact duplicate rows were dropped. Rows that look alike but differ in arrival time or duration are different connecting itineraries, and were kept.</li>
+      <li>"First" class (144 rows) was dropped as too small.</li>
+      <li>The 2022 file has no dates, only days-left. Its scrape date is assumed to be 11 Feb 2022, from the published description of the dataset.</li>
+      <li>Exact departure and arrival times for 2023 come from the raw scraped file, which lines up with the cleaned file row for row (checked: flight code and price match 100%).</li>
+      <li>Airline names and stop labels were normalised across the two files.</li>
+      <li>Jaipur is not in any dataset found, so it is not supported.</li></ul></div>`;
+}
+
+(async () => {
+  M = await (await fetch('/api/meta')).json();
+  c_sort.innerHTML = M.sorts.map(s => `<option>${s}</option>`).join('');
+  fillSettings(M.config); metrics(); how(); model(); data();
+  show((location.hash || '#settings').slice(1));
+})();
+</script>
+{% endblock %}

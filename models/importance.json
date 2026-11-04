@@ -1,0 +1,78 @@
+{
+  "baseline_accuracy_pct": 94.38,
+  "sample_rows": 20000,
+  "features": [
+    {
+      "feature": "te_flight",
+      "accuracy_drop_pts": 70.8
+    },
+    {
+      "feature": "te_route_airline",
+      "accuracy_drop_pts": 19.5
+    },
+    {
+      "feature": "days_left",
+      "accuracy_drop_pts": 10.88
+    },
+    {
+      "feature": "duration_h",
+      "accuracy_drop_pts": 10.78
+    },
+    {
+      "feature": "destination",
+      "accuracy_drop_pts": 4.78
+    },
+    {
+      "feature": "arr_hour",
+      "accuracy_drop_pts": 3.98
+    },
+    {
+      "feature": "source",
+      "accuracy_drop_pts": 3.79
+    },
+    {
+      "feature": "dep_hour",
+      "accuracy_drop_pts": 3.66
+    },
+    {
+      "feature": "distance_km",
+      "accuracy_drop_pts": 3.01
+    },
+    {
+      "feature": "airline",
+      "accuracy_drop_pts": 2.91
+    },
+    {
+      "feature": "route_supply",
+      "accuracy_drop_pts": 2.83
+    },
+    {
+      "feature": "dow",
+      "accuracy_drop_pts": 2.59
+    },
+    {
+      "feature": "stops",
+      "accuracy_drop_pts": 2.06
+    },
+    {
+      "feature": "month",
+      "accuracy_drop_pts": 1.5
+    },
+    {
+      "feature": "dep_bucket",
+      "accuracy_drop_pts": 0.67
+    },
+    {
+      "feature": "arr_bucket",
+      "accuracy_drop_pts": 0.53
+    },
+    {
+      "feature": "class",
+      "accuracy_drop_pts": 0.37
+    },
+    {
+      "feature": "period",
+      "accuracy_drop_pts": 0.0
+    }
+  ]
+}

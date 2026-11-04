@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Fare Predictor{% endblock %}</title>
+<style>
+  :root { --bg:#f5f7fb; --card:#fff; --ink:#1a2233; --muted:#667085; --line:#e4e8f0; --brand:#0b5fff; --brandbg:#e8f0ff;
+          --good:#0a8f4d; --bad:#c2410c; --goodbg:#e7f6ee; --badbg:#fdeee6; --warnbg:#fff6df; --warn:#8a5a00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e121a; --card:#171c27; --ink:#e8ecf4; --muted:#93a0b8;
+          --line:#2a3242; --brand:#5b8cff; --brandbg:#1b2540; --good:#4ade80; --bad:#fb923c; --goodbg:#10291b;
+          --badbg:#2e1b10; --warnbg:#2b2410; --warn:#f2c14e; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  .nav { background:var(--card); border-bottom:1px solid var(--line); }
+  .nav .in { max-width:1100px; margin:0 auto; padding:0 16px; display:flex; align-items:center; gap:24px; height:52px; }
+  .logo { font-weight:700; } .nav a { color:var(--muted); text-decoration:none; padding:15px 2px; border-bottom:2px solid transparent; }
+  .nav a.on { color:var(--brand); border-color:var(--brand); font-weight:600; }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:0 0 4px; } h3 { font-size:14px; margin:16px 0 6px; }
+  .sub { color:var(--muted); margin:0 0 20px; } .meta { color:var(--muted); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  select,input[type=text],input[type=number],input[type=date] { width:100%; padding:9px 10px; border:1px solid var(--line);
+          border-radius:8px; background:var(--card); color:var(--ink); font:inherit; }
+  button { cursor:pointer; padding:10px 16px; border:0; border-radius:8px; background:var(--brand); color:#fff; font:inherit; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  button.ghost { background:transparent; color:var(--brand); border:1px solid var(--brand); padding:6px 12px; font-size:13px; }
+  button.plain { background:transparent; color:var(--muted); border:1px solid var(--line); padding:6px 12px; font-size:13px; font-weight:500; }
+  button.on { background:var(--good); border-color:var(--good); color:#fff; }
+  .warn { background:var(--badbg); color:var(--bad); padding:8px 12px; border-radius:8px; margin-top:12px; font-size:13px; }
+  .info { background:var(--warnbg); color:var(--warn); padding:8px 12px; border-radius:8px; margin:10px 0; font-size:13px; }
+  .ok { background:var(--goodbg); color:var(--good); padding:8px 12px; border-radius:8px; margin-top:12px; font-size:13px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .chip { display:inline-block; font-size:12px; padding:2px 9px; border-radius:99px; background:var(--brandbg); color:var(--brand); }
+  .chip.down { background:var(--goodbg); color:var(--good); } .chip.up { background:var(--badbg); color:var(--bad); }
+  .chip.flat { background:var(--line); color:var(--muted); } .chip.big { font-weight:700; outline:1px solid currentColor; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; } th { text-align:left; color:var(--muted); font-weight:500; font-size:12px;
+          text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--line); }
+  td { padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; } tr:last-child td { border-bottom:0; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; } code { background:var(--brandbg); padding:1px 5px; border-radius:4px; font-size:12.5px; }
+  .grid { display:grid; gap:12px; } .g2 { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+  .g3 { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+  .kpi { border:1px solid var(--line); border-radius:10px; padding:12px; } .kpi b { display:block; font-size:24px; }
+  .bar { height:10px; border-radius:5px; background:var(--brand); min-width:2px; } .track { background:var(--line); border-radius:5px; }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="nav"><div class="in">
+  <span class="logo">Fare Predictor</span>
+  <a href="/" class="{{ 'on' if page=='demo' }}">Demo</a>
+  <a href="/config" class="{{ 'on' if page=='config' }}">Configuration &amp; metrics</a>
+</div></div>
+<div class="wrap">{% block content %}{% endblock %}</div>
+<script>
+const inr = n => n == null ? 'n/a' : '₹' + Math.round(n).toLocaleString('en-IN');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

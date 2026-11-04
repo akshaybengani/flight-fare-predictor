@@ -1,0 +1,24 @@
+# third-party datasets (download with scripts/download_data.sh)
+data/
+
+# trained model is ~110 MB (over GitHub's 100 MB limit); rebuild with: python src/train.py --final-only
+models/*.joblib
+
+# local runtime config written by the Configuration page
+config.json
+
+# secrets and credentials: never commit
+.env
+.env.*
+*.pem
+kaggle.json
+access_token
+.kaggle/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store

@@ -1,0 +1,8 @@
+numpy>=2.0
+pandas>=2.2
+pyarrow>=15
+scikit-learn>=1.5
+joblib>=1.4
+flask>=3.0
+# only needed to download the datasets
+kaggle>=1.7

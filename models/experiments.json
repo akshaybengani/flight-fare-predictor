@@ -1,0 +1,29 @@
+{
+  "note": "Every number below was measured in this project. 'Same period' = random 20% of 2023 rows held out. 'Recalibrated' = train on 2022 plus a random 10% of 2023 flight-days, test on the other 2023 flight-days. Accuracy = 100 - mean absolute percentage error.",
+  "feature_ladder": [
+    {"step": "Base features (airline, route, class, stops, duration, time bucket, days left, weekday, month)", "same_period": 86.86, "recalibrated": 82.22},
+    {"step": "+ period (which scrape: 2022 or 2023)", "same_period": 86.86, "recalibrated": 82.89},
+    {"step": "+ exact departure/arrival hour + route distance", "same_period": 88.69, "recalibrated": 84.71},
+    {"step": "+ route supply (flights per route and class)", "same_period": 88.80, "recalibrated": 84.87},
+    {"step": "+ per-flight price level (out-of-fold target encoding)", "same_period": 89.62, "recalibrated": 84.69},
+    {"step": "+ per-route-airline price level", "same_period": 89.64, "recalibrated": 84.87}
+  ],
+  "tuning": [
+    {"step": "400 rounds, learning rate 0.08, 63 leaves", "same_period": 89.64, "recalibrated": null},
+    {"step": "1,200 rounds, 0.05, 127 leaves, L2=1", "same_period": 91.41, "recalibrated": null},
+    {"step": "2,000 rounds, 0.04, 255 leaves, min leaf 10, L2=1", "same_period": 92.41, "recalibrated": null},
+    {"step": "3,500 rounds, 0.05, 255 leaves, min leaf 5, L2=1 (final)", "same_period": 93.04, "recalibrated": 87.00}
+  ],
+  "first_version": [
+    {"split": "Random 80/20 inside 2023", "accuracy": 86.86},
+    {"split": "Time split inside 2023 (last 20% of journey dates)", "accuracy": 87.41, "caveat": "Because each scrape has one booking date, journey date and days-left are the same signal, so this really tests days-left 30-50 only."},
+    {"split": "Train 2022, test 2023", "accuracy": 66.79},
+    {"split": "2022 + early 2023, test late 2023", "accuracy": 72.18}
+  ],
+  "findings": [
+    "Almost every flight-day has exactly one price once exact times are used (only 1.5% of rows have more than one), so the remaining error is day-to-day variation of individual flights, not label noise.",
+    "Economy fares are about 55% higher in the 2023 scrape than in 2022, which caps accuracy for any unseen period.",
+    "Each scrape has a single booking date, so the model never sees one flight's price change over time and cannot learn festival effects.",
+    "The 'same period' score is an interpolation score: other days of the same flights are in training."
+  ]
+}
