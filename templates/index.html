@@ -1,156 +1,246 @@
 {% extends "base.html" %}
-{% block title %}Fare Predictor: Demo{% endblock %}
-{% block head %}
-<style>
-  form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; }
-  .toolbar { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; margin:12px 0 4px; }
-  .row { display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr 150px; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); }
-  .row.head { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; background:transparent; }
-  .al { font-weight:600; } .price { font-variant-numeric:tabular-nums; font-size:17px; font-weight:600; }
-  .final { color:var(--good); } .struck { text-decoration:line-through; color:var(--muted); }
-  .detail { grid-column:1/-1; border-top:1px dashed var(--line); padding-top:10px; display:grid; gap:14px; grid-template-columns:1.2fr 1fr; }
-  .detail svg { width:100%; height:110px; } .detail table td:first-child { color:var(--muted); width:55%; }
-  .pager { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
-  .pages { display:flex; gap:4px; flex-wrap:wrap; } .pages button { padding:5px 11px; min-width:34px; background:transparent; color:var(--ink);
-          border:1px solid var(--line); font-weight:500; } .pages button.cur { background:var(--brand); border-color:var(--brand); color:#fff; }
-  .pages span { padding:5px 4px; color:var(--muted); }
-  @media (max-width:760px) { .row { grid-template-columns:1fr 1fr; } .row.head { display:none; } .detail { grid-template-columns:1fr; } }
-</style>
-{% endblock %}
+{% block title %}FareSight · Search flights{% endblock %}
 {% block content %}
-  <h1>Demo</h1>
-  <p class="sub">Search a route. Compare today's listed fare with the model's predicted fare. Open any flight to see the exact parameters the model used.</p>
+<section class="hero">
+  <!-- hero scene: a larger airliner on a contrail, clouds, contour lines. Decorative only. -->
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 1440 420" preserveAspectRatio="xMidYMin slice">
+      <use class="art-stroke" href="#cloud" x="980" y="64" width="210" height="105"/>
+      <use class="art-stroke" href="#cloud" x="1210" y="210" width="130" height="65"/>
+      <use class="art-stroke" href="#cloud" x="760" y="250" width="100" height="50"/>
+      <path class="art-stroke dash dashflow" d="M-60 330 C 280 300, 560 260, 880 210 S 1240 120, 1520 70"/>
+      <path class="art-stroke dash" d="M-60 352 C 280 322, 560 282, 880 232 S 1240 142, 1520 92" opacity=".55"/>
+      <g class="drift"><g transform="translate(0 150) rotate(-12 80 80)">
+        <use class="art-plane" href="#plane" width="160" height="160"/></g></g>
+    </svg>
+  </div>
+  <div class="wrap">
+    <div class="eyebrow">Fare intelligence for flight booking</div>
+    <h1>Listed today, <em>predicted</em> for departure.</h1>
+    <p class="lede">Search a route to see the fare on offer next to the fare our model expects, and open any flight to see the numbers behind it.</p>
 
-  <div class="card">
-    <form id="f">
-      <div><label>From</label><select name="source">{% for c in cities %}<option>{{ c }}</option>{% endfor %}</select></div>
-      <div><label>To</label><select name="destination">{% for c in cities %}<option {% if loop.index==2 %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
-      <div><label>Travel date</label><input type="date" name="date" required></div>
-      <div><label>Class</label><select name="class">{% for c in classes %}<option>{{ c }}</option>{% endfor %}</select></div>
-      <div><button type="submit">Search flights</button></div>
+    <form id="f" class="pass" autocomplete="off">
+      <div class="pass-in">
+        <div class="pass-route">
+          <div class="field"><label for="src">From</label>
+            <select id="src" name="source">{% for c in cities %}<option>{{ c }}</option>{% endfor %}</select></div>
+          <div class="arc" aria-hidden="true">
+            <svg viewBox="0 0 200 56" preserveAspectRatio="none"><path class="dashflow" d="M2 46 Q100 -22 198 46"/></svg>
+            <svg class="plane" viewBox="0 0 64 64" style="fill:var(--sheet);stroke:var(--accent);stroke-width:3.4"><use href="#plane"/></svg>
+          </div>
+          <div class="field to"><label for="dst">To</label>
+            <select id="dst" name="destination">{% for c in cities %}<option {% if loop.index==2 %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="pass-bottom">
+          <div><label for="date">Travel date</label><input id="date" type="date" name="date" required></div>
+          <div><label for="cls">Class</label><select id="cls" name="class">{% for c in classes %}<option>{{ c }}</option>{% endfor %}</select></div>
+          <button class="btn" type="submit" id="go">Search flights</button>
+        </div>
+      </div>
     </form>
-    <div class="meta" style="margin-top:12px">Supported cities are the ones in the training data ({{ cities|join(', ') }}). Jaipur is not covered yet.
-      Prediction settings come from the <a href="/config">Configuration</a> page.</div>
-    <div id="err" class="warn" hidden></div>
+    <p class="pass-help">Routes are limited to the {{ cities|length }} cities in the training data: {{ cities|join(', ') }}. How a prediction is made, and the settings behind it, are on <a href="/config">Model &amp; Insights</a>.</p>
+  </div>
+</section>
+
+<section class="wrap results" id="results" aria-live="polite">
+  <div id="idle" class="state">
+    <svg viewBox="0 0 120 80" aria-hidden="true" style="fill:var(--sheet);stroke:var(--ink-3);stroke-width:1.4">
+      <path d="M8 56 H112" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/>
+      <svg x="38" y="14" width="44" height="44" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink)"><use href="#plane"/></svg>
+    </svg>
+    <div><h3>Nothing searched yet</h3><p>Pick two cities and a travel date above. Your flights will be laid out here as tickets, ten to a page.</p></div>
+  </div>
+
+  <div id="loading" class="loading" hidden role="status">
+    <span class="track" aria-hidden="true"><svg class="mark-svg" viewBox="0 0 64 64"><use href="#fs-mark"/></svg></span>
+    <span>Checking fares and running the model…</span>
+  </div>
+
+  <div id="error" class="state bad" hidden>
+    <svg viewBox="0 0 120 80" aria-hidden="true" style="fill:var(--sheet);stroke:var(--ink-3);stroke-width:1.4">
+      <path d="M8 62 H112" stroke-linecap="round" fill="none"/><path d="M24 62 v-8 M96 62 v-8" fill="none"/>
+      <svg x="32" y="30" width="50" height="50" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink);transform:rotate(0deg)"><use href="#plane"/></svg>
+      <path d="M92 18 l10 10 M102 18 l-10 10" stroke="var(--up)" stroke-width="2" fill="none"/>
+    </svg>
+    <div><h3 id="errTitle">No flights for that search</h3><p id="errMsg"></p></div>
   </div>
 
   <div id="out" hidden>
-    <div class="card">
+    <div class="results-head">
       <h2 id="title"></h2>
-      <div class="chips" id="params"></div>
-      <div class="toolbar">
-        <div><label>Airline</label><select id="fAirline"></select></div>
-        <div><label>Stops</label><select id="fStops"><option value="">Any</option><option value="0">Non-stop</option><option value="1">1 stop</option><option value="2">2+ stops</option></select></div>
-        <div><label>Sort by</label><select id="fSort">
-          <option value="listed">Listed price, low to high</option><option value="predicted">Predicted price, low to high</option>
-          <option value="change_asc">Biggest predicted drop first</option><option value="change_desc">Biggest predicted rise first</option>
-          <option value="airline">Airline</option></select></div>
-        <div><button id="approvePage" class="ghost" type="button">Approve all on this page</button></div>
-      </div>
-      <div id="clamp" class="info" hidden></div>
+      <div id="clamp" class="note" style="margin:0" hidden></div>
+    </div>
+    <ul class="facts" id="params"></ul>
+
+    <div class="filters">
+      <div><label for="fAirline">Airline</label><select id="fAirline"></select></div>
+      <div><label for="fStops">Stops</label><select id="fStops"><option value="">Any</option><option value="0">Non-stop</option><option value="1">1 stop</option><option value="2">2+ stops</option></select></div>
+      <div><label for="fSort">Sort by</label><select id="fSort">
+        <option value="listed">Listed price, low to high</option><option value="predicted">Predicted price, low to high</option>
+        <option value="change_asc">Biggest predicted drop first</option><option value="change_desc">Biggest predicted rise first</option>
+        <option value="airline">Airline</option></select></div>
+      <div class="end"><button id="approvePage" class="btn line sm" type="button">Approve all on this page</button></div>
     </div>
 
-    <div class="card" style="padding:0">
-      <div class="row head"><div>Flight</div><div>Listed price</div><div>Predicted</div><div>Change</div><div></div></div>
-      <div id="rows"></div>
-      <div id="empty" class="meta" style="padding:16px" hidden>No flights match these filters.</div>
+    <div id="rows"></div>
+    <div id="empty" class="state" hidden>
+      <svg viewBox="0 0 120 80" aria-hidden="true" style="fill:var(--sheet);stroke:var(--ink-3);stroke-width:1.4"><path d="M8 56 H112" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/><svg x="38" y="14" width="44" height="44" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink)"><use href="#plane"/></svg></svg>
+      <div><h3>No flights match those filters</h3><p>Loosen the airline or stops filter and they will come back. <button class="btn text" id="clearF" type="button">Clear filters</button></p></div>
     </div>
-    <div class="pager"><div class="meta" id="count"></div><div class="pages" id="pages"></div></div>
+    <div class="pager"><div class="muted small" id="count"></div><nav class="pages" id="pages" aria-label="Pages"></nav></div>
   </div>
+</section>
 {% endblock %}
 {% block scripts %}
 <script>
-const f = document.getElementById('f'), err = document.getElementById('err');
-const d = new Date(); d.setDate(d.getDate() + 30);
-f.date.value = d.toISOString().slice(0,10); f.date.min = new Date(Date.now()+864e5).toISOString().slice(0,10);
-let all = [], cfg = {}, page = 1, PAGE = 10, open = new Set();
+const f = document.getElementById('f'), $ = id => document.getElementById(id);
+const d0 = new Date(); d0.setDate(d0.getDate() + 30);
+f.date.value = d0.toISOString().slice(0, 10); f.date.min = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+let all = [], cfg = {}, page = 1, PAGE = 10, open = new Set(), trip = {};
 const FRIENDLY = {stops:'Stops', duration_h:'Duration (h)', dep_hour:'Departure hour', arr_hour:'Arrival hour', distance_km:'Distance (km)',
   days_left:'Days before departure', weekday:'Weekday of travel', month:'Month of travel', period:'Price level (scrape year)',
   route_supply:'Flights on this route and class', flight_price_level_inr:'Typical price of this flight', route_airline_price_level_inr:'Typical price of this airline on the route',
   airline:'Airline', route:'Route', class:'Class', dep_bucket:'Departure window', arr_bucket:'Arrival window'};
 
-function chart(c) {
-  const w = 600, h = 110, xs = c.map((_, i) => 14 + i * (w - 28) / (c.length - 1));
-  const ps = c.map(p => p.p), lo = Math.min(...ps), hi = Math.max(...ps), span = Math.max(hi - lo, 1);
-  const ys = ps.map(p => h - 22 - (p - lo) / span * (h - 44));
-  const line = xs.map((x, i) => `${i ? 'L' : 'M'}${x},${ys[i]}`).join(' ');
-  const dots = xs.map((x, i) => `<circle cx="${x}" cy="${ys[i]}" r="3" fill="var(--brand)"/>` +
-    `<text x="${x}" y="${h-4}" font-size="10" text-anchor="middle" fill="var(--muted)">${c[i].d}d</text>` +
-    `<text x="${x}" y="${ys[i]-7}" font-size="10" text-anchor="middle" fill="var(--muted)">${(ps[i]/1000).toFixed(1)}k</text>`).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2"/>${dots}</svg>`;
+// Some codes arrive from the merged dataset as scientific notation ("6.00E-152" for "6E-152"). Repair for display only.
+function code(c) {
+  const m = /^(\d)\.0*E-(\d+)$/i.exec(c);
+  return m ? `${m[1]}E ${m[2]}` : String(c).replace(/-/g, ' ');
 }
+const hhmm = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
 const pct = x => Math.round((x.predicted - x.listed) / x.listed * 100);
+const arrow = up => `<svg aria-hidden="true"><use href="#arrow-${up ? 'up' : 'down'}"/></svg>`;
+const plane = 'fill:var(--sheet);stroke:var(--accent);stroke-width:4';
+
+function chart(x) {
+  const c = x.curve, W = innerWidth < 640 ? Math.max(300, innerWidth - 96) : 500, H = innerWidth < 640 ? 230 : 250, L = 8, R = 92, T = 24, B = 40, pw = W - L - R, ph = H - T - B;
+  const dmax = Math.max(...c.map(p => p.d)), dmin = Math.min(...c.map(p => p.d)), hotD = Math.min(Math.max(cfg.predict_at_days_left, dmin), dmax);
+  const ps = c.map(p => p.p).concat([x.listed, x.predicted]);
+  let lo = Math.min(...ps), hi = Math.max(...ps); const pad = Math.max((hi - lo) * .14, 100); lo = Math.max(0, lo - pad); hi += pad;
+  const sx = d => L + (dmax - d) / Math.max(dmax - dmin, 1) * pw, sy = p => T + (hi - p) / (hi - lo) * ph;
+  const path = c.map((p, i) => `${i ? 'L' : 'M'}${sx(p.d).toFixed(1)},${sy(p.p).toFixed(1)}`).join(' ');
+  const step = [500, 1000, 2000, 2500, 5000, 10000, 20000].find(s => (hi - lo) / s <= 4) || 20000;
+  let grid = ''; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
+    grid += `<line class="grid" x1="${L}" x2="${L + pw}" y1="${sy(v)}" y2="${sy(v)}"/><text x="${L}" y="${sy(v) - 4}">${inr(v)}</text>`;
+  const ticks = c.map(p => `<text x="${sx(p.d)}" y="${H - 18}" text-anchor="middle">${p.d}</text>`).join('');
+  const dots = c.map(p => `<circle class="pt" cx="${sx(p.d)}" cy="${sy(p.p)}" r="3"/>`).join('');
+  // direct labels in the right margin, pushed apart so they never touch
+  const labs = [{ y: sy(x.listed), name: 'Listed', val: inr(x.listed), cls: '' }, { y: sy(x.predicted), name: 'FareSight', val: inr(x.predicted), cls: 'acc' }].sort((a, b) => a.y - b.y);
+  if (labs[1].y - labs[0].y < 34) { const m = (labs[0].y + labs[1].y) / 2; labs[0].y = m - 17; labs[1].y = m + 17; }
+  const lt = labs.map(l => `<text x="${L + pw + 14}" y="${l.y - 2}">${l.name}</text><text class="lab ${l.cls}" x="${L + pw + 14}" y="${l.y + 14}">${l.val}</text>`).join('');
+  return `<svg class="plot" viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted price by days before departure, from ${inr(c[0].p)} at ${c[0].d} days to ${inr(c[c.length-1].p)} at ${c[c.length-1].d} days">
+    ${grid}
+    <line class="listed" x1="${L}" x2="${L + pw + 8}" y1="${sy(x.listed)}" y2="${sy(x.listed)}"/>
+    <path class="curve" d="${path}"/>${dots}
+    <circle class="pt hot" cx="${sx(hotD)}" cy="${sy(x.predicted)}" r="5"/>
+    ${lt}${ticks}
+    <text x="${L}" y="${H - 2}">Days before departure, earlier on the left</text>
+  </svg>`;
+}
+
+const ORDER = ['airline','route','class','stops','duration_h','dep_bucket','dep_hour','arr_bucket','arr_hour','distance_km','weekday','month','days_left','period','route_supply','flight_price_level_inr','route_airline_price_level_inr'];
+const PLAIN = new Set(['month', 'days_left', 'period', 'stops']);
+function spec(x) {
+  const ents = Object.entries(x.inputs).sort((a, b) => (ORDER.indexOf(a[0]) + 99) % 99 - (ORDER.indexOf(b[0]) + 99) % 99);
+  return `<dl class="spec">` + ents.map(([k, val]) => {
+    const shown = k.endsWith('_inr') ? inr(val) : (val == null ? 'not available' : (k === 'dep_hour' || k === 'arr_hour') ? hhmm(val) : (typeof val === 'number' && !PLAIN.has(k) ? val.toLocaleString('en-IN') : val));
+    return `<div><dt>${esc(FRIENDLY[k] || k)}</dt><span class="lead"></span><dd>${esc(shown)}</dd></div>`; }).join('') + `</dl>`;
+}
+
+function routeLine(x) {
+  const n = x.stops, stopDots = Array.from({ length: n }, (_, i) => `<i class="d" style="left:${(i + 1) / (n + 1) * 100}%"></i>`).join('');
+  const pl = n ? 100 / (2 * (n + 1)) : 50;
+  return `<div class="t-route"><span class="dur">${x.duration_h} h</span><span class="rl"></span><i class="d end" style="left:0"></i>${stopDots}<i class="d end" style="right:0;left:auto"></i>
+    <svg class="pl" style="left:${pl}%;${plane}" viewBox="0 0 64 64" aria-hidden="true"><use href="#plane"/></svg>
+    <span class="stp">${n ? n + (n > 1 ? '+' : '') + ' stop' : 'Non-stop'}</span></div>`;
+}
+
+function ticket(x) {
+  const p = pct(x), cls = p < 0 ? 'down' : p > 0 ? 'up' : 'flat', big = Math.abs(p) >= cfg.flag_threshold_pct, isOpen = open.has(x.code);
+  const diff = x.predicted - x.listed;
+  const t = (k, win) => x.inputs[k + '_hour'] != null ? `<div class="t-time">${hhmm(x.inputs[k + '_hour'])}<small>${k === 'dep' ? 'Departs' : 'Arrives'}</small></div>`
+    : `<div class="t-time win">${esc(win)}<small>${k === 'dep' ? 'Departs' : 'Arrives'}</small></div>`;
+  const fc = big ? (p < 0 ? 'var(--down)' : 'var(--up)') : '';
+  return `<article class="flight">
+    <div class="ticket-wrap"><div class="ticket ${big ? 'flag' : ''}" style="${fc ? '--flagc:' + fc : ''}">
+      <div class="t-main">
+        <div class="t-top"><span class="t-air">${esc(x.airline)}</span><span class="t-code">${esc(code(x.code))}</span>${big ? `<span class="t-flag">${p < 0 ? 'Large drop' : 'Large rise'}</span>` : ''}</div>
+        <div class="t-times">${t('dep', x.dep)}${routeLine(x)}<div class="r">${t('arr', x.arr)}</div></div>
+      </div>
+      <div class="t-fare">
+        <div class="f-line"><span class="lbl">Listed</span><span class="f-listed ${x.approved ? 'struck' : ''}">${inr(x.listed)}</span></div>
+        <div class="f-line"><span class="lbl">FareSight</span><span class="f-pred ${x.approved ? 'final' : ''}">${inr(x.predicted)}</span></div>
+        <div class="f-line"><span class="delta ${cls}">${p === 0 ? '' : arrow(p > 0)}<span>${inr(Math.abs(diff))}${p === 0 ? '' : `<span class="sr"> ${p > 0 ? 'higher' : 'lower'} than listed</span>`}</span> <small>${p === 0 ? 'no change' : (p > 0 ? 'up ' : 'down ') + Math.abs(p) + '%'}</small></span></div>
+        <div class="f-actions"><button class="btn sm ${x.approved ? 'on' : 'line'}" data-a="${esc(x.code)}" aria-pressed="${x.approved}" type="button">${x.approved ? 'Approved' : 'Approve'}</button>
+          <button class="btn sm text" data-o="${esc(x.code)}" aria-expanded="${isOpen}" type="button">${isOpen ? 'Hide details' : 'Details'}</button></div>
+      </div>
+    </div></div>
+    ${isOpen ? `<div class="sheet"><div><h3>Predicted fare by days before departure</h3>${cfg.show_curve ? chart(x) : '<p class="muted">The price curve is switched off in Model &amp; Insights.</p>'}</div>
+      <div><h3>What the model was given</h3>${spec(x)}</div></div>` : ''}
+  </article>`;
+}
 
 function view() {
-  const fa = document.getElementById('fAirline').value, fs = document.getElementById('fStops').value, so = document.getElementById('fSort').value;
-  let v = all.filter(x => (!fa || x.airline === fa) && (fs === '' || (fs === '2' ? x.stops >= 2 : x.stops === +fs)));
-  const key = {listed: x => x.listed, predicted: x => x.predicted, change_asc: pct, change_desc: x => -pct(x), airline: x => x.airline + x.listed}[so];
+  const fa = $('fAirline').value, fs = $('fStops').value, so = $('fSort').value;
+  const v = all.filter(x => (!fa || x.airline === fa) && (fs === '' || (fs === '2' ? x.stops >= 2 : x.stops === +fs)));
+  const key = { listed: x => x.listed, predicted: x => x.predicted, change_asc: pct, change_desc: x => -pct(x), airline: x => x.airline + x.listed }[so];
   return v.sort((a, b) => { const A = key(a), B = key(b); return A < B ? -1 : A > B ? 1 : 0; });
 }
 
 function pager(n) {
-  const last = Math.max(1, Math.ceil(n / PAGE)), el = document.getElementById('pages'); let h = '';
-  const btn = (p, label, cls = '', dis = false) => `<button class="${cls}" data-p="${p}" ${dis ? 'disabled' : ''}>${label}</button>`;
-  h += btn(page - 1, 'Prev', '', page === 1);
-  const set = new Set([1, last, page - 1, page, page + 1].filter(p => p >= 1 && p <= last));
-  let prev = 0; [...set].sort((a, b) => a - b).forEach(p => { if (p - prev > 1) h += '<span>…</span>'; h += btn(p, p, p === page ? 'cur' : ''); prev = p; });
-  h += btn(page + 1, 'Next', '', page === last);
-  el.innerHTML = h;
+  const last = Math.max(1, Math.ceil(n / PAGE)); let h = '';
+  const btn = (p, label, extra = '', dis = false) => `<button ${extra} data-p="${p}" ${dis ? 'disabled' : ''} ${p === page && !extra ? 'aria-current="page"' : ''} aria-label="${typeof label === 'number' ? 'Page ' + label : label}">${label}</button>`;
+  h += btn(page - 1, 'Prev', 'class="step"', page === 1);
+  const set = new Set([1, last, page - 1, page, page + 1].filter(p => p >= 1 && p <= last)); let prev = 0;
+  [...set].sort((a, b) => a - b).forEach(p => { if (p - prev > 1) h += '<span class="gap">…</span>'; h += btn(p, p); prev = p; });
+  h += btn(page + 1, 'Next', 'class="step"', page === last);
+  $('pages').innerHTML = h;
 }
 
 function render() {
   const v = view(), last = Math.max(1, Math.ceil(v.length / PAGE)); page = Math.min(page, last);
   const slice = v.slice((page - 1) * PAGE, page * PAGE);
-  document.getElementById('empty').hidden = v.length > 0;
-  document.getElementById('count').textContent = v.length ? `Showing ${(page-1)*PAGE+1}–${(page-1)*PAGE+slice.length} of ${v.length} flights (page ${page} of ${last})` : '';
-  document.getElementById('rows').innerHTML = slice.map(x => {
-    const p = pct(x), cls = p < 0 ? 'down' : p > 0 ? 'up' : 'flat', big = Math.abs(p) >= cfg.flag_threshold_pct ? ' big' : '';
-    const isOpen = open.has(x.code);
-    const inputs = Object.entries(x.inputs).map(([k, val]) => {
-      const hhmm = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
-      const shown = (k.endsWith('_inr')) ? inr(val) : (val == null ? 'not available' : (k === 'dep_hour' || k === 'arr_hour') ? hhmm(val) : val);
-      return `<tr><td>${esc(FRIENDLY[k] || k)}</td><td>${esc(shown)}</td></tr>`; }).join('');
-    return `<div class="row">
-      <div><div class="al">${esc(x.airline)}</div><div class="meta">${esc(x.code)} · ${x.stops ? x.stops + (x.stops > 1 ? '+' : '') + ' stop' : 'non-stop'} · ${x.duration_h}h</div>
-        <div class="meta">${esc(x.dep)} → ${esc(x.arr)}</div></div>
-      <div class="price ${x.approved ? 'struck' : ''}">${inr(x.listed)}</div>
-      <div class="price ${x.approved ? 'final' : ''}">${inr(x.predicted)}</div>
-      <div><span class="chip ${cls}${big}">${p > 0 ? '+' : ''}${p}%</span></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="ghost ${x.approved ? 'on' : ''}" data-a="${esc(x.code)}" type="button">${x.approved ? 'Approved' : 'Approve'}</button>
-        <button class="plain" data-o="${esc(x.code)}" type="button">${isOpen ? 'Hide' : 'Details'}</button></div>
-      ${isOpen ? `<div class="detail"><div>${cfg.show_curve ? `<h3 style="margin-top:0">Predicted price by days before departure</h3>${chart(x.curve)}` : '<div class="meta">Price curve is switched off in Configuration.</div>'}</div>
-        <div><h3 style="margin-top:0">Parameters the model used</h3><table>${inputs}</table></div></div>` : ''}
-    </div>`; }).join('');
-  pager(v.length);
+  $('empty').hidden = v.length > 0;
+  $('count').textContent = v.length ? `Showing ${(page-1)*PAGE+1} to ${(page-1)*PAGE+slice.length} of ${v.length} flights` : '';
+  $('rows').innerHTML = slice.map(ticket).join('');
+  pager(v.length); $('pages').parentElement.hidden = !v.length;
 }
 
+function show(which) { ['idle', 'loading', 'error', 'out'].forEach(k => $(k).hidden = k !== which); }
+
 f.addEventListener('submit', async e => {
-  e.preventDefault(); err.hidden = true;
-  const r = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.fromEntries(new FormData(f))) });
-  const j = await r.json();
-  if (!r.ok) { err.textContent = j.error; err.hidden = false; document.getElementById('out').hidden = true; return; }
-  all = j.flights.map(x => ({...x, approved:false})); cfg = j.config; PAGE = j.page_size; page = 1; open = new Set();
-  document.getElementById('title').textContent = `${j.source} → ${j.destination} · ${j.date}`;
-  document.getElementById('params').innerHTML = [
-    `${all.length} flights`, `${j.days_out} days from today`, `Predicted at ${cfg.predict_at_days_left} day(s) before departure`,
-    `Price level: ${cfg.price_period} scrape`, `Listed price: median within ±${cfg.listed_window_days} days`, `Highlight changes ≥ ${cfg.flag_threshold_pct}%`
-  ].map(t => `<span class="chip">${esc(t)}</span>`).join('');
-  const airlines = [...new Set(all.map(x => x.airline))].sort();
-  document.getElementById('fAirline').innerHTML = '<option value="">All airlines</option>' + airlines.map(a => `<option>${esc(a)}</option>`).join('');
-  document.getElementById('fStops').value = ''; document.getElementById('fSort').value = cfg.default_sort;
-  const cl = document.getElementById('clamp'); cl.hidden = !j.clamped;
-  cl.textContent = `The model has only seen bookings up to ${j.model_days} days ahead, so this search is treated as ${j.model_days} days out.`;
-  document.getElementById('out').hidden = false; render();
+  e.preventDefault(); show('loading'); $('go').disabled = true;
+  try {
+    const r = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(f))) });
+    const j = await r.json();
+    if (!r.ok) {
+      $('errTitle').textContent = r.status === 404 ? 'No flights for that search' : 'That search did not go through';
+      $('errMsg').textContent = j.error || 'Something went wrong. Try another route or date.'; show('error'); return;
+    }
+    all = j.flights.map(x => ({ ...x, approved: false })); cfg = j.config; PAGE = j.page_size; page = 1; open = new Set();
+    const dt = new Date(j.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    $('title').innerHTML = `${esc(j.source)} <span>to</span> ${esc(j.destination)}<br><span style="font-size:.62em">${esc(dt)} · ${esc(f['class'].value)}</span>`;
+    $('params').innerHTML = [`${all.length} flights`, `${j.days_out} days from today`, `Predicted ${cfg.predict_at_days_left} day${cfg.predict_at_days_left > 1 ? 's' : ''} before departure`,
+      `${cfg.price_period} price level`, `Listed price: median within ±${cfg.listed_window_days} days`, `Large changes start at ${cfg.flag_threshold_pct}%`].map(t => `<li>${esc(t)}</li>`).join('');
+    const airlines = [...new Set(all.map(x => x.airline))].sort();
+    $('fAirline').innerHTML = '<option value="">All airlines</option>' + airlines.map(a => `<option>${esc(a)}</option>`).join('');
+    $('fStops').value = ''; $('fSort').value = cfg.default_sort;
+    const cl = $('clamp'); cl.hidden = !j.clamped;
+    cl.textContent = `The model has only seen bookings up to ${j.model_days} days ahead, so this search is treated as ${j.model_days} days out.`;
+    show('out'); render();
+  } catch (err) {
+    $('errTitle').textContent = 'We could not reach the server'; $('errMsg').textContent = 'Check that the app is still running, then search again.'; show('error');
+  } finally { $('go').disabled = false; }
 });
-['fAirline','fStops','fSort'].forEach(id => document.getElementById(id).addEventListener('change', () => { page = 1; render(); }));
-document.getElementById('pages').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b && !b.disabled) { page = +b.dataset.p; render(); window.scrollTo({top: document.getElementById('rows').offsetTop - 120}); } });
-document.getElementById('rows').addEventListener('click', e => {
+['fAirline', 'fStops', 'fSort'].forEach(id => $(id).addEventListener('change', () => { page = 1; render(); }));
+$('clearF').onclick = () => { $('fAirline').value = ''; $('fStops').value = ''; page = 1; render(); };
+$('pages').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b && !b.disabled) { page = +b.dataset.p; render(); window.scrollTo({ top: $('rows').getBoundingClientRect().top + scrollY - 140 }); } });
+$('rows').addEventListener('click', e => {
   const a = e.target.closest('button[data-a]'), o = e.target.closest('button[data-o]');
   if (a) { const x = all.find(y => y.code === a.dataset.a); x.approved = !x.approved; render(); }
   if (o) { open.has(o.dataset.o) ? open.delete(o.dataset.o) : open.add(o.dataset.o); render(); }
 });
-document.getElementById('approvePage').addEventListener('click', () => {
+$('approvePage').addEventListener('click', () => {
   const v = view().slice((page - 1) * PAGE, page * PAGE), allOn = v.every(x => x.approved); v.forEach(x => x.approved = !allOn); render();
 });
 </script>

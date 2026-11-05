@@ -22,3 +22,10 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 .DS_Store
+
+# scratch output from benchmark runs
+catboost_info/
+models/algo_runs/
+models/ts_work/
+models/*.joblib
+*.log

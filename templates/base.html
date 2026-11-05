@@ -3,59 +3,121 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Fare Predictor{% endblock %}</title>
-<style>
-  :root { --bg:#f5f7fb; --card:#fff; --ink:#1a2233; --muted:#667085; --line:#e4e8f0; --brand:#0b5fff; --brandbg:#e8f0ff;
-          --good:#0a8f4d; --bad:#c2410c; --goodbg:#e7f6ee; --badbg:#fdeee6; --warnbg:#fff6df; --warn:#8a5a00; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0e121a; --card:#171c27; --ink:#e8ecf4; --muted:#93a0b8;
-          --line:#2a3242; --brand:#5b8cff; --brandbg:#1b2540; --good:#4ade80; --bad:#fb923c; --goodbg:#10291b;
-          --badbg:#2e1b10; --warnbg:#2b2410; --warn:#f2c14e; } }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
-  .nav { background:var(--card); border-bottom:1px solid var(--line); }
-  .nav .in { max-width:1100px; margin:0 auto; padding:0 16px; display:flex; align-items:center; gap:24px; height:52px; }
-  .logo { font-weight:700; } .nav a { color:var(--muted); text-decoration:none; padding:15px 2px; border-bottom:2px solid transparent; }
-  .nav a.on { color:var(--brand); border-color:var(--brand); font-weight:600; }
-  .wrap { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
-  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:0 0 4px; } h3 { font-size:14px; margin:16px 0 6px; }
-  .sub { color:var(--muted); margin:0 0 20px; } .meta { color:var(--muted); font-size:13px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
-  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
-  select,input[type=text],input[type=number],input[type=date] { width:100%; padding:9px 10px; border:1px solid var(--line);
-          border-radius:8px; background:var(--card); color:var(--ink); font:inherit; }
-  button { cursor:pointer; padding:10px 16px; border:0; border-radius:8px; background:var(--brand); color:#fff; font:inherit; font-weight:600; }
-  button:disabled { opacity:.5; cursor:default; }
-  button.ghost { background:transparent; color:var(--brand); border:1px solid var(--brand); padding:6px 12px; font-size:13px; }
-  button.plain { background:transparent; color:var(--muted); border:1px solid var(--line); padding:6px 12px; font-size:13px; font-weight:500; }
-  button.on { background:var(--good); border-color:var(--good); color:#fff; }
-  .warn { background:var(--badbg); color:var(--bad); padding:8px 12px; border-radius:8px; margin-top:12px; font-size:13px; }
-  .info { background:var(--warnbg); color:var(--warn); padding:8px 12px; border-radius:8px; margin:10px 0; font-size:13px; }
-  .ok { background:var(--goodbg); color:var(--good); padding:8px 12px; border-radius:8px; margin-top:12px; font-size:13px; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
-  .chip { display:inline-block; font-size:12px; padding:2px 9px; border-radius:99px; background:var(--brandbg); color:var(--brand); }
-  .chip.down { background:var(--goodbg); color:var(--good); } .chip.up { background:var(--badbg); color:var(--bad); }
-  .chip.flat { background:var(--line); color:var(--muted); } .chip.big { font-weight:700; outline:1px solid currentColor; }
-  table { border-collapse:collapse; width:100%; font-size:13.5px; } th { text-align:left; color:var(--muted); font-weight:500; font-size:12px;
-          text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--line); }
-  td { padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; } tr:last-child td { border-bottom:0; }
-  .num { font-variant-numeric:tabular-nums; text-align:right; } code { background:var(--brandbg); padding:1px 5px; border-radius:4px; font-size:12.5px; }
-  .grid { display:grid; gap:12px; } .g2 { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
-  .g3 { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
-  .kpi { border:1px solid var(--line); border-radius:10px; padding:12px; } .kpi b { display:block; font-size:24px; }
-  .bar { height:10px; border-radius:5px; background:var(--brand); min-width:2px; } .track { background:var(--line); border-radius:5px; }
-</style>
+<title>{% block title %}FareSight{% endblock %}</title>
+<meta name="description" content="FareSight: fare intelligence for flight booking.">
+<meta name="theme-color" content="#F5F0E6">
+<script>
+/* set the theme before first paint: saved choice, else the system setting */
+(function () { var t = null; try { t = localStorage.getItem('fs-theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#161816' : '#F5F0E6'; })();
+</script>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/favicon.svg') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='brand/faresight-mark-512.png') }}">
+<link rel="preload" href="{{ url_for('static', filename='fonts/fraunces-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/source-sans-3-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/faresight.css') }}">
 {% block head %}{% endblock %}
 </head>
 <body>
-<div class="nav"><div class="in">
-  <span class="logo">Fare Predictor</span>
-  <a href="/" class="{{ 'on' if page=='demo' }}">Demo</a>
-  <a href="/config" class="{{ 'on' if page=='config' }}">Configuration &amp; metrics</a>
-</div></div>
-<div class="wrap">{% block content %}{% endblock %}</div>
+
+<!-- Hand-drawn symbols, reused across both pages. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- top-down airliner, nose to the right -->
+    <symbol id="plane" viewBox="0 0 64 64">
+      <path d="M62 32 L58.5 30.2 L43 29.6 L31.5 7 L26.5 7 L31.5 29.6 L16 29.6 L10 20.5 L5.5 20.5 L8 29.8 L3 31 L3 33 L8 34.2 L5.5 43.5 L10 43.5 L16 34.4 L31.5 34.4 L26.5 57 L31.5 57 L43 34.4 L58.5 33.8 Z"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M50 31.2 H57 M50 32.8 H57" stroke-width=".8" fill="none"/>
+    </symbol>
+    <symbol id="cloud" viewBox="0 0 120 60">
+      <path d="M14 50 C2 50 0 34 12 31 C12 18 28 12 38 21 C44 6 70 6 76 22 C90 14 108 24 102 38 C116 38 116 50 104 50 Z" fill="none" stroke-linejoin="round"/>
+      <path d="M26 42 H52 M64 42 H90" fill="none" stroke-dasharray="1 5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="topo" viewBox="-100 -100 200 200" overflow="visible">
+      <path d="M-70 -10 C-72 -50 -30 -78 8 -66 C48 -76 82 -40 70 0 C84 36 52 74 14 66 C-24 84 -76 56 -70 -10 Z" fill="none"/>
+    </symbol>
+    <!-- brand mark, coloured through CSS variables so it follows the theme -->
+    <symbol id="fs-mark" viewBox="0 0 64 64">
+      <path class="m-ink" d="M58 7 L11 27 L31 33 Z" stroke-width="2" stroke-linejoin="round"/>
+      <path class="m-ink" d="M58 7 L33.5 37 L37 54 Z" stroke-width="2" stroke-linejoin="round"/>
+      <path class="m-fold" d="M58 7 L32 34.5" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path class="m-trail" d="M4 59 C16 59 25 55 35 50" fill="none" stroke-width="4.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="arrow-down" viewBox="0 0 12 12"><path d="M6 11 L1 4 H11 Z"/></symbol>
+    <symbol id="arrow-up" viewBox="0 0 12 12"><path d="M6 1 L11 8 H1 Z"/></symbol>
+    <symbol id="mark" viewBox="0 0 32 32"><use href="#plane" transform="rotate(-35 16 16)" width="32" height="32"/></symbol>
+  </defs>
+</svg>
+
+<!-- Faint background: contrails and contour lines. Moves slowly with scroll unless reduced motion is on. -->
+<div class="sky" aria-hidden="true">
+  <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <g class="layer" data-speed="0.04">
+      <path class="art-stroke dash" d="M-40 520 C 260 470, 520 600, 860 430 S 1300 330, 1500 360"/>
+      <path class="art-stroke dash" d="M-40 548 C 260 498, 520 628, 860 458 S 1300 358, 1500 388" opacity=".6"/>
+      <use class="art-plane" href="#plane" x="1210" y="296" width="44" height="44" transform="rotate(-8 1232 318)"/>
+    </g>
+    <g class="layer" data-speed="0.08">
+      <use class="art-stroke" href="#topo" x="1280" y="760" width="520" height="520" transform="translate(-260 -260)"/>
+      <use class="art-stroke" href="#topo" x="1280" y="760" width="400" height="400" transform="translate(-200 -200) rotate(8 200 200)"/>
+      <use class="art-stroke" href="#topo" x="1280" y="760" width="290" height="290" transform="translate(-145 -145) rotate(14 145 145)"/>
+      <use class="art-stroke" href="#topo" x="1280" y="760" width="190" height="190" transform="translate(-95 -95) rotate(20 95 95)"/>
+      <use class="art-stroke" href="#topo" x="1280" y="760" width="100" height="100" transform="translate(-50 -50) rotate(26 50 50)"/>
+      <use class="art-stroke" href="#cloud" x="90" y="700" width="170" height="85"/>
+      <use class="art-stroke" href="#cloud" x="330" y="800" width="110" height="55"/>
+    </g>
+  </svg>
+</div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="FareSight, home">
+      <svg class="mark-svg" viewBox="0 0 64 64" aria-hidden="true"><use href="#fs-mark"/></svg>
+      <b>FareSight</b><i>Fare intelligence for flight booking</i>
+    </a>
+    <div class="head-r">
+    <nav class="nav" aria-label="Main">
+      <a href="/" {% if page=='demo' %}aria-current="page"{% endif %}>Search</a>
+      <a href="/config" {% if page=='config' %}aria-current="page"{% endif %}>Model &amp; Insights</a>
+    </nav>
+    <button class="theme" id="themeBtn" type="button" aria-label="Switch to dark theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.500 10.500Z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.500v2.500M12 19v2.500M2.500 12H5M19 12h2.500M5.200 5.200 7 7M17 17l1.800 1.800M18.800 5.200 17 7M7 17l-1.800 1.800"/></svg>
+    </button>
+    </div>
+  </div>
+</header>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Predictions are model estimates built from historical scraped fares. They are not booking advice, and a real fare can differ.</p>
+    <p style="text-align:right">FareSight is a working name.</p>
+  </div>
+</footer>
+
 <script>
 const inr = n => n == null ? 'n/a' : '₹' + Math.round(n).toLocaleString('en-IN');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const themeBtn = document.getElementById('themeBtn');
+function themeLabel() { const d = document.documentElement.dataset.theme === 'dark'; themeBtn.setAttribute('aria-label', d ? 'Switch to light theme' : 'Switch to dark theme'); }
+themeLabel();
+themeBtn.addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; themeLabel();
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#161816' : '#F5F0E6';
+  try { localStorage.setItem('fs-theme', t); } catch (e) {}
+});
+// Very light parallax on the background art. Skipped entirely for reduced motion.
+(() => {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layers = [...document.querySelectorAll('.sky .layer')]; let tick = false;
+  addEventListener('scroll', () => { if (tick) return; tick = true; requestAnimationFrame(() => {
+    layers.forEach(l => l.style.transform = `translateY(${-scrollY * l.dataset.speed}px)`); tick = false; }); }, { passive:true });
+})();
 </script>
 {% block scripts %}{% endblock %}
 </body>

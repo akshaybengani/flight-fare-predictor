@@ -1,0 +1,27 @@
+{
+  "A_same_period_random_20pct": {
+    "rows": 89044,
+    "MAE_inr": 1425,
+    "accuracy_pct": 93.21,
+    "within_10pct": 78.8,
+    "new_features_used": 73,
+    "seconds": 1742
+  },
+  "E_2022_plus_10pct_of_2023": {
+    "rows": 400049,
+    "MAE_inr": 2814,
+    "accuracy_pct": 86.59,
+    "within_10pct": 53.4,
+    "new_features_used": 87,
+    "seconds": 2163
+  },
+  "C_train_2022_test_2023": {
+    "rows": 445222,
+    "MAE_inr": 5806,
+    "accuracy_pct": 67.2,
+    "within_10pct": 20.3,
+    "new_features_used": 76,
+    "seconds": 1721
+  },
+  "rung": "+all_booking_time"
+}

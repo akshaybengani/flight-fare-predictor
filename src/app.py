@@ -2,6 +2,7 @@
 import datetime as dt
 import json
 import math
+import os
 import joblib
 import numpy as np
 import pandas as pd
@@ -11,7 +12,7 @@ from flask import Flask, jsonify, render_template, request
 from features import add_basic, COORDS
 
 ROOT = Path(__file__).resolve().parents[1]
-app = Flask(__name__, template_folder=str(ROOT / "templates"))
+app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"), static_url_path="/static")
 
 bundle = joblib.load(ROOT / "models/fare_model.joblib")
 MODEL, ENC = bundle["model"], bundle["enc"]
@@ -267,5 +268,33 @@ def meta():
         importance=_load_json("importance.json"))
 
 
+# ---------------------------------------------------------------- algorithm comparison (read-only)
+def _read_results(name):
+    p = ROOT / "models" / name
+    try:
+        return json.loads(p.read_text()) if p.exists() else None
+    except (ValueError, OSError):
+        return None
+
+
+@app.get("/api/algorithms")
+def algorithms():
+    """Results written by the algorithm-comparison run. Never written by the app.
+
+    Development only: FARESIGHT_MOCK=1 with FARESIGHT_MOCK_FILE=/path/to.json serves that file
+    as the baseline set when models/algorithms.json does not exist yet (flagged "mock": true).
+    """
+    base, enr = _read_results("algorithms.json"), _read_results("algorithms_enriched.json")
+    mock = False
+    if base is None and os.environ.get("FARESIGHT_MOCK") == "1" and os.environ.get("FARESIGHT_MOCK_FILE"):
+        try:
+            base, mock = json.loads(Path(os.environ["FARESIGHT_MOCK_FILE"]).read_text()), True
+        except (ValueError, OSError):
+            pass
+    sets = {k: v for k, v in (("baseline18", base), ("enriched", enr)) if v}
+    return jsonify(status="ready" if sets else "pending", mock=mock, sets=sets,
+                   message=None if sets else "No comparison results yet. They appear here once models/algorithms.json exists.")
+
+
 if __name__ == "__main__":
-    app.run(port=5055, debug=False)
+    app.run(port=int(os.environ.get("PORT", 5055)), debug=False)

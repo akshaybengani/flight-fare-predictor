@@ -1,0 +1,8 @@
+Fraunces (c) 2020 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
+Source Sans 3 (c) 2010-2020 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
+
+Both fonts are licensed under the SIL Open Font License, Version 1.1.
+Full text: https://openfontlicense.org  (https://scripts.sil.org/OFL)
+
+The woff2 files in this folder are the Latin subsets distributed by Fontsource
+(https://fontsource.org), unmodified.

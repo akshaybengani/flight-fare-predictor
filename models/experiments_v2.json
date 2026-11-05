@@ -1,0 +1,248 @@
+{
+  "config": "fast GBM: lr 0.1, max_iter 1500 (else = train.py GBM)",
+  "rungs": {
+    "baseline": {
+      "n_new_features_requested": 0,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1514,
+        "accuracy_pct": 92.95,
+        "within_10pct": 77.3,
+        "new_features_used": 0,
+        "seconds": 179
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2749,
+        "accuracy_pct": 86.82,
+        "within_10pct": 54.5,
+        "new_features_used": 0,
+        "seconds": 232
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5893,
+        "accuracy_pct": 66.07,
+        "within_10pct": 20.1,
+        "new_features_used": 0,
+        "seconds": 208
+      }
+    },
+    "baseline_seed1": {
+      "n_new_features_requested": 0,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1526,
+        "accuracy_pct": 92.91,
+        "within_10pct": 77.2,
+        "new_features_used": 0,
+        "seconds": 214
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2769,
+        "accuracy_pct": 86.82,
+        "within_10pct": 54.6,
+        "new_features_used": 0,
+        "seconds": 250
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5926,
+        "accuracy_pct": 65.89,
+        "within_10pct": 20.0,
+        "new_features_used": 0,
+        "seconds": 207
+      }
+    },
+    "+calendar": {
+      "n_new_features_requested": 51,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1509,
+        "accuracy_pct": 92.92,
+        "within_10pct": 77.3,
+        "new_features_used": 36,
+        "seconds": 243
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2804,
+        "accuracy_pct": 86.53,
+        "within_10pct": 53.2,
+        "new_features_used": 39,
+        "seconds": 425
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5758,
+        "accuracy_pct": 67.31,
+        "within_10pct": 20.6,
+        "new_features_used": 37,
+        "seconds": 318
+      }
+    },
+    "+weather_lag": {
+      "n_new_features_requested": 16,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1492,
+        "accuracy_pct": 92.97,
+        "within_10pct": 77.5,
+        "new_features_used": 14,
+        "seconds": 246
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2803,
+        "accuracy_pct": 86.44,
+        "within_10pct": 52.7,
+        "new_features_used": 16,
+        "seconds": 263
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5856,
+        "accuracy_pct": 66.7,
+        "within_10pct": 20.1,
+        "new_features_used": 16,
+        "seconds": 420
+      }
+    },
+    "+weather_actual": {
+      "n_new_features_requested": 22,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1490,
+        "accuracy_pct": 92.92,
+        "within_10pct": 77.4,
+        "new_features_used": 20,
+        "seconds": 449
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2836,
+        "accuracy_pct": 86.22,
+        "within_10pct": 52.1,
+        "new_features_used": 20,
+        "seconds": 491
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5878,
+        "accuracy_pct": 66.33,
+        "within_10pct": 19.9,
+        "new_features_used": 18,
+        "seconds": 445
+      }
+    },
+    "+fuel_fx": {
+      "n_new_features_requested": 18,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1501,
+        "accuracy_pct": 92.93,
+        "within_10pct": 77.3,
+        "new_features_used": 9,
+        "seconds": 1053
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2781,
+        "accuracy_pct": 86.81,
+        "within_10pct": 54.1,
+        "new_features_used": 18,
+        "seconds": 2711
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5905,
+        "accuracy_pct": 65.75,
+        "within_10pct": 20.2,
+        "new_features_used": 9,
+        "seconds": 1137
+      }
+    },
+    "+airport_static": {
+      "n_new_features_requested": 14,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1540,
+        "accuracy_pct": 92.87,
+        "within_10pct": 76.8,
+        "new_features_used": 14,
+        "seconds": 202
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2732,
+        "accuracy_pct": 86.86,
+        "within_10pct": 54.8,
+        "new_features_used": 14,
+        "seconds": 248
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5916,
+        "accuracy_pct": 65.97,
+        "within_10pct": 19.9,
+        "new_features_used": 14,
+        "seconds": 253
+      }
+    },
+    "+all_booking_time": {
+      "n_new_features_requested": 99,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1446,
+        "accuracy_pct": 93.08,
+        "within_10pct": 78.1,
+        "new_features_used": 73,
+        "seconds": 405
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2859,
+        "accuracy_pct": 86.35,
+        "within_10pct": 52.6,
+        "new_features_used": 87,
+        "seconds": 493
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5760,
+        "accuracy_pct": 67.29,
+        "within_10pct": 20.6,
+        "new_features_used": 76,
+        "seconds": 519
+      }
+    },
+    "+all": {
+      "n_new_features_requested": 121,
+      "A_same_period_random_20pct": {
+        "rows": 89044,
+        "MAE_inr": 1465,
+        "accuracy_pct": 93.02,
+        "within_10pct": 77.9,
+        "new_features_used": 93,
+        "seconds": 38461
+      },
+      "E_2022_plus_10pct_of_2023": {
+        "rows": 400049,
+        "MAE_inr": 2891,
+        "accuracy_pct": 86.13,
+        "within_10pct": 51.8,
+        "new_features_used": 107,
+        "seconds": 15112
+      },
+      "C_train_2022_test_2023": {
+        "rows": 445222,
+        "MAE_inr": 5766,
+        "accuracy_pct": 67.43,
+        "within_10pct": 20.5,
+        "new_features_used": 94,
+        "seconds": 578
+      }
+    }
+  }
+}

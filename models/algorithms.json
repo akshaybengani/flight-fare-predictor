@@ -1,0 +1,504 @@
+{
+  "generated": "2026-11-05",
+  "feature_set": "baseline18",
+  "scenarios": {
+    "A": {
+      "label": "Same period: random 20% of 2023 rows held out (other days of the same flights are in training)",
+      "n_test": 89044
+    },
+    "E": {
+      "label": "Recalibrated: train on 2022 + 10% of 2023 flight-days, test on the other 2023 flight-days",
+      "n_test": 400049
+    },
+    "C": {
+      "label": "Unseen period: train on 2022 only, test on all of 2023 (no period/exact-time features, route-airline encoding only)",
+      "n_test": 445222
+    }
+  },
+  "results": [
+    {
+      "algorithm": "HistGradientBoosting (current model)",
+      "family": "boosting",
+      "params": {
+        "A": {},
+        "E": {},
+        "C": {}
+      },
+      "tuning": "fixed: the current train.py config (3,500 rounds, lr 0.05, 255 leaves, min leaf 5, L2 1.0); 1 validation run only",
+      "scores": {
+        "A": {
+          "accuracy": 93.037,
+          "within10": 77.55,
+          "mae": 1499.6,
+          "rmse": 2971.4,
+          "r2": 0.9788
+        },
+        "E": {
+          "accuracy": 87.0,
+          "within10": 55.12,
+          "mae": 2716.8,
+          "rmse": 5094.1,
+          "r2": 0.9376
+        },
+        "C": {
+          "accuracy": 66.167,
+          "within10": 19.93,
+          "mae": 5889.4,
+          "rmse": 8230.0,
+          "r2": 0.837
+        }
+      },
+      "train_seconds": 398.8,
+      "predict_ms_per_1k": 37.06,
+      "model_mb": 106.45,
+      "notes": "train seconds A=399, C=938, E=44883 (final fit, excludes tuning); fit info {\"A\": {\"n_rounds\": 3500}, \"C\": {\"n_rounds\": 3323}, \"E\": {\"n_rounds\": 3500}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "LightGBM",
+      "family": "boosting",
+      "params": {
+        "A": {
+          "num_leaves": 511,
+          "min_child_samples": 20,
+          "reg_lambda": 10.0,
+          "colsample_bytree": 0.8
+        },
+        "E": {
+          "num_leaves": 255,
+          "min_child_samples": 5,
+          "reg_lambda": 10.0,
+          "colsample_bytree": 0.8
+        },
+        "C": {
+          "num_leaves": 255,
+          "min_child_samples": 10,
+          "reg_lambda": 0.0,
+          "colsample_bytree": 0.8
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 93.19,
+          "within10": 78.42,
+          "mae": 1464.8,
+          "rmse": 2932.2,
+          "r2": 0.9793
+        },
+        "E": {
+          "accuracy": 87.224,
+          "within10": 55.84,
+          "mae": 2703.9,
+          "rmse": 5064.5,
+          "r2": 0.9383
+        },
+        "C": {
+          "accuracy": 60.87,
+          "within10": 19.22,
+          "mae": 6847.6,
+          "rmse": 10088.2,
+          "r2": 0.755
+        }
+      },
+      "train_seconds": 162.6,
+      "predict_ms_per_1k": 156.63,
+      "model_mb": 164.16,
+      "notes": "train seconds A=163, C=188, E=139 (final fit, excludes tuning); fit info {\"A\": {\"n_rounds\": 3500}, \"C\": {\"n_rounds\": 3164}, \"E\": {\"n_rounds\": 3500}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "XGBoost",
+      "family": "boosting",
+      "params": {
+        "A": {
+          "max_leaves": 511,
+          "min_child_weight": 3,
+          "reg_lambda": 1.0,
+          "colsample_bytree": 1.0
+        },
+        "E": {
+          "max_leaves": 127,
+          "min_child_weight": 1,
+          "reg_lambda": 5.0,
+          "colsample_bytree": 1.0
+        },
+        "C": {
+          "max_leaves": 511,
+          "min_child_weight": 3,
+          "reg_lambda": 1.0,
+          "colsample_bytree": 1.0
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 93.421,
+          "within10": 79.36,
+          "mae": 1395.0,
+          "rmse": 2817.5,
+          "r2": 0.9809
+        },
+        "E": {
+          "accuracy": 86.877,
+          "within10": 54.48,
+          "mae": 2759.3,
+          "rmse": 5197.5,
+          "r2": 0.935
+        },
+        "C": {
+          "accuracy": 67.74,
+          "within10": 21.29,
+          "mae": 5798.4,
+          "rmse": 8561.1,
+          "r2": 0.8236
+        }
+      },
+      "train_seconds": 287.7,
+      "predict_ms_per_1k": 31.61,
+      "model_mb": 134.25,
+      "notes": "train seconds A=288, C=159, E=139 (final fit, excludes tuning); fit info {\"A\": {\"n_rounds\": 3497}, \"C\": {\"n_rounds\": 2008}, \"E\": {\"n_rounds\": 3500}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "CatBoost",
+      "family": "boosting",
+      "params": {
+        "A": {
+          "depth": 10,
+          "l2_leaf_reg": 1.0,
+          "rsm": 0.7
+        },
+        "E": {
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "rsm": 0.7
+        },
+        "C": {
+          "depth": 10,
+          "l2_leaf_reg": 1.0,
+          "rsm": 0.7
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 91.471,
+          "within10": 70.21,
+          "mae": 1905.9,
+          "rmse": 3709.7,
+          "r2": 0.9669
+        },
+        "E": {
+          "accuracy": 86.253,
+          "within10": 51.78,
+          "mae": 2889.0,
+          "rmse": 5367.8,
+          "r2": 0.9307
+        },
+        "C": {
+          "accuracy": 67.391,
+          "within10": 20.44,
+          "mae": 6909.2,
+          "rmse": 11776.0,
+          "r2": 0.6662
+        }
+      },
+      "train_seconds": 557.3,
+      "predict_ms_per_1k": 2.65,
+      "model_mb": 50.22,
+      "notes": "train seconds A=557, C=568, E=729 (final fit, excludes tuning); fit info {\"A\": {\"n_rounds\": 3000}, \"C\": {\"n_rounds\": 3000}, \"E\": {\"n_rounds\": 3000}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Random Forest",
+      "family": "bagging",
+      "params": {
+        "A": {
+          "max_features": 0.8,
+          "min_samples_leaf": 3
+        },
+        "E": {
+          "max_features": 0.4,
+          "min_samples_leaf": 3
+        },
+        "C": {
+          "max_features": 1.0,
+          "min_samples_leaf": 3
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 92.008,
+          "within10": 72.72,
+          "mae": 1819.8,
+          "rmse": 3819.1,
+          "r2": 0.9649
+        },
+        "E": {
+          "accuracy": 86.523,
+          "within10": 54.8,
+          "mae": 2830.5,
+          "rmse": 5535.4,
+          "r2": 0.9263
+        },
+        "C": {
+          "accuracy": 43.931,
+          "within10": 19.03,
+          "mae": 8553.0,
+          "rmse": 12598.1,
+          "r2": 0.618
+        }
+      },
+      "train_seconds": 36.8,
+      "predict_ms_per_1k": 9.96,
+      "model_mb": 919.96,
+      "notes": "train seconds A=37, C=34, E=26 (final fit, excludes tuning); fit info {\"A\": {\"n_trees\": 120}, \"C\": {\"n_trees\": 120}, \"E\": {\"n_trees\": 120}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Extra Trees",
+      "family": "bagging",
+      "params": {
+        "A": {
+          "max_features": 0.8,
+          "min_samples_leaf": 2
+        },
+        "E": {
+          "max_features": 0.8,
+          "min_samples_leaf": 2
+        },
+        "C": {
+          "max_features": 1.0,
+          "min_samples_leaf": 3
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 92.638,
+          "within10": 75.18,
+          "mae": 1671.8,
+          "rmse": 3574.7,
+          "r2": 0.9693
+        },
+        "E": {
+          "accuracy": 87.12,
+          "within10": 56.51,
+          "mae": 2708.4,
+          "rmse": 5243.9,
+          "r2": 0.9339
+        },
+        "C": {
+          "accuracy": 57.334,
+          "within10": 18.98,
+          "mae": 7178.8,
+          "rmse": 10352.5,
+          "r2": 0.742
+        }
+      },
+      "train_seconds": 22.9,
+      "predict_ms_per_1k": 17.72,
+      "model_mb": 2057.08,
+      "notes": "train seconds A=23, C=22, E=29 (final fit, excludes tuning); fit info {\"A\": {\"n_trees\": 120}, \"C\": {\"n_trees\": 120}, \"E\": {\"n_trees\": 120}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Ridge regression (linear)",
+      "family": "linear",
+      "params": {
+        "A": {
+          "alpha": 1.0
+        },
+        "E": {
+          "alpha": 1000.0
+        },
+        "C": {
+          "alpha": 1.0
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 81.461,
+          "within10": 36.93,
+          "mae": 3823.7,
+          "rmse": 6284.4,
+          "r2": 0.905
+        },
+        "E": {
+          "accuracy": 72.428,
+          "within10": 23.91,
+          "mae": 6327.0,
+          "rmse": 10653.7,
+          "r2": 0.7271
+        },
+        "C": {
+          "accuracy": 66.266,
+          "within10": 17.6,
+          "mae": 8276.0,
+          "rmse": 14125.3,
+          "r2": 0.5198
+        }
+      },
+      "train_seconds": 0.4,
+      "predict_ms_per_1k": 0.3,
+      "model_mb": 0.01,
+      "notes": "train seconds A=0, C=0, E=1 (final fit, excludes tuning); train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Route-airline-class median lookup (naive)",
+      "family": "naive",
+      "params": {
+        "A": {},
+        "E": {},
+        "C": {}
+      },
+      "tuning": "none (rule based: median of log price by route+airline+class, fallback route+class, then class)",
+      "scores": {
+        "A": {
+          "accuracy": 75.415,
+          "within10": 38.9,
+          "mae": 4588.6,
+          "rmse": 8346.5,
+          "r2": 0.8324
+        },
+        "E": {
+          "accuracy": 67.389,
+          "within10": 25.07,
+          "mae": 5784.8,
+          "rmse": 8916.7,
+          "r2": 0.8088
+        },
+        "C": {
+          "accuracy": 61.754,
+          "within10": 18.49,
+          "mae": 6448.6,
+          "rmse": 9303.3,
+          "r2": 0.7917
+        }
+      },
+      "train_seconds": 0.1,
+      "predict_ms_per_1k": 0.31,
+      "model_mb": 0.02,
+      "notes": "train seconds A=0, C=0, E=1 (final fit, excludes tuning); train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Neural net (MLP)",
+      "family": "neural",
+      "params": {
+        "A": {
+          "hidden_layer_sizes": [
+            128,
+            64,
+            32
+          ],
+          "alpha": 0.0001,
+          "learning_rate_init": 0.01
+        },
+        "E": {
+          "hidden_layer_sizes": [
+            128,
+            64
+          ],
+          "alpha": 0.001,
+          "learning_rate_init": 0.01
+        },
+        "C": {
+          "hidden_layer_sizes": [
+            128,
+            64
+          ],
+          "alpha": 1e-05,
+          "learning_rate_init": 0.01
+        }
+      },
+      "tuning": "random search, 6 trials on <=150,000 sampled training rows, validated on a fixed random 10% hold-out; boosters tuned at lr 0.1 then refit at lr 0.05 / nets 10 -> 25 epochs / forests 40 -> 120 trees",
+      "scores": {
+        "A": {
+          "accuracy": 86.803,
+          "within10": 51.55,
+          "mae": 2936.0,
+          "rmse": 5260.4,
+          "r2": 0.9334
+        },
+        "E": {
+          "accuracy": 80.462,
+          "within10": 36.66,
+          "mae": 3837.1,
+          "rmse": 6583.9,
+          "r2": 0.8958
+        },
+        "C": {
+          "accuracy": 47.29,
+          "within10": 13.14,
+          "mae": 9933.1,
+          "rmse": 15204.3,
+          "r2": 0.4436
+        }
+      },
+      "train_seconds": 11.3,
+      "predict_ms_per_1k": 0.82,
+      "model_mb": 0.41,
+      "notes": "train seconds A=11, C=12, E=26 (final fit, excludes tuning); fit info {\"A\": {\"n_epochs\": 16}, \"C\": {\"n_epochs\": 25}, \"E\": {\"n_epochs\": 25}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    },
+    {
+      "algorithm": "Blend (average of top 3)",
+      "family": "ensemble",
+      "params": {
+        "A": {
+          "members": [
+            "xgboost",
+            "lightgbm",
+            "hgb"
+          ],
+          "weights": "equal, averaged in log-price"
+        },
+        "E": {
+          "members": [
+            "extra_trees",
+            "lightgbm",
+            "xgboost"
+          ],
+          "weights": "equal, averaged in log-price"
+        },
+        "C": {
+          "members": [
+            "extra_trees",
+            "random_forest",
+            "hgb"
+          ],
+          "weights": "equal, averaged in log-price"
+        }
+      },
+      "tuning": "no fitting: equal-weight average of the 3 algorithms with the best VALIDATION accuracy (picked on the tuning split, not the test fold)",
+      "scores": {
+        "A": {
+          "accuracy": 93.41,
+          "within10": 79.12,
+          "mae": 1412.9,
+          "rmse": 2845.6,
+          "r2": 0.9805
+        },
+        "E": {
+          "accuracy": 87.596,
+          "within10": 57.19,
+          "mae": 2637.6,
+          "rmse": 5052.6,
+          "r2": 0.9386
+        },
+        "C": {
+          "accuracy": 67.127,
+          "within10": 21.23,
+          "mae": 5547.3,
+          "rmse": 8037.6,
+          "r2": 0.8445
+        }
+      },
+      "train_seconds": 849.1,
+      "predict_ms_per_1k": 225.3,
+      "model_mb": 404.86,
+      "notes": "train seconds A=849, C=993, E=307 (final fit, excludes tuning); train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+    }
+  ],
+  "winner": {
+    "A": "XGBoost",
+    "E": "Blend (average of top 3)",
+    "C": "XGBoost"
+  }
+}

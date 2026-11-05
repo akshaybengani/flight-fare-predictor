@@ -1,4 +1,8 @@
-# Flight Fare Predictor
+# FareSight
+
+*Fare intelligence for flight booking.* (FareSight is a working name; no trademark is claimed.)
+
+Flight fare predictor proof of concept.
 
 A proof of concept that predicts Indian domestic airfares and compares them with the fare listed today, wrapped in a MakeMyTrip-style search demo and a configuration page that explains every metric.
 
