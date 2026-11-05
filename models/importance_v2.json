@@ -1,0 +1,624 @@
+{
+  "rung": "+all_booking_time",
+  "note": "held-out permutation importance on FAST-config models (lr 0.1), 8000 held-out rows, 2 shuffles",
+  "A_same_period_random_20pct": {
+    "baseline_accuracy_pct": 92.96,
+    "sample_rows": 8000,
+    "group_drop_pts": {
+      "calendar": 1.593,
+      "weather_lag": 3.955,
+      "fuel_fx": 2.132,
+      "airport_static": 0.094
+    },
+    "new_features": [
+      {
+        "feature": "wxl_o_tmin",
+        "accuracy_drop_pts": 0.828
+      },
+      {
+        "feature": "wxl_o_tmax",
+        "accuracy_drop_pts": 0.791
+      },
+      {
+        "feature": "wxl_o_gust_max",
+        "accuracy_drop_pts": 0.593
+      },
+      {
+        "feature": "wxl_d_gust_max",
+        "accuracy_drop_pts": 0.588
+      },
+      {
+        "feature": "wxl_d_tmin",
+        "accuracy_drop_pts": 0.524
+      },
+      {
+        "feature": "wxl_d_tmax",
+        "accuracy_drop_pts": 0.447
+      },
+      {
+        "feature": "fx_jet_usd_gal",
+        "accuracy_drop_pts": 0.433
+      },
+      {
+        "feature": "wxl_o_precip_mm",
+        "accuracy_drop_pts": 0.38
+      },
+      {
+        "feature": "cal_o_days_to_next_holiday",
+        "accuracy_drop_pts": 0.339
+      },
+      {
+        "feature": "fx_jet_usd_gal_chg30",
+        "accuracy_drop_pts": 0.319
+      },
+      {
+        "feature": "wxl_d_precip_mm",
+        "accuracy_drop_pts": 0.299
+      },
+      {
+        "feature": "cal_o_days_since_holiday",
+        "accuracy_drop_pts": 0.296
+      },
+      {
+        "feature": "fx_usdinr",
+        "accuracy_drop_pts": 0.296
+      },
+      {
+        "feature": "fx_brent_usd_bbl_chg30",
+        "accuracy_drop_pts": 0.266
+      },
+      {
+        "feature": "fest_days_to_next_major",
+        "accuracy_drop_pts": 0.239
+      },
+      {
+        "feature": "wxl_o_fog_prob",
+        "accuracy_drop_pts": 0.222
+      },
+      {
+        "feature": "cal_d_days_to_next_holiday",
+        "accuracy_drop_pts": 0.215
+      },
+      {
+        "feature": "wxl_d_fog_prob",
+        "accuracy_drop_pts": 0.196
+      },
+      {
+        "feature": "cal_d_days_since_holiday",
+        "accuracy_drop_pts": 0.194
+      },
+      {
+        "feature": "fx_jet_usd_gal_chg7",
+        "accuracy_drop_pts": 0.186
+      },
+      {
+        "feature": "fx_usdinr_chg30",
+        "accuracy_drop_pts": 0.17
+      },
+      {
+        "feature": "fx_brent_usd_bbl",
+        "accuracy_drop_pts": 0.164
+      },
+      {
+        "feature": "wxl_o_rain_prob",
+        "accuracy_drop_pts": 0.11
+      },
+      {
+        "feature": "wxl_d_rain_prob",
+        "accuracy_drop_pts": 0.079
+      },
+      {
+        "feature": "crk_india_playing_day",
+        "accuracy_drop_pts": 0.051
+      },
+      {
+        "feature": "fest_republic_day_window",
+        "accuracy_drop_pts": 0.047
+      },
+      {
+        "feature": "apt_o_elevation_ft",
+        "accuracy_drop_pts": 0.026
+      },
+      {
+        "feature": "crk_o_match_in_city_pm1",
+        "accuracy_drop_pts": 0.025
+      },
+      {
+        "feature": "cal_d_holidays_next14d",
+        "accuracy_drop_pts": 0.023
+      },
+      {
+        "feature": "fx_jet_inr_litre",
+        "accuracy_drop_pts": 0.02
+      },
+      {
+        "feature": "fx_jet_inr_litre_chg30",
+        "accuracy_drop_pts": 0.017
+      },
+      {
+        "feature": "apt_o_routes_out",
+        "accuracy_drop_pts": 0.017
+      },
+      {
+        "feature": "apt_d_elevation_ft",
+        "accuracy_drop_pts": 0.016
+      },
+      {
+        "feature": "fest_valentines_window",
+        "accuracy_drop_pts": 0.013
+      },
+      {
+        "feature": "wxl_d_heavy_rain_prob",
+        "accuracy_drop_pts": 0.012
+      },
+      {
+        "feature": "fest_any_major_window",
+        "accuracy_drop_pts": 0.011
+      },
+      {
+        "feature": "cal_o_holidays_next14d",
+        "accuracy_drop_pts": 0.01
+      },
+      {
+        "feature": "cal_o_is_weekend",
+        "accuracy_drop_pts": 0.009
+      },
+      {
+        "feature": "cal_o_long_weekend",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "cal_d_holidays_next7d",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "crk_d_match_in_city_pm1",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "wxl_o_heavy_rain_prob",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "apt_d_longest_runway_ft",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "apt_d_hub_flag",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "crk_o_match_in_city",
+        "accuracy_drop_pts": 0.006
+      },
+      {
+        "feature": "crk_d_match_in_city",
+        "accuracy_drop_pts": 0.006
+      },
+      {
+        "feature": "apt_d_runways",
+        "accuracy_drop_pts": 0.006
+      },
+      {
+        "feature": "cal_d_long_weekend",
+        "accuracy_drop_pts": 0.005
+      },
+      {
+        "feature": "cal_d_holidays_next3d",
+        "accuracy_drop_pts": 0.005
+      },
+      {
+        "feature": "cal_o_last_day_long_weekend",
+        "accuracy_drop_pts": 0.004
+      },
+      {
+        "feature": "cal_o_holidays_next7d",
+        "accuracy_drop_pts": 0.004
+      },
+      {
+        "feature": "apt_o_city_pop_2011_m",
+        "accuracy_drop_pts": 0.004
+      },
+      {
+        "feature": "apt_d_routes_out",
+        "accuracy_drop_pts": 0.004
+      },
+      {
+        "feature": "cal_o_holidays_next3d",
+        "accuracy_drop_pts": 0.003
+      },
+      {
+        "feature": "cal_d_is_holiday",
+        "accuracy_drop_pts": 0.003
+      },
+      {
+        "feature": "cal_d_last_day_long_weekend",
+        "accuracy_drop_pts": 0.003
+      },
+      {
+        "feature": "cal_o_eve_of_long_weekend",
+        "accuracy_drop_pts": 0.002
+      },
+      {
+        "feature": "apt_o_runways",
+        "accuracy_drop_pts": 0.002
+      },
+      {
+        "feature": "apt_d_city_pop_2011_m",
+        "accuracy_drop_pts": 0.002
+      },
+      {
+        "feature": "cal_o_bridge_day",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "fest_pongal_sankranti_window",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "apt_o_longest_runway_ft",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "apt_o_dest_count",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "cal_d_is_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_bridge_day",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_eve_of_long_weekend",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "fest_holi_window",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_days_since_major",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_school_exam_season",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_wedding_season",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "apt_o_hub_flag",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "apt_d_dest_count",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_o_is_holiday",
+        "accuracy_drop_pts": -0.001
+      }
+    ]
+  },
+  "C_train_2022_test_2023": {
+    "baseline_accuracy_pct": 67.78,
+    "sample_rows": 8000,
+    "group_drop_pts": {
+      "calendar": 0.174,
+      "weather_lag": -0.0,
+      "fuel_fx": -0.053,
+      "airport_static": -0.02
+    },
+    "new_features": [
+      {
+        "feature": "fest_days_since_major",
+        "accuracy_drop_pts": 0.137
+      },
+      {
+        "feature": "wxl_o_precip_mm",
+        "accuracy_drop_pts": 0.102
+      },
+      {
+        "feature": "fest_days_to_next_major",
+        "accuracy_drop_pts": 0.071
+      },
+      {
+        "feature": "wxl_o_tmax",
+        "accuracy_drop_pts": 0.043
+      },
+      {
+        "feature": "wxl_o_fog_prob",
+        "accuracy_drop_pts": 0.039
+      },
+      {
+        "feature": "wxl_o_tmin",
+        "accuracy_drop_pts": 0.027
+      },
+      {
+        "feature": "wxl_d_precip_mm",
+        "accuracy_drop_pts": 0.014
+      },
+      {
+        "feature": "fx_brent_usd_bbl_chg30",
+        "accuracy_drop_pts": 0.014
+      },
+      {
+        "feature": "cal_d_days_to_next_holiday",
+        "accuracy_drop_pts": 0.011
+      },
+      {
+        "feature": "apt_o_routes_out",
+        "accuracy_drop_pts": 0.008
+      },
+      {
+        "feature": "fx_usdinr_chg30",
+        "accuracy_drop_pts": 0.007
+      },
+      {
+        "feature": "apt_o_city_pop_2011_m",
+        "accuracy_drop_pts": 0.006
+      },
+      {
+        "feature": "fest_holi_window",
+        "accuracy_drop_pts": 0.005
+      },
+      {
+        "feature": "apt_o_runways",
+        "accuracy_drop_pts": 0.003
+      },
+      {
+        "feature": "cal_o_is_weekend",
+        "accuracy_drop_pts": 0.002
+      },
+      {
+        "feature": "cal_o_long_weekend",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "cal_d_holidays_next3d",
+        "accuracy_drop_pts": 0.001
+      },
+      {
+        "feature": "cal_o_is_holiday",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_o_eve_of_long_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_o_last_day_long_weekend",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "cal_o_holidays_next7d",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "cal_o_holidays_next14d",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "cal_d_is_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_long_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_bridge_day",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_eve_of_long_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_d_last_day_long_weekend",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_maha_shivratri_window",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_ugadi_window",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fest_any_major_window",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "crk_o_match_in_city",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "crk_d_match_in_city_pm1",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "crk_ipl_day",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "wxl_o_rain_prob",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "wxl_o_storm_prob",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "wxl_d_storm_prob",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fx_brent_usd_bbl",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fx_usdinr",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "fx_jet_inr_litre",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "apt_o_dest_count",
+        "accuracy_drop_pts": -0.0
+      },
+      {
+        "feature": "apt_o_hub_flag",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "apt_d_hub_flag",
+        "accuracy_drop_pts": 0.0
+      },
+      {
+        "feature": "cal_o_holidays_next3d",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "cal_d_is_holiday",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "fest_school_exam_season",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "crk_d_match_in_city",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "crk_india_playing_day",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "apt_d_dest_count",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "apt_d_city_pop_2011_m",
+        "accuracy_drop_pts": -0.001
+      },
+      {
+        "feature": "cal_d_holidays_next14d",
+        "accuracy_drop_pts": -0.002
+      },
+      {
+        "feature": "wxl_d_heavy_rain_prob",
+        "accuracy_drop_pts": -0.002
+      },
+      {
+        "feature": "apt_d_elevation_ft",
+        "accuracy_drop_pts": -0.002
+      },
+      {
+        "feature": "apt_d_runways",
+        "accuracy_drop_pts": -0.002
+      },
+      {
+        "feature": "cal_o_bridge_day",
+        "accuracy_drop_pts": -0.003
+      },
+      {
+        "feature": "cal_d_holidays_next7d",
+        "accuracy_drop_pts": -0.003
+      },
+      {
+        "feature": "fest_valentines_window",
+        "accuracy_drop_pts": -0.003
+      },
+      {
+        "feature": "crk_o_match_in_city_pm1",
+        "accuracy_drop_pts": -0.004
+      },
+      {
+        "feature": "apt_d_longest_runway_ft",
+        "accuracy_drop_pts": -0.004
+      },
+      {
+        "feature": "apt_o_elevation_ft",
+        "accuracy_drop_pts": -0.005
+      },
+      {
+        "feature": "apt_o_longest_runway_ft",
+        "accuracy_drop_pts": -0.006
+      },
+      {
+        "feature": "wxl_d_rain_prob",
+        "accuracy_drop_pts": -0.007
+      },
+      {
+        "feature": "cal_o_days_since_holiday",
+        "accuracy_drop_pts": -0.009
+      },
+      {
+        "feature": "fest_wedding_season",
+        "accuracy_drop_pts": -0.01
+      },
+      {
+        "feature": "apt_d_routes_out",
+        "accuracy_drop_pts": -0.01
+      },
+      {
+        "feature": "cal_o_days_to_next_holiday",
+        "accuracy_drop_pts": -0.011
+      },
+      {
+        "feature": "fx_jet_inr_litre_chg30",
+        "accuracy_drop_pts": -0.011
+      },
+      {
+        "feature": "fx_jet_usd_gal",
+        "accuracy_drop_pts": -0.013
+      },
+      {
+        "feature": "wxl_o_heavy_rain_prob",
+        "accuracy_drop_pts": -0.014
+      },
+      {
+        "feature": "wxl_d_tmin",
+        "accuracy_drop_pts": -0.015
+      },
+      {
+        "feature": "fx_jet_usd_gal_chg30",
+        "accuracy_drop_pts": -0.018
+      },
+      {
+        "feature": "wxl_o_gust_max",
+        "accuracy_drop_pts": -0.023
+      },
+      {
+        "feature": "wxl_d_fog_prob",
+        "accuracy_drop_pts": -0.023
+      },
+      {
+        "feature": "wxl_d_tmax",
+        "accuracy_drop_pts": -0.026
+      },
+      {
+        "feature": "wxl_d_gust_max",
+        "accuracy_drop_pts": -0.027
+      },
+      {
+        "feature": "cal_d_days_since_holiday",
+        "accuracy_drop_pts": -0.031
+      },
+      {
+        "feature": "fx_jet_usd_gal_chg7",
+        "accuracy_drop_pts": -0.033
+      }
+    ]
+  }
+}

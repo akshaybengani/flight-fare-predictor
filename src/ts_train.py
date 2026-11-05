@@ -244,7 +244,7 @@ def full_eval(model_pred, df_te, train, inv, label_extra=None):
 
 
 # ------------------------------------------------------------------ models
-def fit_model(algo, params, Xtr, rtr, Xva, rva, rounds=800):
+def fit_model(algo, params, Xtr, rtr, Xva, rva, rounds=800, fixed=None):
     """rtr/rva: residual targets (log price - anchor). Returns a predict(X)->residual callable."""
     if algo == "lgb":
         import lightgbm as lgb
@@ -252,6 +252,9 @@ def fit_model(algo, params, Xtr, rtr, Xva, rva, rounds=800):
                  feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, max_bin=127, **params)
         dtr = lgb.Dataset(Xtr, rtr, free_raw_data=True)
         dva = lgb.Dataset(Xva, rva, reference=dtr)
+        if fixed:   # fixed number of rounds, no early stopping: removes early-stopping noise from ablations
+            m = lgb.train(p, dtr, fixed); m.best_iteration = fixed
+            return m, (lambda X: m.predict(X, num_iteration=fixed)), fixed
         m = lgb.train(p, dtr, rounds, valid_sets=[dva], callbacks=[lgb.early_stopping(40, verbose=False)])
         return m, (lambda X: m.predict(X, num_iteration=m.best_iteration)), m.best_iteration
     if algo == "xgb":
@@ -278,6 +281,19 @@ def fit_model(algo, params, Xtr, rtr, Xva, rva, rounds=800):
         p.update(params)
         m = HistGradientBoostingRegressor(**p).fit(num(Xtr), np.clip(rtr, -clip, clip) if clip else rtr)
         return m, (lambda X: m.predict(num(X))), m.n_iter_
+    if algo == "rf":
+        from sklearn.ensemble import RandomForestRegressor
+        def num(X):
+            X = X.copy()
+            for c in CATS:
+                if c in X:
+                    X[c] = X[c].cat.codes.astype(np.float32)
+            return np.nan_to_num(X.values.astype(np.float32), nan=-1.0)   # sklearn RF: NaN -> -1 sentinel
+        params = dict(params); clip = params.pop("clip", 0.25)
+        p = dict(n_estimators=60, max_samples=0.3, min_samples_leaf=5, max_features=0.33, n_jobs=THREADS, random_state=0)
+        p.update(params)
+        m = RandomForestRegressor(**p).fit(num(Xtr), np.clip(rtr, -clip, clip))   # residual clipped like HistGB (squared-error loss)
+        return m, (lambda X: m.predict(num(X))), p["n_estimators"]
     raise ValueError(algo)
 
 
@@ -285,6 +301,7 @@ GRID = {"lgb": [dict(num_leaves=63), dict(num_leaves=255), dict(num_leaves=127, 
         # xgb / hgb: an L1 loss collapses to 'no change' (65% of next prices are unchanged, so every leaf median is 0): use pseudo-Huber / clipped-residual L2
         "xgb": [dict(objective="reg:pseudohubererror", huber_slope=0.05, max_depth=6), dict(objective="reg:pseudohubererror", huber_slope=0.1, max_depth=8),
                 dict(objective="reg:pseudohubererror", huber_slope=0.05, max_depth=8, reg_lambda=10.0)],
+        "rf": [dict(max_features=0.33, min_samples_leaf=5), dict(max_features=0.5, min_samples_leaf=3)],
         "hgb": [dict(loss="squared_error", clip=0.25, max_leaf_nodes=63), dict(loss="squared_error", clip=0.25, max_leaf_nodes=255),
                 dict(loss="squared_error", clip=0.5, max_leaf_nodes=127, l2_regularization=10.0)]}
 
@@ -322,7 +339,7 @@ def tune(algo, df, fams, tr_mask, va_mask, n_tune=1_000_000):
     return best[1], best[0]
 
 
-def run_split(algo, params, df, fams, split, inv, drop=()):
+def run_split(algo, params, df, fams, split, inv, drop=(), fixed=None):
     if split == "T":
         trm, vam, tem = split_T(df); extra = {}
     elif split == "F":
@@ -338,11 +355,11 @@ def run_split(algo, params, df, fams, split, inv, drop=()):
         va = df[vam]
     Xt, at, rt, cols = prepare(tr, fams, drop); Xv, av, rv, _ = prepare(va, fams, drop); Xe, ae, re_, _ = prepare(te, fams, drop)
     t = time.time()
-    m, pred, it = fit_model(algo, params, Xt, rt, Xv, rv)
+    m, pred, it = fit_model(algo, params, Xt, rt, Xv, rv, fixed=fixed)
     pv = np.exp(pred(Xv) + av); pe = np.exp(pred(Xe) + ae)
     log(f"  fit {algo} {split}: iters {it}, {time.time() - t:.0f}s, train {len(tr):,}, test {len(te):,}")
     res = {"algo": algo, "params": params, "iterations": int(it), "train_rows": int(len(tr)), "val_rows": int(len(va)),
-           "test_rows": int(len(te)), "val": acc_block(va.price.values.astype(np.float64), pv), **extra}
+           "test_rows": int(len(te)), "fit_seconds": round(time.time() - t, 1), "val": acc_block(va.price.values.astype(np.float64), pv), **extra}
     res.update(full_eval(pe, te.reset_index(drop=True), tr, inv))
     return res, (m, pred, cols, te, pe)
 
@@ -412,7 +429,31 @@ def stage_ladder(df, algo="lgb"):
         log(f"  ladder {name}: acc(all) {res['model_all_rows']['accuracy_pct']} acc(hist) {res['model_rows_with_history']['accuracy_pct']}")
 
 
-def stage_importance(df, algo="lgb", n=250_000):
+def stage_ladderfix(df, rounds=124):
+    """Ablation with a FIXED number of LightGBM rounds (the iteration count of the main model), so differences are not
+    early-stopping luck. Cumulative ladder + drop-one-family from the full model."""
+    inv = inv_routes()
+    best = load_json("best_params.json", {})
+    params = best["lgb"]["params"]
+    out = load_json("ladder_fixed.json", {})
+    steps = [("basics", ["basics"]), ("+history", ["basics", "history"]), ("+route_market", ["basics", "history", "route_market"]),
+             ("+calendar", ["basics", "history", "route_market", "calendar"]), ("+fuel", ["basics", "history", "route_market", "calendar", "fuel"]),
+             ("+weather (= all)", ALL)]
+    steps += [(f"all minus {f}", [x for x in ALL if x != f]) for f in ("history", "route_market", "calendar", "fuel", "weather")]
+    steps += [("all + weather_ORACLE", ALL + [WEATHER_ORACLE])]
+    for name, fams in steps:
+        if name in out:
+            continue
+        res, _ = run_split("lgb", params, df, fams, "T", inv, fixed=rounds)
+        keep = {k: res[k] for k in ("model_all_rows", "model_rows_with_history", "naive_last_price_rows_with_history",
+                                    "direction_vs_last_observation", "iterations", "train_rows")}
+        keep["families"] = [f if isinstance(f, str) else "weather_oracle" for f in fams]
+        out[name] = keep
+        save_json("ladder_fixed.json", out)
+        log(f"  ladderfix {name}: acc(all) {res['model_all_rows']['accuracy_pct']} acc(hist) {res['model_rows_with_history']['accuracy_pct']}")
+
+
+def stage_importance(df, algo="lgb", n=250_000, outname="importance.json"):
     inv = inv_routes()
     best = load_json("best_params.json", {})
     res, (m, pred, cols, te, pe) = run_split(algo, best[algo]["params"], df, ALL, "T", inv)
@@ -438,7 +479,9 @@ def stage_importance(df, algo="lgb", n=250_000):
             drops.append(base - score(d))
         out["families"][fam] = {"mean_drop_pct_points": round(float(np.mean(drops)), 4), "std": round(float(np.std(drops)), 4)}
     out["note"] = "accuracy drop (percentage points) when the column(s) are shuffled on the test window; whole family shuffled together with one permutation. The anchor is recomputed from the shuffled last_price/route_med7."
-    save_json("importance.json", out)
+    if algo == "rf":
+        out["mdi_impurity_importance"] = {c: round(float(v), 5) for c, v in sorted(zip(cols, m.feature_importances_), key=lambda kv: -kv[1])}
+    save_json(outname, out)
     log("importance done; top:", sorted(out["features"].items(), key=lambda kv: -kv[1])[:8])
 
 
@@ -484,6 +527,37 @@ def stage_direction(df):
     log("direction classifier:", out)
 
 
+def stage_rf(df):
+    """Random Forest (scikit-learn): tune on validation window, splits T/F/R, short ablation, importances, size + time."""
+    import joblib, tempfile
+    inv = inv_routes()
+    best = load_json("best_params.json", {})
+    trm, vam, _ = split_T(df)
+    if "rf" not in best:
+        log("tuning rf on validation window")
+        params, va = tune("rf", df, ALL, trm, vam, n_tune=500_000)
+        best["rf"] = {"params": params, "val_acc": va}; save_json("best_params.json", best)
+    out = load_json("rf.json", {})
+    for split in ("T", "F", "R"):
+        if f"rf_{split}" in out:
+            continue
+        res, (m, pred, cols, te, pe) = run_split("rf", best["rf"]["params"], df, ALL, split, inv)
+        with tempfile.NamedTemporaryFile(suffix=".joblib") as f:
+            joblib.dump(m, f.name, compress=0); res["model_size_mb"] = round(os.path.getsize(f.name) / 1e6, 1)
+        out[f"rf_{split}"] = res; save_json("rf.json", out)
+        log(f"  rf_{split}: acc(all) {res['model_all_rows']['accuracy_pct']} acc(hist) {res['model_rows_with_history']['accuracy_pct']} "
+            f"naive last {res['naive_last_price_rows_with_history']['accuracy_pct']} fit {res['fit_seconds']}s size {res['model_size_mb']}MB")
+    lad = load_json("rf_ladder.json", {})
+    for name, fams in [("basics", ["basics"]), ("+history", ["basics", "history"]), ("all", ALL)]:
+        if name in lad:
+            continue
+        res, _ = run_split("rf", best["rf"]["params"], df, fams, "T", inv)
+        lad[name] = {k: res[k] for k in ("model_all_rows", "model_rows_with_history", "fit_seconds")}; save_json("rf_ladder.json", lad)
+        log(f"  rf ladder {name}: {res['model_all_rows']['accuracy_pct']}")
+    if not (WORK / "importance_rf.json").exists():
+        stage_importance(df, "rf", 150_000, "importance_rf.json")
+
+
 def stage_final(df):
     """Fit the chosen model on the T-split training window (+validation) and save the deliverable joblib."""
     import joblib
@@ -504,12 +578,13 @@ def stage_final(df):
 def stage_merge():
     sp = load_json("splits.json", {}); lad = load_json("ladder.json", {}); imp = load_json("importance.json", {})
     sc = load_json("scale.json", {}); dr = load_json("direction.json", {}); best = load_json("best_params.json", {}); fin = load_json("final.json", {})
+    sp.update(load_json("rf.json", {}))
     out = {"generated": time.strftime("%Y-%m-%d %H:%M"), "dataset": "US Airfare Time Machine (38.46M flight-days after collapsing duplicate quotes)",
            "metric": "accuracy = 100 - MAPE on price (USD); within 10%; MAE; RMSE",
            "flight_sample_pct": PCT, "splits": {"T": "train search<=2026-08-15, val 08-16..08-31, test 09-01..09-30",
                                                 "F": "20% of flights held out entirely", "R": "5 routes held out (+reverse directions dropped from training)"},
-           "best_params_by_validation": best, "final_model": fin, "results": sp, "ablation_ladder_T_lightgbm": lad,
-           "permutation_importance_T_test": imp, "direction_classifier_T": dr, "scale_check": sc}
+           "best_params_by_validation": best, "final_model": fin, "results": sp, "ablation_ladder_T_lightgbm_early_stopping": lad, "ablation_ladder_T_lightgbm_fixed_124_rounds": load_json("ladder_fixed.json", {}),
+           "permutation_importance_T_test": imp, "direction_classifier_T": dr, "random_forest_ablation_T": load_json("rf_ladder.json", {}), "random_forest_importance_T": load_json("importance_rf.json", {}), "scale_check": sc}
     (ROOT / "models/ts_metrics.json").write_text(json.dumps(out, indent=1))
     log("wrote models/ts_metrics.json")
 
@@ -523,7 +598,9 @@ if __name__ == "__main__":
     df = load()
     if stage in ("splits", "all"): stage_splits(df)
     if stage in ("ladder", "all"): stage_ladder(df)
+    if stage in ("ladderfix", "all"): stage_ladderfix(df)
     if stage in ("importance", "all"): stage_importance(df)
+    if stage == "rf": stage_rf(df)
     if stage in ("direction", "all"): stage_direction(df)
     if stage in ("final", "all"): stage_final(df)
     if stage == "all": stage_merge()

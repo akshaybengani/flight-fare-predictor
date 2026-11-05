@@ -1,7 +1,8 @@
 """Ablation ladder for the external features (v2). Does NOT touch the v1 model files.
 
     python src/train_v2.py ladder            # fast-GBM ablation ladder, all rungs x 3 scenarios -> models/experiments_v2.json
-    python src/train_v2.py best <rung>       # full train.py GBM on one rung: 3 scenarios, final model, permutation importance
+    python src/train_v2.py importance <rung> # held-out permutation importance (fast-GBM models)
+    python src/train_v2.py final <rung>      # full train.py GBM, all data -> models/fare_model_v2.joblib
 Scenarios and metric are the same as train.py (A same-period random 20%, E 2022 + 10% of 2023 flight-days, C 2022 -> 2023).
 """
 import sys
@@ -108,19 +109,22 @@ def perm_importance(model, enc, test, use, n=30000, reps=3):
     return {"baseline_accuracy_pct": round(float(base), 2), "sample_rows": len(t), "group_drop_pts": grp, "new_features": feats}
 
 
-def best(rung):
+def importance(rung):
+    """Held-out permutation importance from FAST-config models (scenarios A and C); the full-GBM model is too slow to shuffle ~100 columns."""
     df = load()
     keep = {}
-    res = run_rung(df, rung, GBM, keep)
-    metrics = {k: v for k, v in res.items() if k[0] in "ACE" and k[1] == "_"}
-    metrics["rung"] = rung
-    (ROOT / "models/metrics_v2.json").write_text(json.dumps(metrics, indent=2))
-    imp = {"rung": rung, "note": "held-out permutation importance (rows the model never trained on), 3 shuffles"}
-    for name in ("A_same_period_random_20pct", "E_2022_plus_10pct_of_2023", "C_train_2022_test_2023"):
+    run_rung(df, rung, FAST, keep)
+    imp = {"rung": rung, "note": "held-out permutation importance on FAST-config models (lr 0.1), 8000 held-out rows, 2 shuffles"}
+    for name in ("A_same_period_random_20pct", "C_train_2022_test_2023"):
         m, enc, te_, use = keep[name]
-        imp[name] = perm_importance(m, enc, te_, use)
+        imp[name] = perm_importance(m, enc, te_, use, n=8000, reps=2)
+        print("importance", name, flush=True)
     (ROOT / "models/importance_v2.json").write_text(json.dumps(imp, indent=2))
     print("importance written", flush=True)
+
+
+def final(rung):
+    df = load()
     g = groups(df.columns)
     use = nonconstant(df, [c for grp in RUNGS[rung] for c in g[grp]])
     m, enc = fit(df, NUMS + use, TE, GBM)
@@ -129,4 +133,4 @@ def best(rung):
 
 
 if __name__ == "__main__":
-    {"ladder": ladder, "best": lambda: best(sys.argv[2])}[sys.argv[1]]()
+    {"ladder": ladder, "importance": lambda: importance(sys.argv[2]), "final": lambda: final(sys.argv[2])}[sys.argv[1]]()

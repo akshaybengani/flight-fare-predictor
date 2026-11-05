@@ -1,0 +1,6687 @@
+{
+ "generated": "2026-11-05 13:58",
+ "dataset": "US Airfare Time Machine (38.46M flight-days after collapsing duplicate quotes)",
+ "metric": "accuracy = 100 - MAPE on price (USD); within 10%; MAE; RMSE",
+ "flight_sample_pct": 10.0,
+ "splits": {
+  "T": "train search<=2026-08-15, val 08-16..08-31, test 09-01..09-30",
+  "F": "20% of flights held out entirely",
+  "R": "5 routes held out (+reverse directions dropped from training)"
+ },
+ "best_params_by_validation": {
+  "lgb": {
+   "params": {
+    "num_leaves": 127,
+    "lambda_l2": 10.0
+   },
+   "val_acc": 94.034
+  },
+  "xgb": {
+   "params": {
+    "objective": "reg:pseudohubererror",
+    "huber_slope": 0.05,
+    "max_depth": 8,
+    "reg_lambda": 10.0
+   },
+   "val_acc": 92.938
+  },
+  "hgb": {
+   "params": {
+    "loss": "squared_error",
+    "clip": 0.25,
+    "max_leaf_nodes": 63
+   },
+   "val_acc": 91.644
+  },
+  "rf": {
+   "params": {
+    "max_features": 0.33,
+    "min_samples_leaf": 5
+   },
+   "val_acc": 91.92
+  }
+ },
+ "final_model": {
+  "algo": "lgb",
+  "test_accuracy_pct": 92.969
+ },
+ "results": {
+  "lgb_T": {
+   "algo": "lgb",
+   "params": {
+    "num_leaves": 127,
+    "lambda_l2": 10.0
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "val_rows": 309915,
+   "test_rows": 587197,
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 94.07,
+    "within_10pct": 83.86,
+    "MAE_usd": 14.01,
+    "RMSE_usd": 61.29
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.969,
+    "within_10pct": 80.83,
+    "MAE_usd": 13.53,
+    "RMSE_usd": 43.48
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.276,
+    "within_10pct": 81.65,
+    "MAE_usd": 12.62,
+    "RMSE_usd": 38.84
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 66.304,
+    "within_10pct": 22.58,
+    "MAE_usd": 70.6,
+    "RMSE_usd": 118.92
+   },
+   "share_rows_with_history_pct": 98.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 93.233,
+     "within_10pct": 78.05,
+     "MAE_usd": 21.78,
+     "RMSE_usd": 51.25
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 91.133,
+     "within_10pct": 72.9,
+     "MAE_usd": 18.89,
+     "RMSE_usd": 41.32
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 92.495,
+     "within_10pct": 78.83,
+     "MAE_usd": 12.29,
+     "RMSE_usd": 29.67
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 93.162,
+     "within_10pct": 81.92,
+     "MAE_usd": 13.67,
+     "RMSE_usd": 47.14
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 93.53,
+     "within_10pct": 83.56,
+     "MAE_usd": 11.28,
+     "RMSE_usd": 45.26
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 28617,
+     "accuracy_pct": 93.339,
+     "within_10pct": 78.42,
+     "MAE_usd": 21.49,
+     "RMSE_usd": 51.67
+    },
+    "15-30": {
+     "rows": 56942,
+     "accuracy_pct": 91.255,
+     "within_10pct": 73.07,
+     "MAE_usd": 18.74,
+     "RMSE_usd": 42.14
+    },
+    "31-60": {
+     "rows": 105935,
+     "accuracy_pct": 92.713,
+     "within_10pct": 79.06,
+     "MAE_usd": 12.01,
+     "RMSE_usd": 29.55
+    },
+    "61-120": {
+     "rows": 196443,
+     "accuracy_pct": 93.154,
+     "within_10pct": 82.71,
+     "MAE_usd": 13.0,
+     "RMSE_usd": 49.7
+    },
+    "121-180": {
+     "rows": 189246,
+     "accuracy_pct": 93.553,
+     "within_10pct": 85.05,
+     "MAE_usd": 10.38,
+     "RMSE_usd": 50.06
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 76.524,
+     "within_10pct": 29.02,
+     "MAE_usd": 74.18,
+     "RMSE_usd": 110.2
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 65.878,
+     "within_10pct": 20.41,
+     "MAE_usd": 72.91,
+     "RMSE_usd": 108.22
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 62.759,
+     "within_10pct": 21.18,
+     "MAE_usd": 64.19,
+     "RMSE_usd": 98.48
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 64.677,
+     "within_10pct": 20.07,
+     "MAE_usd": 83.12,
+     "RMSE_usd": 141.08
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 68.596,
+     "within_10pct": 25.63,
+     "MAE_usd": 60.49,
+     "RMSE_usd": 110.93
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 9960,
+     "accuracy_pct": 93.603,
+     "within_10pct": 85.0,
+     "MAE_usd": 10.85,
+     "RMSE_usd": 45.86
+    },
+    "ATL-LAX": {
+     "rows": 11316,
+     "accuracy_pct": 96.153,
+     "within_10pct": 87.49,
+     "MAE_usd": 10.64,
+     "RMSE_usd": 27.9
+    },
+    "BOS-DCA": {
+     "rows": 13165,
+     "accuracy_pct": 82.737,
+     "within_10pct": 68.12,
+     "MAE_usd": 24.49,
+     "RMSE_usd": 63.15
+    },
+    "BOS-LAX": {
+     "rows": 9973,
+     "accuracy_pct": 94.263,
+     "within_10pct": 80.8,
+     "MAE_usd": 17.52,
+     "RMSE_usd": 45.3
+    },
+    "BOS-ORD": {
+     "rows": 11771,
+     "accuracy_pct": 92.923,
+     "within_10pct": 78.8,
+     "MAE_usd": 13.13,
+     "RMSE_usd": 39.99
+    },
+    "DCA-BOS": {
+     "rows": 12632,
+     "accuracy_pct": 82.889,
+     "within_10pct": 67.43,
+     "MAE_usd": 24.49,
+     "RMSE_usd": 56.35
+    },
+    "DCA-ORD": {
+     "rows": 13601,
+     "accuracy_pct": 95.737,
+     "within_10pct": 88.96,
+     "MAE_usd": 8.78,
+     "RMSE_usd": 41.11
+    },
+    "DEN-LAX": {
+     "rows": 11535,
+     "accuracy_pct": 90.776,
+     "within_10pct": 77.76,
+     "MAE_usd": 12.28,
+     "RMSE_usd": 30.55
+    },
+    "DEN-ORD": {
+     "rows": 9575,
+     "accuracy_pct": 94.671,
+     "within_10pct": 82.21,
+     "MAE_usd": 11.1,
+     "RMSE_usd": 45.94
+    },
+    "DEN-SFO": {
+     "rows": 9858,
+     "accuracy_pct": 92.956,
+     "within_10pct": 80.74,
+     "MAE_usd": 11.32,
+     "RMSE_usd": 27.47
+    },
+    "DFW-ATL": {
+     "rows": 9550,
+     "accuracy_pct": 94.196,
+     "within_10pct": 85.84,
+     "MAE_usd": 9.88,
+     "RMSE_usd": 37.67
+    },
+    "DFW-LAX": {
+     "rows": 10491,
+     "accuracy_pct": 95.336,
+     "within_10pct": 84.34,
+     "MAE_usd": 10.1,
+     "RMSE_usd": 30.19
+    },
+    "DFW-ORD": {
+     "rows": 10914,
+     "accuracy_pct": 93.789,
+     "within_10pct": 80.78,
+     "MAE_usd": 12.62,
+     "RMSE_usd": 36.76
+    },
+    "EWR-LAX": {
+     "rows": 8200,
+     "accuracy_pct": 95.641,
+     "within_10pct": 84.46,
+     "MAE_usd": 15.54,
+     "RMSE_usd": 42.47
+    },
+    "EWR-SFO": {
+     "rows": 11074,
+     "accuracy_pct": 95.507,
+     "within_10pct": 85.43,
+     "MAE_usd": 16.24,
+     "RMSE_usd": 44.22
+    },
+    "IAH-LAX": {
+     "rows": 8353,
+     "accuracy_pct": 94.751,
+     "within_10pct": 83.07,
+     "MAE_usd": 10.84,
+     "RMSE_usd": 35.76
+    },
+    "JFK-LAX": {
+     "rows": 16310,
+     "accuracy_pct": 95.431,
+     "within_10pct": 85.22,
+     "MAE_usd": 17.6,
+     "RMSE_usd": 48.9
+    },
+    "JFK-SFO": {
+     "rows": 10642,
+     "accuracy_pct": 92.94,
+     "within_10pct": 77.56,
+     "MAE_usd": 25.02,
+     "RMSE_usd": 59.48
+    },
+    "LAS-LAX": {
+     "rows": 12269,
+     "accuracy_pct": 90.183,
+     "within_10pct": 78.39,
+     "MAE_usd": 12.41,
+     "RMSE_usd": 55.22
+    },
+    "LAX-ATL": {
+     "rows": 10534,
+     "accuracy_pct": 95.957,
+     "within_10pct": 86.51,
+     "MAE_usd": 11.67,
+     "RMSE_usd": 30.49
+    },
+    "LAX-BOS": {
+     "rows": 9491,
+     "accuracy_pct": 94.764,
+     "within_10pct": 82.47,
+     "MAE_usd": 14.68,
+     "RMSE_usd": 39.47
+    },
+    "LAX-DEN": {
+     "rows": 10861,
+     "accuracy_pct": 90.827,
+     "within_10pct": 77.59,
+     "MAE_usd": 11.67,
+     "RMSE_usd": 27.73
+    },
+    "LAX-DFW": {
+     "rows": 9891,
+     "accuracy_pct": 94.338,
+     "within_10pct": 80.5,
+     "MAE_usd": 12.19,
+     "RMSE_usd": 45.32
+    },
+    "LAX-EWR": {
+     "rows": 7111,
+     "accuracy_pct": 95.249,
+     "within_10pct": 82.8,
+     "MAE_usd": 15.64,
+     "RMSE_usd": 37.79
+    },
+    "LAX-IAH": {
+     "rows": 7297,
+     "accuracy_pct": 94.726,
+     "within_10pct": 83.17,
+     "MAE_usd": 10.91,
+     "RMSE_usd": 29.97
+    },
+    "LAX-JFK": {
+     "rows": 15056,
+     "accuracy_pct": 95.742,
+     "within_10pct": 86.14,
+     "MAE_usd": 15.98,
+     "RMSE_usd": 50.16
+    },
+    "LAX-LAS": {
+     "rows": 13803,
+     "accuracy_pct": 90.734,
+     "within_10pct": 80.68,
+     "MAE_usd": 10.74,
+     "RMSE_usd": 30.93
+    },
+    "LAX-ORD": {
+     "rows": 12421,
+     "accuracy_pct": 93.432,
+     "within_10pct": 81.54,
+     "MAE_usd": 13.28,
+     "RMSE_usd": 44.94
+    },
+    "LAX-PHX": {
+     "rows": 11614,
+     "accuracy_pct": 92.006,
+     "within_10pct": 79.66,
+     "MAE_usd": 11.24,
+     "RMSE_usd": 38.67
+    },
+    "LAX-SEA": {
+     "rows": 13387,
+     "accuracy_pct": 93.509,
+     "within_10pct": 79.84,
+     "MAE_usd": 12.08,
+     "RMSE_usd": 31.16
+    },
+    "LAX-SFO": {
+     "rows": 19497,
+     "accuracy_pct": 92.548,
+     "within_10pct": 80.56,
+     "MAE_usd": 9.4,
+     "RMSE_usd": 42.53
+    },
+    "LGA-ORD": {
+     "rows": 16449,
+     "accuracy_pct": 93.638,
+     "within_10pct": 79.57,
+     "MAE_usd": 12.69,
+     "RMSE_usd": 42.97
+    },
+    "MSP-ORD": {
+     "rows": 10211,
+     "accuracy_pct": 87.051,
+     "within_10pct": 75.08,
+     "MAE_usd": 17.19,
+     "RMSE_usd": 50.86
+    },
+    "ORD-BOS": {
+     "rows": 11766,
+     "accuracy_pct": 92.647,
+     "within_10pct": 78.18,
+     "MAE_usd": 14.01,
+     "RMSE_usd": 48.2
+    },
+    "ORD-DCA": {
+     "rows": 14496,
+     "accuracy_pct": 95.847,
+     "within_10pct": 89.37,
+     "MAE_usd": 8.55,
+     "RMSE_usd": 40.79
+    },
+    "ORD-DEN": {
+     "rows": 10001,
+     "accuracy_pct": 94.17,
+     "within_10pct": 81.06,
+     "MAE_usd": 12.85,
+     "RMSE_usd": 59.29
+    },
+    "ORD-DFW": {
+     "rows": 11711,
+     "accuracy_pct": 93.741,
+     "within_10pct": 80.96,
+     "MAE_usd": 13.78,
+     "RMSE_usd": 55.03
+    },
+    "ORD-LAX": {
+     "rows": 12524,
+     "accuracy_pct": 93.329,
+     "within_10pct": 81.87,
+     "MAE_usd": 13.8,
+     "RMSE_usd": 52.21
+    },
+    "ORD-LGA": {
+     "rows": 17904,
+     "accuracy_pct": 93.615,
+     "within_10pct": 79.81,
+     "MAE_usd": 13.17,
+     "RMSE_usd": 46.77
+    },
+    "ORD-MSP": {
+     "rows": 10736,
+     "accuracy_pct": 87.071,
+     "within_10pct": 74.53,
+     "MAE_usd": 17.17,
+     "RMSE_usd": 48.52
+    },
+    "ORD-SFO": {
+     "rows": 11483,
+     "accuracy_pct": 95.174,
+     "within_10pct": 85.48,
+     "MAE_usd": 11.61,
+     "RMSE_usd": 46.79
+    },
+    "PHX-LAX": {
+     "rows": 10521,
+     "accuracy_pct": 91.922,
+     "within_10pct": 78.86,
+     "MAE_usd": 11.5,
+     "RMSE_usd": 41.56
+    },
+    "SEA-LAX": {
+     "rows": 13472,
+     "accuracy_pct": 93.526,
+     "within_10pct": 79.75,
+     "MAE_usd": 11.96,
+     "RMSE_usd": 27.6
+    },
+    "SEA-SFO": {
+     "rows": 10236,
+     "accuracy_pct": 91.393,
+     "within_10pct": 71.77,
+     "MAE_usd": 12.35,
+     "RMSE_usd": 30.94
+    },
+    "SFO-DEN": {
+     "rows": 9373,
+     "accuracy_pct": 92.745,
+     "within_10pct": 80.98,
+     "MAE_usd": 12.18,
+     "RMSE_usd": 33.28
+    },
+    "SFO-EWR": {
+     "rows": 10607,
+     "accuracy_pct": 95.816,
+     "within_10pct": 86.66,
+     "MAE_usd": 15.19,
+     "RMSE_usd": 44.33
+    },
+    "SFO-JFK": {
+     "rows": 10875,
+     "accuracy_pct": 93.453,
+     "within_10pct": 79.4,
+     "MAE_usd": 23.24,
+     "RMSE_usd": 55.79
+    },
+    "SFO-LAX": {
+     "rows": 20127,
+     "accuracy_pct": 93.062,
+     "within_10pct": 81.04,
+     "MAE_usd": 8.42,
+     "RMSE_usd": 35.88
+    },
+    "SFO-ORD": {
+     "rows": 11839,
+     "accuracy_pct": 95.01,
+     "within_10pct": 85.28,
+     "MAE_usd": 12.65,
+     "RMSE_usd": 49.45
+    },
+    "SFO-SEA": {
+     "rows": 10714,
+     "accuracy_pct": 89.518,
+     "within_10pct": 68.88,
+     "MAE_usd": 14.92,
+     "RMSE_usd": 37.99
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.96,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.78,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.62,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 526944,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 87.25,
+    "majority_class_pct": 58.97,
+    "pct_changes_that_are_up": 58.97,
+    "hit_rate_changes_over_10pct": 89.8,
+    "rows_changes_over_10pct": 223296,
+    "MAE_change_usd_model": 12.83,
+    "MAE_change_usd_no_change_baseline": 30.54,
+    "hit_rate_persistence_baseline_pct": 89.98,
+    "persistence_baseline_rows": 356677,
+    "hit_rate_model_on_same_rows_pct": 89.89,
+    "hit_rate_route_dbd_median_reversion_pct": 58.98
+   }
+  },
+  "lgb_F": {
+   "algo": "lgb",
+   "params": {
+    "num_leaves": 127,
+    "lambda_l2": 10.0
+   },
+   "iterations": 800,
+   "train_rows": 2750623,
+   "val_rows": 307544,
+   "test_rows": 771051,
+   "val": {
+    "rows": 307544,
+    "accuracy_pct": 94.503,
+    "within_10pct": 83.77,
+    "MAE_usd": 11.75,
+    "RMSE_usd": 44.88
+   },
+   "model_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 94.412,
+    "within_10pct": 83.49,
+    "MAE_usd": 11.96,
+    "RMSE_usd": 45.17
+   },
+   "model_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.866,
+    "within_10pct": 84.74,
+    "MAE_usd": 10.54,
+    "RMSE_usd": 36.53
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.078,
+    "within_10pct": 84.03,
+    "MAE_usd": 11.56,
+    "RMSE_usd": 47.07
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 67.408,
+    "within_10pct": 24.79,
+    "MAE_usd": 68.47,
+    "RMSE_usd": 113.77
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 67.403,
+    "within_10pct": 24.77,
+    "MAE_usd": 68.09,
+    "RMSE_usd": 111.42
+   },
+   "share_rows_with_history_pct": 97.42,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 92.759,
+     "within_10pct": 75.79,
+     "MAE_usd": 22.38,
+     "RMSE_usd": 54.38
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 92.436,
+     "within_10pct": 75.85,
+     "MAE_usd": 16.79,
+     "RMSE_usd": 42.9
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 93.895,
+     "within_10pct": 81.38,
+     "MAE_usd": 11.65,
+     "RMSE_usd": 34.38
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 94.581,
+     "within_10pct": 84.45,
+     "MAE_usd": 10.99,
+     "RMSE_usd": 43.15
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 95.249,
+     "within_10pct": 86.67,
+     "MAE_usd": 10.41,
+     "RMSE_usd": 50.78
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 35198,
+     "accuracy_pct": 92.842,
+     "within_10pct": 76.02,
+     "MAE_usd": 21.99,
+     "RMSE_usd": 53.78
+    },
+    "15-30": {
+     "rows": 69829,
+     "accuracy_pct": 92.432,
+     "within_10pct": 75.78,
+     "MAE_usd": 16.66,
+     "RMSE_usd": 41.0
+    },
+    "31-60": {
+     "rows": 130476,
+     "accuracy_pct": 93.714,
+     "within_10pct": 81.22,
+     "MAE_usd": 11.66,
+     "RMSE_usd": 36.45
+    },
+    "61-120": {
+     "rows": 261216,
+     "accuracy_pct": 94.217,
+     "within_10pct": 84.85,
+     "MAE_usd": 10.67,
+     "RMSE_usd": 45.65
+    },
+    "121-180": {
+     "rows": 254443,
+     "accuracy_pct": 94.745,
+     "within_10pct": 87.99,
+     "MAE_usd": 9.57,
+     "RMSE_usd": 53.46
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 73.719,
+     "within_10pct": 32.0,
+     "MAE_usd": 74.11,
+     "RMSE_usd": 118.11
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 66.097,
+     "within_10pct": 24.4,
+     "MAE_usd": 73.01,
+     "RMSE_usd": 113.99
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 64.667,
+     "within_10pct": 21.26,
+     "MAE_usd": 67.95,
+     "RMSE_usd": 104.66
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 66.101,
+     "within_10pct": 23.01,
+     "MAE_usd": 69.53,
+     "RMSE_usd": 114.49
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 69.596,
+     "within_10pct": 27.49,
+     "MAE_usd": 65.68,
+     "RMSE_usd": 116.73
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 11639,
+     "accuracy_pct": 93.495,
+     "within_10pct": 83.81,
+     "MAE_usd": 10.68,
+     "RMSE_usd": 36.6
+    },
+    "ATL-LAX": {
+     "rows": 13989,
+     "accuracy_pct": 97.182,
+     "within_10pct": 90.05,
+     "MAE_usd": 8.34,
+     "RMSE_usd": 27.2
+    },
+    "BOS-DCA": {
+     "rows": 18862,
+     "accuracy_pct": 89.769,
+     "within_10pct": 77.01,
+     "MAE_usd": 15.77,
+     "RMSE_usd": 45.97
+    },
+    "BOS-LAX": {
+     "rows": 14003,
+     "accuracy_pct": 93.808,
+     "within_10pct": 79.27,
+     "MAE_usd": 17.96,
+     "RMSE_usd": 49.15
+    },
+    "BOS-ORD": {
+     "rows": 18014,
+     "accuracy_pct": 94.118,
+     "within_10pct": 82.9,
+     "MAE_usd": 11.35,
+     "RMSE_usd": 48.42
+    },
+    "DCA-BOS": {
+     "rows": 15293,
+     "accuracy_pct": 88.821,
+     "within_10pct": 75.75,
+     "MAE_usd": 18.24,
+     "RMSE_usd": 51.42
+    },
+    "DCA-ORD": {
+     "rows": 17157,
+     "accuracy_pct": 96.157,
+     "within_10pct": 88.49,
+     "MAE_usd": 7.67,
+     "RMSE_usd": 44.44
+    },
+    "DEN-LAX": {
+     "rows": 14736,
+     "accuracy_pct": 93.792,
+     "within_10pct": 82.34,
+     "MAE_usd": 9.64,
+     "RMSE_usd": 34.93
+    },
+    "DEN-ORD": {
+     "rows": 12654,
+     "accuracy_pct": 94.976,
+     "within_10pct": 84.93,
+     "MAE_usd": 10.94,
+     "RMSE_usd": 46.2
+    },
+    "DEN-SFO": {
+     "rows": 11859,
+     "accuracy_pct": 96.037,
+     "within_10pct": 86.49,
+     "MAE_usd": 7.01,
+     "RMSE_usd": 24.35
+    },
+    "DFW-ATL": {
+     "rows": 13821,
+     "accuracy_pct": 93.838,
+     "within_10pct": 84.81,
+     "MAE_usd": 11.26,
+     "RMSE_usd": 40.62
+    },
+    "DFW-LAX": {
+     "rows": 14510,
+     "accuracy_pct": 97.064,
+     "within_10pct": 90.65,
+     "MAE_usd": 7.75,
+     "RMSE_usd": 34.85
+    },
+    "DFW-ORD": {
+     "rows": 14261,
+     "accuracy_pct": 94.367,
+     "within_10pct": 84.01,
+     "MAE_usd": 12.73,
+     "RMSE_usd": 56.97
+    },
+    "EWR-LAX": {
+     "rows": 12829,
+     "accuracy_pct": 94.952,
+     "within_10pct": 82.18,
+     "MAE_usd": 15.3,
+     "RMSE_usd": 44.56
+    },
+    "EWR-SFO": {
+     "rows": 14881,
+     "accuracy_pct": 94.957,
+     "within_10pct": 83.25,
+     "MAE_usd": 16.44,
+     "RMSE_usd": 43.71
+    },
+    "IAH-LAX": {
+     "rows": 10065,
+     "accuracy_pct": 95.444,
+     "within_10pct": 84.86,
+     "MAE_usd": 9.65,
+     "RMSE_usd": 40.66
+    },
+    "JFK-LAX": {
+     "rows": 20480,
+     "accuracy_pct": 94.653,
+     "within_10pct": 82.35,
+     "MAE_usd": 17.97,
+     "RMSE_usd": 56.48
+    },
+    "JFK-SFO": {
+     "rows": 14459,
+     "accuracy_pct": 93.3,
+     "within_10pct": 77.92,
+     "MAE_usd": 22.99,
+     "RMSE_usd": 55.88
+    },
+    "LAS-LAX": {
+     "rows": 14478,
+     "accuracy_pct": 93.48,
+     "within_10pct": 83.19,
+     "MAE_usd": 9.39,
+     "RMSE_usd": 50.85
+    },
+    "LAX-ATL": {
+     "rows": 15539,
+     "accuracy_pct": 96.714,
+     "within_10pct": 87.91,
+     "MAE_usd": 10.01,
+     "RMSE_usd": 29.34
+    },
+    "LAX-BOS": {
+     "rows": 14353,
+     "accuracy_pct": 93.685,
+     "within_10pct": 80.16,
+     "MAE_usd": 18.05,
+     "RMSE_usd": 53.09
+    },
+    "LAX-DEN": {
+     "rows": 14358,
+     "accuracy_pct": 93.656,
+     "within_10pct": 82.71,
+     "MAE_usd": 9.05,
+     "RMSE_usd": 32.55
+    },
+    "LAX-DFW": {
+     "rows": 15709,
+     "accuracy_pct": 96.596,
+     "within_10pct": 89.63,
+     "MAE_usd": 9.41,
+     "RMSE_usd": 44.34
+    },
+    "LAX-EWR": {
+     "rows": 9687,
+     "accuracy_pct": 94.533,
+     "within_10pct": 80.38,
+     "MAE_usd": 17.07,
+     "RMSE_usd": 63.81
+    },
+    "LAX-IAH": {
+     "rows": 9404,
+     "accuracy_pct": 95.817,
+     "within_10pct": 85.91,
+     "MAE_usd": 8.58,
+     "RMSE_usd": 27.98
+    },
+    "LAX-JFK": {
+     "rows": 18755,
+     "accuracy_pct": 94.531,
+     "within_10pct": 81.89,
+     "MAE_usd": 18.4,
+     "RMSE_usd": 57.14
+    },
+    "LAX-LAS": {
+     "rows": 17189,
+     "accuracy_pct": 93.747,
+     "within_10pct": 83.88,
+     "MAE_usd": 8.66,
+     "RMSE_usd": 54.53
+    },
+    "LAX-ORD": {
+     "rows": 18762,
+     "accuracy_pct": 94.524,
+     "within_10pct": 83.9,
+     "MAE_usd": 11.67,
+     "RMSE_usd": 48.49
+    },
+    "LAX-PHX": {
+     "rows": 13890,
+     "accuracy_pct": 94.351,
+     "within_10pct": 84.77,
+     "MAE_usd": 9.28,
+     "RMSE_usd": 41.91
+    },
+    "LAX-SEA": {
+     "rows": 18212,
+     "accuracy_pct": 95.665,
+     "within_10pct": 85.54,
+     "MAE_usd": 8.94,
+     "RMSE_usd": 26.5
+    },
+    "LAX-SFO": {
+     "rows": 22915,
+     "accuracy_pct": 94.41,
+     "within_10pct": 84.17,
+     "MAE_usd": 7.28,
+     "RMSE_usd": 37.35
+    },
+    "LGA-ORD": {
+     "rows": 20867,
+     "accuracy_pct": 94.777,
+     "within_10pct": 83.39,
+     "MAE_usd": 10.53,
+     "RMSE_usd": 41.93
+    },
+    "MSP-ORD": {
+     "rows": 13190,
+     "accuracy_pct": 92.486,
+     "within_10pct": 82.13,
+     "MAE_usd": 11.97,
+     "RMSE_usd": 49.77
+    },
+    "ORD-BOS": {
+     "rows": 16836,
+     "accuracy_pct": 94.526,
+     "within_10pct": 82.8,
+     "MAE_usd": 10.72,
+     "RMSE_usd": 52.98
+    },
+    "ORD-DCA": {
+     "rows": 17469,
+     "accuracy_pct": 95.886,
+     "within_10pct": 87.96,
+     "MAE_usd": 9.02,
+     "RMSE_usd": 46.74
+    },
+    "ORD-DEN": {
+     "rows": 14228,
+     "accuracy_pct": 94.699,
+     "within_10pct": 84.18,
+     "MAE_usd": 13.2,
+     "RMSE_usd": 57.62
+    },
+    "ORD-DFW": {
+     "rows": 16676,
+     "accuracy_pct": 94.593,
+     "within_10pct": 84.5,
+     "MAE_usd": 12.95,
+     "RMSE_usd": 60.62
+    },
+    "ORD-LAX": {
+     "rows": 15785,
+     "accuracy_pct": 94.903,
+     "within_10pct": 85.19,
+     "MAE_usd": 10.83,
+     "RMSE_usd": 46.58
+    },
+    "ORD-LGA": {
+     "rows": 22115,
+     "accuracy_pct": 94.545,
+     "within_10pct": 82.98,
+     "MAE_usd": 11.44,
+     "RMSE_usd": 43.49
+    },
+    "ORD-MSP": {
+     "rows": 13489,
+     "accuracy_pct": 92.32,
+     "within_10pct": 80.72,
+     "MAE_usd": 12.46,
+     "RMSE_usd": 43.48
+    },
+    "ORD-SFO": {
+     "rows": 14316,
+     "accuracy_pct": 95.257,
+     "within_10pct": 84.89,
+     "MAE_usd": 11.94,
+     "RMSE_usd": 50.12
+    },
+    "PHX-LAX": {
+     "rows": 13629,
+     "accuracy_pct": 94.443,
+     "within_10pct": 84.64,
+     "MAE_usd": 8.19,
+     "RMSE_usd": 34.6
+    },
+    "SEA-LAX": {
+     "rows": 17909,
+     "accuracy_pct": 95.379,
+     "within_10pct": 85.07,
+     "MAE_usd": 10.21,
+     "RMSE_usd": 36.41
+    },
+    "SEA-SFO": {
+     "rows": 14596,
+     "accuracy_pct": 93.542,
+     "within_10pct": 78.99,
+     "MAE_usd": 11.06,
+     "RMSE_usd": 35.03
+    },
+    "SFO-DEN": {
+     "rows": 12348,
+     "accuracy_pct": 96.131,
+     "within_10pct": 87.23,
+     "MAE_usd": 8.78,
+     "RMSE_usd": 39.5
+    },
+    "SFO-EWR": {
+     "rows": 12680,
+     "accuracy_pct": 94.458,
+     "within_10pct": 82.76,
+     "MAE_usd": 18.26,
+     "RMSE_usd": 51.32
+    },
+    "SFO-JFK": {
+     "rows": 14281,
+     "accuracy_pct": 93.732,
+     "within_10pct": 79.18,
+     "MAE_usd": 21.24,
+     "RMSE_usd": 51.86
+    },
+    "SFO-LAX": {
+     "rows": 26378,
+     "accuracy_pct": 94.199,
+     "within_10pct": 83.11,
+     "MAE_usd": 7.13,
+     "RMSE_usd": 30.38
+    },
+    "SFO-ORD": {
+     "rows": 14194,
+     "accuracy_pct": 95.218,
+     "within_10pct": 84.9,
+     "MAE_usd": 12.38,
+     "RMSE_usd": 48.0
+    },
+    "SFO-SEA": {
+     "rows": 13302,
+     "accuracy_pct": 92.02,
+     "within_10pct": 75.31,
+     "MAE_usd": 13.24,
+     "RMSE_usd": 39.21
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 751162,
+    "share_actually_unchanged": 68.51,
+    "hit_rate_on_changed_pct": 70.74,
+    "majority_class_pct": 53.77,
+    "pct_changes_that_are_up": 53.77,
+    "hit_rate_changes_over_10pct": 73.42,
+    "rows_changes_over_10pct": 120064,
+    "MAE_change_usd_model": 10.54,
+    "MAE_change_usd_no_change_baseline": 11.56,
+    "hit_rate_route_dbd_median_reversion_pct": 57.37
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 666550,
+    "share_actually_unchanged": 30.47,
+    "hit_rate_on_changed_pct": 89.96,
+    "majority_class_pct": 56.46,
+    "pct_changes_that_are_up": 56.46,
+    "hit_rate_changes_over_10pct": 91.82,
+    "rows_changes_over_10pct": 271811,
+    "MAE_change_usd_model": 10.47,
+    "MAE_change_usd_no_change_baseline": 28.01,
+    "hit_rate_persistence_baseline_pct": 91.39,
+    "persistence_baseline_rows": 419768,
+    "hit_rate_model_on_same_rows_pct": 91.76,
+    "hit_rate_route_dbd_median_reversion_pct": 59.1
+   }
+  },
+  "lgb_R": {
+   "algo": "lgb",
+   "params": {
+    "num_leaves": 127,
+    "lambda_l2": 10.0
+   },
+   "iterations": 800,
+   "train_rows": 2728230,
+   "val_rows": 321297,
+   "test_rows": 386514,
+   "val": {
+    "rows": 321297,
+    "accuracy_pct": 94.493,
+    "within_10pct": 83.9,
+    "MAE_usd": 10.74,
+    "RMSE_usd": 42.53
+   },
+   "held_out_routes": [
+    "LAX-JFK",
+    "LAX-ORD",
+    "JFK-SFO",
+    "EWR-LAX",
+    "DFW-ORD"
+   ],
+   "reverse_routes_also_removed_from_training": true,
+   "model_all_rows": {
+    "rows": 386514,
+    "accuracy_pct": 93.995,
+    "within_10pct": 81.41,
+    "MAE_usd": 16.99,
+    "RMSE_usd": 56.25
+   },
+   "model_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.498,
+    "within_10pct": 82.8,
+    "MAE_usd": 15.28,
+    "RMSE_usd": 48.35
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.18,
+    "within_10pct": 82.81,
+    "MAE_usd": 15.67,
+    "RMSE_usd": 56.8
+   },
+   "naive_route_dbd_median_all_rows": null,
+   "naive_route_dbd_median_rows_with_history": null,
+   "share_rows_with_history_pct": 97.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 17768,
+     "accuracy_pct": 91.065,
+     "within_10pct": 70.41,
+     "MAE_usd": 34.02,
+     "RMSE_usd": 80.28
+    },
+    "15-30": {
+     "rows": 36102,
+     "accuracy_pct": 91.69,
+     "within_10pct": 71.65,
+     "MAE_usd": 25.69,
+     "RMSE_usd": 64.28
+    },
+    "31-60": {
+     "rows": 67137,
+     "accuracy_pct": 93.397,
+     "within_10pct": 78.49,
+     "MAE_usd": 16.84,
+     "RMSE_usd": 43.79
+    },
+    "61-120": {
+     "rows": 134533,
+     "accuracy_pct": 93.951,
+     "within_10pct": 81.93,
+     "MAE_usd": 16.15,
+     "RMSE_usd": 53.35
+    },
+    "121-180": {
+     "rows": 130974,
+     "accuracy_pct": 95.38,
+     "within_10pct": 86.56,
+     "MAE_usd": 13.23,
+     "RMSE_usd": 58.46
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 17471,
+     "accuracy_pct": 91.19,
+     "within_10pct": 71.0,
+     "MAE_usd": 33.06,
+     "RMSE_usd": 77.85
+    },
+    "15-30": {
+     "rows": 35503,
+     "accuracy_pct": 92.007,
+     "within_10pct": 72.26,
+     "MAE_usd": 24.33,
+     "RMSE_usd": 61.52
+    },
+    "31-60": {
+     "rows": 66087,
+     "accuracy_pct": 93.716,
+     "within_10pct": 79.51,
+     "MAE_usd": 16.14,
+     "RMSE_usd": 44.88
+    },
+    "61-120": {
+     "rows": 131373,
+     "accuracy_pct": 94.051,
+     "within_10pct": 83.07,
+     "MAE_usd": 15.15,
+     "RMSE_usd": 55.73
+    },
+    "121-180": {
+     "rows": 125593,
+     "accuracy_pct": 95.59,
+     "within_10pct": 88.89,
+     "MAE_usd": 11.1,
+     "RMSE_usd": 58.62
+    }
+   },
+   "by_dbd_bucket_naive_route_median": null,
+   "by_route_model": {
+    "DFW-ORD": {
+     "rows": 74904,
+     "accuracy_pct": 94.114,
+     "within_10pct": 83.52,
+     "MAE_usd": 13.2,
+     "RMSE_usd": 54.49
+    },
+    "EWR-LAX": {
+     "rows": 55383,
+     "accuracy_pct": 94.998,
+     "within_10pct": 82.59,
+     "MAE_usd": 15.54,
+     "RMSE_usd": 48.42
+    },
+    "JFK-SFO": {
+     "rows": 73910,
+     "accuracy_pct": 93.124,
+     "within_10pct": 77.93,
+     "MAE_usd": 23.09,
+     "RMSE_usd": 61.06
+    },
+    "LAX-JFK": {
+     "rows": 101746,
+     "accuracy_pct": 94.202,
+     "within_10pct": 81.13,
+     "MAE_usd": 19.05,
+     "RMSE_usd": 59.78
+    },
+    "LAX-ORD": {
+     "rows": 80571,
+     "accuracy_pct": 93.733,
+     "within_10pct": 82.18,
+     "MAE_usd": 13.33,
+     "RMSE_usd": 53.61
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 376027,
+    "share_actually_unchanged": 65.39,
+    "hit_rate_on_changed_pct": 63.26,
+    "majority_class_pct": 55.08,
+    "pct_changes_that_are_up": 55.08,
+    "hit_rate_changes_over_10pct": 66.04,
+    "rows_changes_over_10pct": 64750,
+    "MAE_change_usd_model": 15.28,
+    "MAE_change_usd_no_change_baseline": 15.67
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 333173,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 88.14,
+    "majority_class_pct": 58.42,
+    "pct_changes_that_are_up": 58.42,
+    "hit_rate_changes_over_10pct": 89.74,
+    "rows_changes_over_10pct": 133757,
+    "MAE_change_usd_model": 15.2,
+    "MAE_change_usd_no_change_baseline": 35.51,
+    "hit_rate_persistence_baseline_pct": 90.71,
+    "persistence_baseline_rows": 223200,
+    "hit_rate_model_on_same_rows_pct": 90.65
+   }
+  },
+  "xgb_T": {
+   "algo": "xgb",
+   "params": {
+    "objective": "reg:pseudohubererror",
+    "huber_slope": 0.05,
+    "max_depth": 8,
+    "reg_lambda": 10.0
+   },
+   "iterations": 4,
+   "train_rows": 2932106,
+   "val_rows": 309915,
+   "test_rows": 587197,
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 92.973,
+    "within_10pct": 84.05,
+    "MAE_usd": 15.52,
+    "RMSE_usd": 73.13
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.596,
+    "within_10pct": 81.03,
+    "MAE_usd": 14.11,
+    "RMSE_usd": 48.79
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 92.938,
+    "within_10pct": 81.9,
+    "MAE_usd": 13.15,
+    "RMSE_usd": 44.66
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 66.304,
+    "within_10pct": 22.58,
+    "MAE_usd": 70.6,
+    "RMSE_usd": 118.92
+   },
+   "share_rows_with_history_pct": 98.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 93.166,
+     "within_10pct": 78.2,
+     "MAE_usd": 21.96,
+     "RMSE_usd": 51.34
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 91.061,
+     "within_10pct": 73.16,
+     "MAE_usd": 19.07,
+     "RMSE_usd": 41.77
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 92.446,
+     "within_10pct": 79.06,
+     "MAE_usd": 12.46,
+     "RMSE_usd": 29.54
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 92.71,
+     "within_10pct": 82.13,
+     "MAE_usd": 14.33,
+     "RMSE_usd": 53.41
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 92.929,
+     "within_10pct": 83.71,
+     "MAE_usd": 12.18,
+     "RMSE_usd": 53.59
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 28617,
+     "accuracy_pct": 93.339,
+     "within_10pct": 78.42,
+     "MAE_usd": 21.49,
+     "RMSE_usd": 51.67
+    },
+    "15-30": {
+     "rows": 56942,
+     "accuracy_pct": 91.255,
+     "within_10pct": 73.07,
+     "MAE_usd": 18.74,
+     "RMSE_usd": 42.14
+    },
+    "31-60": {
+     "rows": 105935,
+     "accuracy_pct": 92.713,
+     "within_10pct": 79.06,
+     "MAE_usd": 12.01,
+     "RMSE_usd": 29.55
+    },
+    "61-120": {
+     "rows": 196443,
+     "accuracy_pct": 93.154,
+     "within_10pct": 82.71,
+     "MAE_usd": 13.0,
+     "RMSE_usd": 49.7
+    },
+    "121-180": {
+     "rows": 189246,
+     "accuracy_pct": 93.553,
+     "within_10pct": 85.05,
+     "MAE_usd": 10.38,
+     "RMSE_usd": 50.06
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 76.524,
+     "within_10pct": 29.02,
+     "MAE_usd": 74.18,
+     "RMSE_usd": 110.2
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 65.878,
+     "within_10pct": 20.41,
+     "MAE_usd": 72.91,
+     "RMSE_usd": 108.22
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 62.759,
+     "within_10pct": 21.18,
+     "MAE_usd": 64.19,
+     "RMSE_usd": 98.48
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 64.677,
+     "within_10pct": 20.07,
+     "MAE_usd": 83.12,
+     "RMSE_usd": 141.08
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 68.596,
+     "within_10pct": 25.63,
+     "MAE_usd": 60.49,
+     "RMSE_usd": 110.93
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 9960,
+     "accuracy_pct": 93.049,
+     "within_10pct": 85.26,
+     "MAE_usd": 11.44,
+     "RMSE_usd": 52.4
+    },
+    "ATL-LAX": {
+     "rows": 11316,
+     "accuracy_pct": 95.984,
+     "within_10pct": 87.75,
+     "MAE_usd": 10.98,
+     "RMSE_usd": 28.19
+    },
+    "BOS-DCA": {
+     "rows": 13165,
+     "accuracy_pct": 82.511,
+     "within_10pct": 68.2,
+     "MAE_usd": 24.76,
+     "RMSE_usd": 66.82
+    },
+    "BOS-LAX": {
+     "rows": 9973,
+     "accuracy_pct": 94.165,
+     "within_10pct": 81.04,
+     "MAE_usd": 17.75,
+     "RMSE_usd": 45.85
+    },
+    "BOS-ORD": {
+     "rows": 11771,
+     "accuracy_pct": 92.558,
+     "within_10pct": 78.97,
+     "MAE_usd": 13.84,
+     "RMSE_usd": 45.18
+    },
+    "DCA-BOS": {
+     "rows": 12632,
+     "accuracy_pct": 82.906,
+     "within_10pct": 67.68,
+     "MAE_usd": 24.35,
+     "RMSE_usd": 57.27
+    },
+    "DCA-ORD": {
+     "rows": 13601,
+     "accuracy_pct": 95.151,
+     "within_10pct": 89.64,
+     "MAE_usd": 9.84,
+     "RMSE_usd": 50.61
+    },
+    "DEN-LAX": {
+     "rows": 11535,
+     "accuracy_pct": 90.681,
+     "within_10pct": 77.85,
+     "MAE_usd": 12.44,
+     "RMSE_usd": 31.35
+    },
+    "DEN-ORD": {
+     "rows": 9575,
+     "accuracy_pct": 93.948,
+     "within_10pct": 82.29,
+     "MAE_usd": 12.27,
+     "RMSE_usd": 55.84
+    },
+    "DEN-SFO": {
+     "rows": 9858,
+     "accuracy_pct": 92.917,
+     "within_10pct": 80.95,
+     "MAE_usd": 11.43,
+     "RMSE_usd": 27.09
+    },
+    "DFW-ATL": {
+     "rows": 9550,
+     "accuracy_pct": 94.077,
+     "within_10pct": 86.05,
+     "MAE_usd": 10.11,
+     "RMSE_usd": 39.9
+    },
+    "DFW-LAX": {
+     "rows": 10491,
+     "accuracy_pct": 95.214,
+     "within_10pct": 84.26,
+     "MAE_usd": 10.31,
+     "RMSE_usd": 30.5
+    },
+    "DFW-ORD": {
+     "rows": 10914,
+     "accuracy_pct": 93.565,
+     "within_10pct": 80.67,
+     "MAE_usd": 12.97,
+     "RMSE_usd": 39.63
+    },
+    "EWR-LAX": {
+     "rows": 8200,
+     "accuracy_pct": 95.529,
+     "within_10pct": 84.96,
+     "MAE_usd": 15.7,
+     "RMSE_usd": 42.88
+    },
+    "EWR-SFO": {
+     "rows": 11074,
+     "accuracy_pct": 95.38,
+     "within_10pct": 85.35,
+     "MAE_usd": 16.47,
+     "RMSE_usd": 44.27
+    },
+    "IAH-LAX": {
+     "rows": 8353,
+     "accuracy_pct": 94.378,
+     "within_10pct": 83.67,
+     "MAE_usd": 11.28,
+     "RMSE_usd": 38.7
+    },
+    "JFK-LAX": {
+     "rows": 16310,
+     "accuracy_pct": 95.328,
+     "within_10pct": 85.51,
+     "MAE_usd": 17.45,
+     "RMSE_usd": 48.33
+    },
+    "JFK-SFO": {
+     "rows": 10642,
+     "accuracy_pct": 92.845,
+     "within_10pct": 77.76,
+     "MAE_usd": 25.3,
+     "RMSE_usd": 60.4
+    },
+    "LAS-LAX": {
+     "rows": 12269,
+     "accuracy_pct": 90.009,
+     "within_10pct": 78.33,
+     "MAE_usd": 12.6,
+     "RMSE_usd": 60.06
+    },
+    "LAX-ATL": {
+     "rows": 10534,
+     "accuracy_pct": 95.763,
+     "within_10pct": 86.73,
+     "MAE_usd": 12.07,
+     "RMSE_usd": 30.97
+    },
+    "LAX-BOS": {
+     "rows": 9491,
+     "accuracy_pct": 94.701,
+     "within_10pct": 83.13,
+     "MAE_usd": 14.79,
+     "RMSE_usd": 39.38
+    },
+    "LAX-DEN": {
+     "rows": 10861,
+     "accuracy_pct": 90.689,
+     "within_10pct": 77.58,
+     "MAE_usd": 11.9,
+     "RMSE_usd": 28.86
+    },
+    "LAX-DFW": {
+     "rows": 9891,
+     "accuracy_pct": 93.676,
+     "within_10pct": 80.56,
+     "MAE_usd": 13.53,
+     "RMSE_usd": 55.07
+    },
+    "LAX-EWR": {
+     "rows": 7111,
+     "accuracy_pct": 95.125,
+     "within_10pct": 82.97,
+     "MAE_usd": 15.93,
+     "RMSE_usd": 37.91
+    },
+    "LAX-IAH": {
+     "rows": 7297,
+     "accuracy_pct": 94.575,
+     "within_10pct": 83.84,
+     "MAE_usd": 10.98,
+     "RMSE_usd": 28.6
+    },
+    "LAX-JFK": {
+     "rows": 15056,
+     "accuracy_pct": 95.611,
+     "within_10pct": 86.31,
+     "MAE_usd": 16.11,
+     "RMSE_usd": 49.55
+    },
+    "LAX-LAS": {
+     "rows": 13803,
+     "accuracy_pct": 90.857,
+     "within_10pct": 80.76,
+     "MAE_usd": 10.71,
+     "RMSE_usd": 32.87
+    },
+    "LAX-ORD": {
+     "rows": 12421,
+     "accuracy_pct": 93.17,
+     "within_10pct": 82.09,
+     "MAE_usd": 14.01,
+     "RMSE_usd": 52.86
+    },
+    "LAX-PHX": {
+     "rows": 11614,
+     "accuracy_pct": 91.615,
+     "within_10pct": 79.77,
+     "MAE_usd": 11.78,
+     "RMSE_usd": 44.87
+    },
+    "LAX-SEA": {
+     "rows": 13387,
+     "accuracy_pct": 93.302,
+     "within_10pct": 79.93,
+     "MAE_usd": 12.41,
+     "RMSE_usd": 32.22
+    },
+    "LAX-SFO": {
+     "rows": 19497,
+     "accuracy_pct": 92.053,
+     "within_10pct": 80.6,
+     "MAE_usd": 9.96,
+     "RMSE_usd": 50.95
+    },
+    "LGA-ORD": {
+     "rows": 16449,
+     "accuracy_pct": 92.867,
+     "within_10pct": 79.89,
+     "MAE_usd": 13.86,
+     "RMSE_usd": 52.04
+    },
+    "MSP-ORD": {
+     "rows": 10211,
+     "accuracy_pct": 86.209,
+     "within_10pct": 75.29,
+     "MAE_usd": 17.94,
+     "RMSE_usd": 59.37
+    },
+    "ORD-BOS": {
+     "rows": 11766,
+     "accuracy_pct": 91.792,
+     "within_10pct": 78.43,
+     "MAE_usd": 15.54,
+     "RMSE_usd": 59.24
+    },
+    "ORD-DCA": {
+     "rows": 14496,
+     "accuracy_pct": 95.21,
+     "within_10pct": 89.96,
+     "MAE_usd": 9.74,
+     "RMSE_usd": 50.67
+    },
+    "ORD-DEN": {
+     "rows": 10001,
+     "accuracy_pct": 92.602,
+     "within_10pct": 81.37,
+     "MAE_usd": 15.28,
+     "RMSE_usd": 75.37
+    },
+    "ORD-DFW": {
+     "rows": 11711,
+     "accuracy_pct": 92.85,
+     "within_10pct": 80.87,
+     "MAE_usd": 15.37,
+     "RMSE_usd": 68.95
+    },
+    "ORD-LAX": {
+     "rows": 12524,
+     "accuracy_pct": 92.58,
+     "within_10pct": 82.17,
+     "MAE_usd": 15.13,
+     "RMSE_usd": 64.27
+    },
+    "ORD-LGA": {
+     "rows": 17904,
+     "accuracy_pct": 92.807,
+     "within_10pct": 80.04,
+     "MAE_usd": 14.27,
+     "RMSE_usd": 55.81
+    },
+    "ORD-MSP": {
+     "rows": 10736,
+     "accuracy_pct": 86.555,
+     "within_10pct": 74.53,
+     "MAE_usd": 17.7,
+     "RMSE_usd": 54.99
+    },
+    "ORD-SFO": {
+     "rows": 11483,
+     "accuracy_pct": 94.482,
+     "within_10pct": 85.57,
+     "MAE_usd": 12.95,
+     "RMSE_usd": 57.2
+    },
+    "PHX-LAX": {
+     "rows": 10521,
+     "accuracy_pct": 91.316,
+     "within_10pct": 78.96,
+     "MAE_usd": 12.35,
+     "RMSE_usd": 50.88
+    },
+    "SEA-LAX": {
+     "rows": 13472,
+     "accuracy_pct": 93.367,
+     "within_10pct": 79.85,
+     "MAE_usd": 12.26,
+     "RMSE_usd": 27.56
+    },
+    "SEA-SFO": {
+     "rows": 10236,
+     "accuracy_pct": 91.118,
+     "within_10pct": 72.45,
+     "MAE_usd": 12.68,
+     "RMSE_usd": 33.03
+    },
+    "SFO-DEN": {
+     "rows": 9373,
+     "accuracy_pct": 92.645,
+     "within_10pct": 81.12,
+     "MAE_usd": 12.48,
+     "RMSE_usd": 35.33
+    },
+    "SFO-EWR": {
+     "rows": 10607,
+     "accuracy_pct": 95.716,
+     "within_10pct": 86.6,
+     "MAE_usd": 15.32,
+     "RMSE_usd": 44.19
+    },
+    "SFO-JFK": {
+     "rows": 10875,
+     "accuracy_pct": 93.347,
+     "within_10pct": 79.44,
+     "MAE_usd": 23.51,
+     "RMSE_usd": 55.97
+    },
+    "SFO-LAX": {
+     "rows": 20127,
+     "accuracy_pct": 92.626,
+     "within_10pct": 81.08,
+     "MAE_usd": 9.0,
+     "RMSE_usd": 44.56
+    },
+    "SFO-ORD": {
+     "rows": 11839,
+     "accuracy_pct": 94.345,
+     "within_10pct": 85.22,
+     "MAE_usd": 13.93,
+     "RMSE_usd": 60.37
+    },
+    "SFO-SEA": {
+     "rows": 10714,
+     "accuracy_pct": 89.183,
+     "within_10pct": 69.17,
+     "MAE_usd": 15.4,
+     "RMSE_usd": 41.99
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 70.15,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 77.36,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 13.15,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 526944,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 88.12,
+    "majority_class_pct": 58.97,
+    "pct_changes_that_are_up": 58.97,
+    "hit_rate_changes_over_10pct": 90.85,
+    "rows_changes_over_10pct": 223296,
+    "MAE_change_usd_model": 13.24,
+    "MAE_change_usd_no_change_baseline": 30.54,
+    "hit_rate_persistence_baseline_pct": 89.98,
+    "persistence_baseline_rows": 356677,
+    "hit_rate_model_on_same_rows_pct": 89.82,
+    "hit_rate_route_dbd_median_reversion_pct": 58.98
+   }
+  },
+  "xgb_F": {
+   "algo": "xgb",
+   "params": {
+    "objective": "reg:pseudohubererror",
+    "huber_slope": 0.05,
+    "max_depth": 8,
+    "reg_lambda": 10.0
+   },
+   "iterations": 800,
+   "train_rows": 2750623,
+   "val_rows": 307544,
+   "test_rows": 771051,
+   "val": {
+    "rows": 307544,
+    "accuracy_pct": 94.654,
+    "within_10pct": 85.0,
+    "MAE_usd": 11.62,
+    "RMSE_usd": 42.77
+   },
+   "model_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 94.581,
+    "within_10pct": 84.66,
+    "MAE_usd": 11.79,
+    "RMSE_usd": 42.88
+   },
+   "model_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.926,
+    "within_10pct": 85.72,
+    "MAE_usd": 10.61,
+    "RMSE_usd": 34.63
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.078,
+    "within_10pct": 84.03,
+    "MAE_usd": 11.56,
+    "RMSE_usd": 47.07
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 67.408,
+    "within_10pct": 24.79,
+    "MAE_usd": 68.47,
+    "RMSE_usd": 113.77
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 67.403,
+    "within_10pct": 24.77,
+    "MAE_usd": 68.09,
+    "RMSE_usd": 111.42
+   },
+   "share_rows_with_history_pct": 97.42,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 92.77,
+     "within_10pct": 76.69,
+     "MAE_usd": 22.01,
+     "RMSE_usd": 49.85
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 92.32,
+     "within_10pct": 76.53,
+     "MAE_usd": 17.05,
+     "RMSE_usd": 40.48
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 93.997,
+     "within_10pct": 82.57,
+     "MAE_usd": 11.68,
+     "RMSE_usd": 32.62
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 94.785,
+     "within_10pct": 85.61,
+     "MAE_usd": 10.82,
+     "RMSE_usd": 41.03
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 95.514,
+     "within_10pct": 87.99,
+     "MAE_usd": 10.03,
+     "RMSE_usd": 48.47
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 35198,
+     "accuracy_pct": 92.842,
+     "within_10pct": 76.02,
+     "MAE_usd": 21.99,
+     "RMSE_usd": 53.78
+    },
+    "15-30": {
+     "rows": 69829,
+     "accuracy_pct": 92.432,
+     "within_10pct": 75.78,
+     "MAE_usd": 16.66,
+     "RMSE_usd": 41.0
+    },
+    "31-60": {
+     "rows": 130476,
+     "accuracy_pct": 93.714,
+     "within_10pct": 81.22,
+     "MAE_usd": 11.66,
+     "RMSE_usd": 36.45
+    },
+    "61-120": {
+     "rows": 261216,
+     "accuracy_pct": 94.217,
+     "within_10pct": 84.85,
+     "MAE_usd": 10.67,
+     "RMSE_usd": 45.65
+    },
+    "121-180": {
+     "rows": 254443,
+     "accuracy_pct": 94.745,
+     "within_10pct": 87.99,
+     "MAE_usd": 9.57,
+     "RMSE_usd": 53.46
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 73.719,
+     "within_10pct": 32.0,
+     "MAE_usd": 74.11,
+     "RMSE_usd": 118.11
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 66.097,
+     "within_10pct": 24.4,
+     "MAE_usd": 73.01,
+     "RMSE_usd": 113.99
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 64.667,
+     "within_10pct": 21.26,
+     "MAE_usd": 67.95,
+     "RMSE_usd": 104.66
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 66.101,
+     "within_10pct": 23.01,
+     "MAE_usd": 69.53,
+     "RMSE_usd": 114.49
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 69.596,
+     "within_10pct": 27.49,
+     "MAE_usd": 65.68,
+     "RMSE_usd": 116.73
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 11639,
+     "accuracy_pct": 93.606,
+     "within_10pct": 84.58,
+     "MAE_usd": 10.59,
+     "RMSE_usd": 34.35
+    },
+    "ATL-LAX": {
+     "rows": 13989,
+     "accuracy_pct": 97.157,
+     "within_10pct": 90.8,
+     "MAE_usd": 8.4,
+     "RMSE_usd": 24.69
+    },
+    "BOS-DCA": {
+     "rows": 18862,
+     "accuracy_pct": 90.669,
+     "within_10pct": 76.83,
+     "MAE_usd": 15.09,
+     "RMSE_usd": 41.88
+    },
+    "BOS-LAX": {
+     "rows": 14003,
+     "accuracy_pct": 93.812,
+     "within_10pct": 80.6,
+     "MAE_usd": 17.96,
+     "RMSE_usd": 45.18
+    },
+    "BOS-ORD": {
+     "rows": 18014,
+     "accuracy_pct": 94.145,
+     "within_10pct": 83.74,
+     "MAE_usd": 11.48,
+     "RMSE_usd": 46.93
+    },
+    "DCA-BOS": {
+     "rows": 15293,
+     "accuracy_pct": 89.672,
+     "within_10pct": 75.06,
+     "MAE_usd": 17.51,
+     "RMSE_usd": 46.35
+    },
+    "DCA-ORD": {
+     "rows": 17157,
+     "accuracy_pct": 96.34,
+     "within_10pct": 89.96,
+     "MAE_usd": 7.47,
+     "RMSE_usd": 43.49
+    },
+    "DEN-LAX": {
+     "rows": 14736,
+     "accuracy_pct": 93.893,
+     "within_10pct": 83.3,
+     "MAE_usd": 9.69,
+     "RMSE_usd": 34.08
+    },
+    "DEN-ORD": {
+     "rows": 12654,
+     "accuracy_pct": 95.166,
+     "within_10pct": 86.51,
+     "MAE_usd": 10.74,
+     "RMSE_usd": 44.65
+    },
+    "DEN-SFO": {
+     "rows": 11859,
+     "accuracy_pct": 96.092,
+     "within_10pct": 88.14,
+     "MAE_usd": 6.93,
+     "RMSE_usd": 22.83
+    },
+    "DFW-ATL": {
+     "rows": 13821,
+     "accuracy_pct": 93.913,
+     "within_10pct": 85.7,
+     "MAE_usd": 11.16,
+     "RMSE_usd": 38.36
+    },
+    "DFW-LAX": {
+     "rows": 14510,
+     "accuracy_pct": 97.181,
+     "within_10pct": 91.86,
+     "MAE_usd": 7.28,
+     "RMSE_usd": 31.15
+    },
+    "DFW-ORD": {
+     "rows": 14261,
+     "accuracy_pct": 94.516,
+     "within_10pct": 85.46,
+     "MAE_usd": 12.54,
+     "RMSE_usd": 55.48
+    },
+    "EWR-LAX": {
+     "rows": 12829,
+     "accuracy_pct": 95.051,
+     "within_10pct": 84.0,
+     "MAE_usd": 14.71,
+     "RMSE_usd": 40.67
+    },
+    "EWR-SFO": {
+     "rows": 14881,
+     "accuracy_pct": 95.066,
+     "within_10pct": 85.13,
+     "MAE_usd": 16.02,
+     "RMSE_usd": 39.91
+    },
+    "IAH-LAX": {
+     "rows": 10065,
+     "accuracy_pct": 95.567,
+     "within_10pct": 86.74,
+     "MAE_usd": 9.46,
+     "RMSE_usd": 39.17
+    },
+    "JFK-LAX": {
+     "rows": 20480,
+     "accuracy_pct": 94.654,
+     "within_10pct": 83.37,
+     "MAE_usd": 18.0,
+     "RMSE_usd": 53.28
+    },
+    "JFK-SFO": {
+     "rows": 14459,
+     "accuracy_pct": 93.303,
+     "within_10pct": 78.98,
+     "MAE_usd": 23.08,
+     "RMSE_usd": 51.82
+    },
+    "LAS-LAX": {
+     "rows": 14478,
+     "accuracy_pct": 93.815,
+     "within_10pct": 84.18,
+     "MAE_usd": 9.11,
+     "RMSE_usd": 48.25
+    },
+    "LAX-ATL": {
+     "rows": 15539,
+     "accuracy_pct": 96.62,
+     "within_10pct": 88.6,
+     "MAE_usd": 10.23,
+     "RMSE_usd": 26.93
+    },
+    "LAX-BOS": {
+     "rows": 14353,
+     "accuracy_pct": 93.761,
+     "within_10pct": 81.15,
+     "MAE_usd": 17.87,
+     "RMSE_usd": 49.26
+    },
+    "LAX-DEN": {
+     "rows": 14358,
+     "accuracy_pct": 93.877,
+     "within_10pct": 84.19,
+     "MAE_usd": 8.88,
+     "RMSE_usd": 31.35
+    },
+    "LAX-DFW": {
+     "rows": 15709,
+     "accuracy_pct": 96.751,
+     "within_10pct": 90.9,
+     "MAE_usd": 8.98,
+     "RMSE_usd": 40.54
+    },
+    "LAX-EWR": {
+     "rows": 9687,
+     "accuracy_pct": 94.576,
+     "within_10pct": 82.36,
+     "MAE_usd": 16.83,
+     "RMSE_usd": 61.49
+    },
+    "LAX-IAH": {
+     "rows": 9404,
+     "accuracy_pct": 95.887,
+     "within_10pct": 87.76,
+     "MAE_usd": 8.47,
+     "RMSE_usd": 26.1
+    },
+    "LAX-JFK": {
+     "rows": 18755,
+     "accuracy_pct": 94.514,
+     "within_10pct": 82.72,
+     "MAE_usd": 18.47,
+     "RMSE_usd": 54.18
+    },
+    "LAX-LAS": {
+     "rows": 17189,
+     "accuracy_pct": 94.116,
+     "within_10pct": 84.81,
+     "MAE_usd": 8.52,
+     "RMSE_usd": 53.14
+    },
+    "LAX-ORD": {
+     "rows": 18762,
+     "accuracy_pct": 94.712,
+     "within_10pct": 85.27,
+     "MAE_usd": 11.48,
+     "RMSE_usd": 46.56
+    },
+    "LAX-PHX": {
+     "rows": 13890,
+     "accuracy_pct": 94.626,
+     "within_10pct": 86.23,
+     "MAE_usd": 8.97,
+     "RMSE_usd": 39.8
+    },
+    "LAX-SEA": {
+     "rows": 18212,
+     "accuracy_pct": 95.642,
+     "within_10pct": 86.82,
+     "MAE_usd": 9.05,
+     "RMSE_usd": 24.54
+    },
+    "LAX-SFO": {
+     "rows": 22915,
+     "accuracy_pct": 94.657,
+     "within_10pct": 85.38,
+     "MAE_usd": 7.15,
+     "RMSE_usd": 35.81
+    },
+    "LGA-ORD": {
+     "rows": 20867,
+     "accuracy_pct": 94.801,
+     "within_10pct": 84.5,
+     "MAE_usd": 10.6,
+     "RMSE_usd": 40.54
+    },
+    "MSP-ORD": {
+     "rows": 13190,
+     "accuracy_pct": 92.896,
+     "within_10pct": 82.89,
+     "MAE_usd": 11.9,
+     "RMSE_usd": 48.87
+    },
+    "ORD-BOS": {
+     "rows": 16836,
+     "accuracy_pct": 94.599,
+     "within_10pct": 83.85,
+     "MAE_usd": 10.7,
+     "RMSE_usd": 51.69
+    },
+    "ORD-DCA": {
+     "rows": 17469,
+     "accuracy_pct": 96.034,
+     "within_10pct": 89.06,
+     "MAE_usd": 8.7,
+     "RMSE_usd": 45.16
+    },
+    "ORD-DEN": {
+     "rows": 14228,
+     "accuracy_pct": 94.817,
+     "within_10pct": 85.49,
+     "MAE_usd": 12.93,
+     "RMSE_usd": 55.61
+    },
+    "ORD-DFW": {
+     "rows": 16676,
+     "accuracy_pct": 94.734,
+     "within_10pct": 85.75,
+     "MAE_usd": 12.83,
+     "RMSE_usd": 59.1
+    },
+    "ORD-LAX": {
+     "rows": 15785,
+     "accuracy_pct": 95.216,
+     "within_10pct": 86.68,
+     "MAE_usd": 10.35,
+     "RMSE_usd": 44.23
+    },
+    "ORD-LGA": {
+     "rows": 22115,
+     "accuracy_pct": 94.613,
+     "within_10pct": 84.33,
+     "MAE_usd": 11.27,
+     "RMSE_usd": 41.48
+    },
+    "ORD-MSP": {
+     "rows": 13489,
+     "accuracy_pct": 92.679,
+     "within_10pct": 81.56,
+     "MAE_usd": 12.27,
+     "RMSE_usd": 41.63
+    },
+    "ORD-SFO": {
+     "rows": 14316,
+     "accuracy_pct": 95.447,
+     "within_10pct": 86.58,
+     "MAE_usd": 11.63,
+     "RMSE_usd": 47.72
+    },
+    "PHX-LAX": {
+     "rows": 13629,
+     "accuracy_pct": 94.673,
+     "within_10pct": 85.91,
+     "MAE_usd": 7.9,
+     "RMSE_usd": 33.0
+    },
+    "SEA-LAX": {
+     "rows": 17909,
+     "accuracy_pct": 95.439,
+     "within_10pct": 85.77,
+     "MAE_usd": 10.14,
+     "RMSE_usd": 34.22
+    },
+    "SEA-SFO": {
+     "rows": 14596,
+     "accuracy_pct": 93.816,
+     "within_10pct": 80.75,
+     "MAE_usd": 10.77,
+     "RMSE_usd": 32.9
+    },
+    "SFO-DEN": {
+     "rows": 12348,
+     "accuracy_pct": 96.161,
+     "within_10pct": 88.32,
+     "MAE_usd": 8.72,
+     "RMSE_usd": 37.55
+    },
+    "SFO-EWR": {
+     "rows": 12680,
+     "accuracy_pct": 94.641,
+     "within_10pct": 84.35,
+     "MAE_usd": 17.54,
+     "RMSE_usd": 46.82
+    },
+    "SFO-JFK": {
+     "rows": 14281,
+     "accuracy_pct": 93.741,
+     "within_10pct": 80.18,
+     "MAE_usd": 21.25,
+     "RMSE_usd": 48.17
+    },
+    "SFO-LAX": {
+     "rows": 26378,
+     "accuracy_pct": 94.392,
+     "within_10pct": 84.35,
+     "MAE_usd": 7.09,
+     "RMSE_usd": 29.22
+    },
+    "SFO-ORD": {
+     "rows": 14194,
+     "accuracy_pct": 95.341,
+     "within_10pct": 86.44,
+     "MAE_usd": 12.27,
+     "RMSE_usd": 46.64
+    },
+    "SFO-SEA": {
+     "rows": 13302,
+     "accuracy_pct": 92.516,
+     "within_10pct": 76.94,
+     "MAE_usd": 12.79,
+     "RMSE_usd": 37.31
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 751162,
+    "share_actually_unchanged": 68.51,
+    "hit_rate_on_changed_pct": 76.92,
+    "majority_class_pct": 53.77,
+    "pct_changes_that_are_up": 53.77,
+    "hit_rate_changes_over_10pct": 82.97,
+    "rows_changes_over_10pct": 120064,
+    "MAE_change_usd_model": 10.61,
+    "MAE_change_usd_no_change_baseline": 11.56,
+    "hit_rate_route_dbd_median_reversion_pct": 57.37
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 666550,
+    "share_actually_unchanged": 30.47,
+    "hit_rate_on_changed_pct": 90.77,
+    "majority_class_pct": 56.46,
+    "pct_changes_that_are_up": 56.46,
+    "hit_rate_changes_over_10pct": 93.6,
+    "rows_changes_over_10pct": 271811,
+    "MAE_change_usd_model": 10.58,
+    "MAE_change_usd_no_change_baseline": 28.01,
+    "hit_rate_persistence_baseline_pct": 91.39,
+    "persistence_baseline_rows": 419768,
+    "hit_rate_model_on_same_rows_pct": 91.82,
+    "hit_rate_route_dbd_median_reversion_pct": 59.1
+   }
+  },
+  "xgb_R": {
+   "algo": "xgb",
+   "params": {
+    "objective": "reg:pseudohubererror",
+    "huber_slope": 0.05,
+    "max_depth": 8,
+    "reg_lambda": 10.0
+   },
+   "iterations": 800,
+   "train_rows": 2728230,
+   "val_rows": 321297,
+   "test_rows": 386514,
+   "val": {
+    "rows": 321297,
+    "accuracy_pct": 94.703,
+    "within_10pct": 85.17,
+    "MAE_usd": 10.52,
+    "RMSE_usd": 40.36
+   },
+   "held_out_routes": [
+    "LAX-JFK",
+    "LAX-ORD",
+    "JFK-SFO",
+    "EWR-LAX",
+    "DFW-ORD"
+   ],
+   "reverse_routes_also_removed_from_training": true,
+   "model_all_rows": {
+    "rows": 386514,
+    "accuracy_pct": 93.728,
+    "within_10pct": 81.74,
+    "MAE_usd": 17.67,
+    "RMSE_usd": 54.3
+   },
+   "model_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.19,
+    "within_10pct": 83.09,
+    "MAE_usd": 16.11,
+    "RMSE_usd": 46.62
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.18,
+    "within_10pct": 82.81,
+    "MAE_usd": 15.67,
+    "RMSE_usd": 56.8
+   },
+   "naive_route_dbd_median_all_rows": null,
+   "naive_route_dbd_median_rows_with_history": null,
+   "share_rows_with_history_pct": 97.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 17768,
+     "accuracy_pct": 90.717,
+     "within_10pct": 70.68,
+     "MAE_usd": 34.9,
+     "RMSE_usd": 75.8
+    },
+    "15-30": {
+     "rows": 36102,
+     "accuracy_pct": 91.399,
+     "within_10pct": 72.33,
+     "MAE_usd": 26.28,
+     "RMSE_usd": 60.82
+    },
+    "31-60": {
+     "rows": 67137,
+     "accuracy_pct": 93.062,
+     "within_10pct": 78.85,
+     "MAE_usd": 17.65,
+     "RMSE_usd": 41.96
+    },
+    "61-120": {
+     "rows": 134533,
+     "accuracy_pct": 93.686,
+     "within_10pct": 82.13,
+     "MAE_usd": 16.82,
+     "RMSE_usd": 51.26
+    },
+    "121-180": {
+     "rows": 130974,
+     "accuracy_pct": 95.163,
+     "within_10pct": 86.9,
+     "MAE_usd": 13.86,
+     "RMSE_usd": 57.45
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 17471,
+     "accuracy_pct": 91.19,
+     "within_10pct": 71.0,
+     "MAE_usd": 33.06,
+     "RMSE_usd": 77.85
+    },
+    "15-30": {
+     "rows": 35503,
+     "accuracy_pct": 92.007,
+     "within_10pct": 72.26,
+     "MAE_usd": 24.33,
+     "RMSE_usd": 61.52
+    },
+    "31-60": {
+     "rows": 66087,
+     "accuracy_pct": 93.716,
+     "within_10pct": 79.51,
+     "MAE_usd": 16.14,
+     "RMSE_usd": 44.88
+    },
+    "61-120": {
+     "rows": 131373,
+     "accuracy_pct": 94.051,
+     "within_10pct": 83.07,
+     "MAE_usd": 15.15,
+     "RMSE_usd": 55.73
+    },
+    "121-180": {
+     "rows": 125593,
+     "accuracy_pct": 95.59,
+     "within_10pct": 88.89,
+     "MAE_usd": 11.1,
+     "RMSE_usd": 58.62
+    }
+   },
+   "by_dbd_bucket_naive_route_median": null,
+   "by_route_model": {
+    "DFW-ORD": {
+     "rows": 74904,
+     "accuracy_pct": 93.837,
+     "within_10pct": 83.87,
+     "MAE_usd": 14.01,
+     "RMSE_usd": 53.5
+    },
+    "EWR-LAX": {
+     "rows": 55383,
+     "accuracy_pct": 94.835,
+     "within_10pct": 83.55,
+     "MAE_usd": 15.93,
+     "RMSE_usd": 45.42
+    },
+    "JFK-SFO": {
+     "rows": 73910,
+     "accuracy_pct": 92.829,
+     "within_10pct": 78.41,
+     "MAE_usd": 23.79,
+     "RMSE_usd": 57.5
+    },
+    "LAX-JFK": {
+     "rows": 101746,
+     "accuracy_pct": 93.889,
+     "within_10pct": 81.67,
+     "MAE_usd": 20.05,
+     "RMSE_usd": 58.15
+    },
+    "LAX-ORD": {
+     "rows": 80571,
+     "accuracy_pct": 93.485,
+     "within_10pct": 81.64,
+     "MAE_usd": 13.67,
+     "RMSE_usd": 52.55
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 376027,
+    "share_actually_unchanged": 65.39,
+    "hit_rate_on_changed_pct": 71.18,
+    "majority_class_pct": 55.08,
+    "pct_changes_that_are_up": 55.08,
+    "hit_rate_changes_over_10pct": 77.81,
+    "rows_changes_over_10pct": 64750,
+    "MAE_change_usd_model": 16.11,
+    "MAE_change_usd_no_change_baseline": 15.67
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 333173,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 88.36,
+    "majority_class_pct": 58.42,
+    "pct_changes_that_are_up": 58.42,
+    "hit_rate_changes_over_10pct": 91.55,
+    "rows_changes_over_10pct": 133757,
+    "MAE_change_usd_model": 16.04,
+    "MAE_change_usd_no_change_baseline": 35.51,
+    "hit_rate_persistence_baseline_pct": 90.71,
+    "persistence_baseline_rows": 223200,
+    "hit_rate_model_on_same_rows_pct": 89.98
+   }
+  },
+  "hgb_T": {
+   "algo": "hgb",
+   "params": {
+    "loss": "squared_error",
+    "clip": 0.25,
+    "max_leaf_nodes": 63
+   },
+   "iterations": 800,
+   "train_rows": 2932106,
+   "val_rows": 309915,
+   "test_rows": 587197,
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 92.076,
+    "within_10pct": 83.09,
+    "MAE_usd": 17.14,
+    "RMSE_usd": 68.38
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 91.68,
+    "within_10pct": 79.59,
+    "MAE_usd": 16.06,
+    "RMSE_usd": 45.73
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 91.947,
+    "within_10pct": 80.38,
+    "MAE_usd": 15.24,
+    "RMSE_usd": 41.55
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 66.304,
+    "within_10pct": 22.58,
+    "MAE_usd": 70.6,
+    "RMSE_usd": 118.92
+   },
+   "share_rows_with_history_pct": 98.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 92.455,
+     "within_10pct": 78.17,
+     "MAE_usd": 23.69,
+     "RMSE_usd": 46.72
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 90.354,
+     "within_10pct": 72.35,
+     "MAE_usd": 20.46,
+     "RMSE_usd": 39.13
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 91.449,
+     "within_10pct": 77.53,
+     "MAE_usd": 14.42,
+     "RMSE_usd": 28.16
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 91.852,
+     "within_10pct": 80.71,
+     "MAE_usd": 16.29,
+     "RMSE_usd": 49.92
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 91.905,
+     "within_10pct": 81.92,
+     "MAE_usd": 14.31,
+     "RMSE_usd": 50.41
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 28617,
+     "accuracy_pct": 93.339,
+     "within_10pct": 78.42,
+     "MAE_usd": 21.49,
+     "RMSE_usd": 51.67
+    },
+    "15-30": {
+     "rows": 56942,
+     "accuracy_pct": 91.255,
+     "within_10pct": 73.07,
+     "MAE_usd": 18.74,
+     "RMSE_usd": 42.14
+    },
+    "31-60": {
+     "rows": 105935,
+     "accuracy_pct": 92.713,
+     "within_10pct": 79.06,
+     "MAE_usd": 12.01,
+     "RMSE_usd": 29.55
+    },
+    "61-120": {
+     "rows": 196443,
+     "accuracy_pct": 93.154,
+     "within_10pct": 82.71,
+     "MAE_usd": 13.0,
+     "RMSE_usd": 49.7
+    },
+    "121-180": {
+     "rows": 189246,
+     "accuracy_pct": 93.553,
+     "within_10pct": 85.05,
+     "MAE_usd": 10.38,
+     "RMSE_usd": 50.06
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 76.524,
+     "within_10pct": 29.02,
+     "MAE_usd": 74.18,
+     "RMSE_usd": 110.2
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 65.878,
+     "within_10pct": 20.41,
+     "MAE_usd": 72.91,
+     "RMSE_usd": 108.22
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 62.759,
+     "within_10pct": 21.18,
+     "MAE_usd": 64.19,
+     "RMSE_usd": 98.48
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 64.677,
+     "within_10pct": 20.07,
+     "MAE_usd": 83.12,
+     "RMSE_usd": 141.08
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 68.596,
+     "within_10pct": 25.63,
+     "MAE_usd": 60.49,
+     "RMSE_usd": 110.93
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 9960,
+     "accuracy_pct": 91.834,
+     "within_10pct": 84.85,
+     "MAE_usd": 13.3,
+     "RMSE_usd": 50.28
+    },
+    "ATL-LAX": {
+     "rows": 11316,
+     "accuracy_pct": 95.081,
+     "within_10pct": 88.08,
+     "MAE_usd": 13.78,
+     "RMSE_usd": 26.55
+    },
+    "BOS-DCA": {
+     "rows": 13165,
+     "accuracy_pct": 82.441,
+     "within_10pct": 61.52,
+     "MAE_usd": 26.76,
+     "RMSE_usd": 62.97
+    },
+    "BOS-LAX": {
+     "rows": 9973,
+     "accuracy_pct": 93.458,
+     "within_10pct": 81.27,
+     "MAE_usd": 19.64,
+     "RMSE_usd": 42.41
+    },
+    "BOS-ORD": {
+     "rows": 11771,
+     "accuracy_pct": 91.194,
+     "within_10pct": 76.79,
+     "MAE_usd": 16.27,
+     "RMSE_usd": 42.92
+    },
+    "DCA-BOS": {
+     "rows": 12632,
+     "accuracy_pct": 82.788,
+     "within_10pct": 60.88,
+     "MAE_usd": 26.31,
+     "RMSE_usd": 53.71
+    },
+    "DCA-ORD": {
+     "rows": 13601,
+     "accuracy_pct": 93.014,
+     "within_10pct": 83.54,
+     "MAE_usd": 13.42,
+     "RMSE_usd": 47.82
+    },
+    "DEN-LAX": {
+     "rows": 11535,
+     "accuracy_pct": 89.988,
+     "within_10pct": 76.06,
+     "MAE_usd": 13.9,
+     "RMSE_usd": 29.45
+    },
+    "DEN-ORD": {
+     "rows": 9575,
+     "accuracy_pct": 93.248,
+     "within_10pct": 84.28,
+     "MAE_usd": 13.54,
+     "RMSE_usd": 52.34
+    },
+    "DEN-SFO": {
+     "rows": 9858,
+     "accuracy_pct": 92.261,
+     "within_10pct": 79.2,
+     "MAE_usd": 12.92,
+     "RMSE_usd": 24.82
+    },
+    "DFW-ATL": {
+     "rows": 9550,
+     "accuracy_pct": 92.687,
+     "within_10pct": 85.54,
+     "MAE_usd": 12.07,
+     "RMSE_usd": 37.82
+    },
+    "DFW-LAX": {
+     "rows": 10491,
+     "accuracy_pct": 94.32,
+     "within_10pct": 84.63,
+     "MAE_usd": 12.65,
+     "RMSE_usd": 28.66
+    },
+    "DFW-ORD": {
+     "rows": 10914,
+     "accuracy_pct": 92.947,
+     "within_10pct": 80.64,
+     "MAE_usd": 14.38,
+     "RMSE_usd": 36.81
+    },
+    "EWR-LAX": {
+     "rows": 8200,
+     "accuracy_pct": 94.661,
+     "within_10pct": 85.93,
+     "MAE_usd": 18.39,
+     "RMSE_usd": 39.89
+    },
+    "EWR-SFO": {
+     "rows": 11074,
+     "accuracy_pct": 94.77,
+     "within_10pct": 86.4,
+     "MAE_usd": 18.38,
+     "RMSE_usd": 40.61
+    },
+    "IAH-LAX": {
+     "rows": 8353,
+     "accuracy_pct": 93.063,
+     "within_10pct": 82.7,
+     "MAE_usd": 13.89,
+     "RMSE_usd": 36.69
+    },
+    "JFK-LAX": {
+     "rows": 16310,
+     "accuracy_pct": 94.537,
+     "within_10pct": 86.04,
+     "MAE_usd": 20.61,
+     "RMSE_usd": 45.63
+    },
+    "JFK-SFO": {
+     "rows": 10642,
+     "accuracy_pct": 92.249,
+     "within_10pct": 78.43,
+     "MAE_usd": 27.52,
+     "RMSE_usd": 55.88
+    },
+    "LAS-LAX": {
+     "rows": 12269,
+     "accuracy_pct": 88.997,
+     "within_10pct": 74.16,
+     "MAE_usd": 14.22,
+     "RMSE_usd": 57.37
+    },
+    "LAX-ATL": {
+     "rows": 10534,
+     "accuracy_pct": 95.032,
+     "within_10pct": 87.34,
+     "MAE_usd": 14.58,
+     "RMSE_usd": 28.64
+    },
+    "LAX-BOS": {
+     "rows": 9491,
+     "accuracy_pct": 93.958,
+     "within_10pct": 83.29,
+     "MAE_usd": 16.62,
+     "RMSE_usd": 36.83
+    },
+    "LAX-DEN": {
+     "rows": 10861,
+     "accuracy_pct": 90.018,
+     "within_10pct": 76.01,
+     "MAE_usd": 13.32,
+     "RMSE_usd": 26.89
+    },
+    "LAX-DFW": {
+     "rows": 9891,
+     "accuracy_pct": 92.851,
+     "within_10pct": 81.17,
+     "MAE_usd": 15.67,
+     "RMSE_usd": 51.42
+    },
+    "LAX-EWR": {
+     "rows": 7111,
+     "accuracy_pct": 94.344,
+     "within_10pct": 84.52,
+     "MAE_usd": 18.41,
+     "RMSE_usd": 35.78
+    },
+    "LAX-IAH": {
+     "rows": 7297,
+     "accuracy_pct": 93.273,
+     "within_10pct": 82.62,
+     "MAE_usd": 13.62,
+     "RMSE_usd": 27.72
+    },
+    "LAX-JFK": {
+     "rows": 15056,
+     "accuracy_pct": 94.658,
+     "within_10pct": 86.84,
+     "MAE_usd": 19.54,
+     "RMSE_usd": 46.46
+    },
+    "LAX-LAS": {
+     "rows": 13803,
+     "accuracy_pct": 89.638,
+     "within_10pct": 76.18,
+     "MAE_usd": 12.68,
+     "RMSE_usd": 31.32
+    },
+    "LAX-ORD": {
+     "rows": 12421,
+     "accuracy_pct": 92.003,
+     "within_10pct": 80.61,
+     "MAE_usd": 16.01,
+     "RMSE_usd": 49.01
+    },
+    "LAX-PHX": {
+     "rows": 11614,
+     "accuracy_pct": 90.523,
+     "within_10pct": 75.74,
+     "MAE_usd": 13.68,
+     "RMSE_usd": 41.9
+    },
+    "LAX-SEA": {
+     "rows": 13387,
+     "accuracy_pct": 92.438,
+     "within_10pct": 78.86,
+     "MAE_usd": 14.05,
+     "RMSE_usd": 29.92
+    },
+    "LAX-SFO": {
+     "rows": 19497,
+     "accuracy_pct": 90.64,
+     "within_10pct": 78.27,
+     "MAE_usd": 11.28,
+     "RMSE_usd": 46.88
+    },
+    "LGA-ORD": {
+     "rows": 16449,
+     "accuracy_pct": 91.928,
+     "within_10pct": 79.83,
+     "MAE_usd": 15.51,
+     "RMSE_usd": 48.64
+    },
+    "MSP-ORD": {
+     "rows": 10211,
+     "accuracy_pct": 85.89,
+     "within_10pct": 71.78,
+     "MAE_usd": 18.97,
+     "RMSE_usd": 55.56
+    },
+    "ORD-BOS": {
+     "rows": 11766,
+     "accuracy_pct": 90.57,
+     "within_10pct": 76.23,
+     "MAE_usd": 17.64,
+     "RMSE_usd": 56.15
+    },
+    "ORD-DCA": {
+     "rows": 14496,
+     "accuracy_pct": 92.786,
+     "within_10pct": 83.08,
+     "MAE_usd": 13.83,
+     "RMSE_usd": 47.97
+    },
+    "ORD-DEN": {
+     "rows": 10001,
+     "accuracy_pct": 92.15,
+     "within_10pct": 83.47,
+     "MAE_usd": 16.26,
+     "RMSE_usd": 70.18
+    },
+    "ORD-DFW": {
+     "rows": 11711,
+     "accuracy_pct": 92.379,
+     "within_10pct": 81.03,
+     "MAE_usd": 16.46,
+     "RMSE_usd": 64.91
+    },
+    "ORD-LAX": {
+     "rows": 12524,
+     "accuracy_pct": 91.476,
+     "within_10pct": 79.84,
+     "MAE_usd": 16.97,
+     "RMSE_usd": 60.18
+    },
+    "ORD-LGA": {
+     "rows": 17904,
+     "accuracy_pct": 91.86,
+     "within_10pct": 80.18,
+     "MAE_usd": 16.04,
+     "RMSE_usd": 52.76
+    },
+    "ORD-MSP": {
+     "rows": 10736,
+     "accuracy_pct": 86.093,
+     "within_10pct": 71.0,
+     "MAE_usd": 19.0,
+     "RMSE_usd": 51.64
+    },
+    "ORD-SFO": {
+     "rows": 11483,
+     "accuracy_pct": 93.581,
+     "within_10pct": 84.76,
+     "MAE_usd": 14.85,
+     "RMSE_usd": 53.9
+    },
+    "PHX-LAX": {
+     "rows": 10521,
+     "accuracy_pct": 90.377,
+     "within_10pct": 76.26,
+     "MAE_usd": 14.09,
+     "RMSE_usd": 48.06
+    },
+    "SEA-LAX": {
+     "rows": 13472,
+     "accuracy_pct": 92.475,
+     "within_10pct": 77.66,
+     "MAE_usd": 13.92,
+     "RMSE_usd": 25.26
+    },
+    "SEA-SFO": {
+     "rows": 10236,
+     "accuracy_pct": 90.62,
+     "within_10pct": 72.25,
+     "MAE_usd": 13.68,
+     "RMSE_usd": 31.08
+    },
+    "SFO-DEN": {
+     "rows": 9373,
+     "accuracy_pct": 92.217,
+     "within_10pct": 80.02,
+     "MAE_usd": 13.5,
+     "RMSE_usd": 32.36
+    },
+    "SFO-EWR": {
+     "rows": 10607,
+     "accuracy_pct": 95.084,
+     "within_10pct": 87.89,
+     "MAE_usd": 17.36,
+     "RMSE_usd": 41.87
+    },
+    "SFO-JFK": {
+     "rows": 10875,
+     "accuracy_pct": 92.853,
+     "within_10pct": 80.0,
+     "MAE_usd": 25.35,
+     "RMSE_usd": 51.51
+    },
+    "SFO-LAX": {
+     "rows": 20127,
+     "accuracy_pct": 91.201,
+     "within_10pct": 78.67,
+     "MAE_usd": 10.26,
+     "RMSE_usd": 40.79
+    },
+    "SFO-ORD": {
+     "rows": 11839,
+     "accuracy_pct": 93.333,
+     "within_10pct": 83.8,
+     "MAE_usd": 15.99,
+     "RMSE_usd": 56.43
+    },
+    "SFO-SEA": {
+     "rows": 10714,
+     "accuracy_pct": 88.876,
+     "within_10pct": 68.5,
+     "MAE_usd": 16.14,
+     "RMSE_usd": 39.56
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 66.87,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 77.93,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 15.24,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 526944,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 83.91,
+    "majority_class_pct": 58.97,
+    "pct_changes_that_are_up": 58.97,
+    "hit_rate_changes_over_10pct": 91.79,
+    "rows_changes_over_10pct": 223296,
+    "MAE_change_usd_model": 15.32,
+    "MAE_change_usd_no_change_baseline": 30.54,
+    "hit_rate_persistence_baseline_pct": 89.98,
+    "persistence_baseline_rows": 356677,
+    "hit_rate_model_on_same_rows_pct": 86.16,
+    "hit_rate_route_dbd_median_reversion_pct": 58.98
+   }
+  },
+  "hgb_F": {
+   "algo": "hgb",
+   "params": {
+    "loss": "squared_error",
+    "clip": 0.25,
+    "max_leaf_nodes": 63
+   },
+   "iterations": 800,
+   "train_rows": 2750623,
+   "val_rows": 307544,
+   "test_rows": 771051,
+   "val": {
+    "rows": 307544,
+    "accuracy_pct": 93.623,
+    "within_10pct": 84.48,
+    "MAE_usd": 13.38,
+    "RMSE_usd": 48.64
+   },
+   "model_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 93.523,
+    "within_10pct": 84.11,
+    "MAE_usd": 13.56,
+    "RMSE_usd": 48.87
+   },
+   "model_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.012,
+    "within_10pct": 85.42,
+    "MAE_usd": 12.08,
+    "RMSE_usd": 40.71
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.078,
+    "within_10pct": 84.03,
+    "MAE_usd": 11.56,
+    "RMSE_usd": 47.07
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 67.408,
+    "within_10pct": 24.79,
+    "MAE_usd": 68.47,
+    "RMSE_usd": 113.77
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 67.403,
+    "within_10pct": 24.77,
+    "MAE_usd": 68.09,
+    "RMSE_usd": 111.42
+   },
+   "share_rows_with_history_pct": 97.42,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 92.474,
+     "within_10pct": 76.91,
+     "MAE_usd": 22.89,
+     "RMSE_usd": 49.23
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 91.777,
+     "within_10pct": 76.63,
+     "MAE_usd": 18.18,
+     "RMSE_usd": 41.26
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 93.139,
+     "within_10pct": 81.95,
+     "MAE_usd": 12.98,
+     "RMSE_usd": 34.31
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 93.698,
+     "within_10pct": 84.99,
+     "MAE_usd": 12.58,
+     "RMSE_usd": 46.83
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 94.147,
+     "within_10pct": 87.26,
+     "MAE_usd": 12.34,
+     "RMSE_usd": 58.06
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 35198,
+     "accuracy_pct": 92.842,
+     "within_10pct": 76.02,
+     "MAE_usd": 21.99,
+     "RMSE_usd": 53.78
+    },
+    "15-30": {
+     "rows": 69829,
+     "accuracy_pct": 92.432,
+     "within_10pct": 75.78,
+     "MAE_usd": 16.66,
+     "RMSE_usd": 41.0
+    },
+    "31-60": {
+     "rows": 130476,
+     "accuracy_pct": 93.714,
+     "within_10pct": 81.22,
+     "MAE_usd": 11.66,
+     "RMSE_usd": 36.45
+    },
+    "61-120": {
+     "rows": 261216,
+     "accuracy_pct": 94.217,
+     "within_10pct": 84.85,
+     "MAE_usd": 10.67,
+     "RMSE_usd": 45.65
+    },
+    "121-180": {
+     "rows": 254443,
+     "accuracy_pct": 94.745,
+     "within_10pct": 87.99,
+     "MAE_usd": 9.57,
+     "RMSE_usd": 53.46
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 73.719,
+     "within_10pct": 32.0,
+     "MAE_usd": 74.11,
+     "RMSE_usd": 118.11
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 66.097,
+     "within_10pct": 24.4,
+     "MAE_usd": 73.01,
+     "RMSE_usd": 113.99
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 64.667,
+     "within_10pct": 21.26,
+     "MAE_usd": 67.95,
+     "RMSE_usd": 104.66
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 66.101,
+     "within_10pct": 23.01,
+     "MAE_usd": 69.53,
+     "RMSE_usd": 114.49
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 69.596,
+     "within_10pct": 27.49,
+     "MAE_usd": 65.68,
+     "RMSE_usd": 116.73
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 11639,
+     "accuracy_pct": 92.784,
+     "within_10pct": 83.96,
+     "MAE_usd": 11.81,
+     "RMSE_usd": 36.09
+    },
+    "ATL-LAX": {
+     "rows": 13989,
+     "accuracy_pct": 96.446,
+     "within_10pct": 90.12,
+     "MAE_usd": 10.18,
+     "RMSE_usd": 27.79
+    },
+    "BOS-DCA": {
+     "rows": 18862,
+     "accuracy_pct": 89.066,
+     "within_10pct": 76.02,
+     "MAE_usd": 17.18,
+     "RMSE_usd": 47.78
+    },
+    "BOS-LAX": {
+     "rows": 14003,
+     "accuracy_pct": 93.18,
+     "within_10pct": 80.45,
+     "MAE_usd": 19.78,
+     "RMSE_usd": 48.59
+    },
+    "BOS-ORD": {
+     "rows": 18014,
+     "accuracy_pct": 92.958,
+     "within_10pct": 83.6,
+     "MAE_usd": 13.1,
+     "RMSE_usd": 55.19
+    },
+    "DCA-BOS": {
+     "rows": 15293,
+     "accuracy_pct": 88.295,
+     "within_10pct": 74.37,
+     "MAE_usd": 19.52,
+     "RMSE_usd": 51.42
+    },
+    "DCA-ORD": {
+     "rows": 17157,
+     "accuracy_pct": 94.835,
+     "within_10pct": 88.1,
+     "MAE_usd": 9.64,
+     "RMSE_usd": 53.16
+    },
+    "DEN-LAX": {
+     "rows": 14736,
+     "accuracy_pct": 92.823,
+     "within_10pct": 82.64,
+     "MAE_usd": 10.97,
+     "RMSE_usd": 38.3
+    },
+    "DEN-ORD": {
+     "rows": 12654,
+     "accuracy_pct": 93.898,
+     "within_10pct": 86.04,
+     "MAE_usd": 12.7,
+     "RMSE_usd": 52.71
+    },
+    "DEN-SFO": {
+     "rows": 11859,
+     "accuracy_pct": 95.493,
+     "within_10pct": 87.54,
+     "MAE_usd": 7.94,
+     "RMSE_usd": 26.79
+    },
+    "DFW-ATL": {
+     "rows": 13821,
+     "accuracy_pct": 93.057,
+     "within_10pct": 85.51,
+     "MAE_usd": 12.48,
+     "RMSE_usd": 40.78
+    },
+    "DFW-LAX": {
+     "rows": 14510,
+     "accuracy_pct": 96.501,
+     "within_10pct": 91.21,
+     "MAE_usd": 9.36,
+     "RMSE_usd": 37.68
+    },
+    "DFW-ORD": {
+     "rows": 14261,
+     "accuracy_pct": 93.088,
+     "within_10pct": 84.61,
+     "MAE_usd": 15.23,
+     "RMSE_usd": 66.39
+    },
+    "EWR-LAX": {
+     "rows": 12829,
+     "accuracy_pct": 94.583,
+     "within_10pct": 84.29,
+     "MAE_usd": 15.97,
+     "RMSE_usd": 42.8
+    },
+    "EWR-SFO": {
+     "rows": 14881,
+     "accuracy_pct": 94.508,
+     "within_10pct": 84.8,
+     "MAE_usd": 17.75,
+     "RMSE_usd": 43.63
+    },
+    "IAH-LAX": {
+     "rows": 10065,
+     "accuracy_pct": 94.701,
+     "within_10pct": 86.44,
+     "MAE_usd": 11.05,
+     "RMSE_usd": 47.3
+    },
+    "JFK-LAX": {
+     "rows": 20480,
+     "accuracy_pct": 93.922,
+     "within_10pct": 83.68,
+     "MAE_usd": 20.06,
+     "RMSE_usd": 58.88
+    },
+    "JFK-SFO": {
+     "rows": 14459,
+     "accuracy_pct": 92.643,
+     "within_10pct": 78.72,
+     "MAE_usd": 25.26,
+     "RMSE_usd": 53.04
+    },
+    "LAS-LAX": {
+     "rows": 14478,
+     "accuracy_pct": 92.658,
+     "within_10pct": 83.29,
+     "MAE_usd": 10.49,
+     "RMSE_usd": 54.16
+    },
+    "LAX-ATL": {
+     "rows": 15539,
+     "accuracy_pct": 95.978,
+     "within_10pct": 88.43,
+     "MAE_usd": 11.99,
+     "RMSE_usd": 29.87
+    },
+    "LAX-BOS": {
+     "rows": 14353,
+     "accuracy_pct": 92.987,
+     "within_10pct": 80.97,
+     "MAE_usd": 19.74,
+     "RMSE_usd": 53.4
+    },
+    "LAX-DEN": {
+     "rows": 14358,
+     "accuracy_pct": 92.779,
+     "within_10pct": 83.33,
+     "MAE_usd": 10.34,
+     "RMSE_usd": 36.29
+    },
+    "LAX-DFW": {
+     "rows": 15709,
+     "accuracy_pct": 95.963,
+     "within_10pct": 90.64,
+     "MAE_usd": 11.06,
+     "RMSE_usd": 46.05
+    },
+    "LAX-EWR": {
+     "rows": 9687,
+     "accuracy_pct": 94.116,
+     "within_10pct": 82.58,
+     "MAE_usd": 17.94,
+     "RMSE_usd": 61.09
+    },
+    "LAX-IAH": {
+     "rows": 9404,
+     "accuracy_pct": 95.383,
+     "within_10pct": 87.47,
+     "MAE_usd": 9.41,
+     "RMSE_usd": 29.27
+    },
+    "LAX-JFK": {
+     "rows": 18755,
+     "accuracy_pct": 93.784,
+     "within_10pct": 82.6,
+     "MAE_usd": 20.67,
+     "RMSE_usd": 58.57
+    },
+    "LAX-LAS": {
+     "rows": 17189,
+     "accuracy_pct": 92.586,
+     "within_10pct": 83.79,
+     "MAE_usd": 10.2,
+     "RMSE_usd": 64.79
+    },
+    "LAX-ORD": {
+     "rows": 18762,
+     "accuracy_pct": 93.619,
+     "within_10pct": 84.7,
+     "MAE_usd": 13.48,
+     "RMSE_usd": 54.87
+    },
+    "LAX-PHX": {
+     "rows": 13890,
+     "accuracy_pct": 93.035,
+     "within_10pct": 84.59,
+     "MAE_usd": 11.06,
+     "RMSE_usd": 47.72
+    },
+    "LAX-SEA": {
+     "rows": 18212,
+     "accuracy_pct": 95.188,
+     "within_10pct": 86.57,
+     "MAE_usd": 9.91,
+     "RMSE_usd": 25.47
+    },
+    "LAX-SFO": {
+     "rows": 22915,
+     "accuracy_pct": 93.145,
+     "within_10pct": 84.77,
+     "MAE_usd": 8.6,
+     "RMSE_usd": 42.57
+    },
+    "LGA-ORD": {
+     "rows": 20867,
+     "accuracy_pct": 93.633,
+     "within_10pct": 84.06,
+     "MAE_usd": 12.22,
+     "RMSE_usd": 47.69
+    },
+    "MSP-ORD": {
+     "rows": 13190,
+     "accuracy_pct": 90.571,
+     "within_10pct": 81.91,
+     "MAE_usd": 14.37,
+     "RMSE_usd": 58.23
+    },
+    "ORD-BOS": {
+     "rows": 16836,
+     "accuracy_pct": 92.933,
+     "within_10pct": 83.53,
+     "MAE_usd": 13.15,
+     "RMSE_usd": 63.67
+    },
+    "ORD-DCA": {
+     "rows": 17469,
+     "accuracy_pct": 94.593,
+     "within_10pct": 87.94,
+     "MAE_usd": 10.74,
+     "RMSE_usd": 53.67
+    },
+    "ORD-DEN": {
+     "rows": 14228,
+     "accuracy_pct": 93.196,
+     "within_10pct": 84.93,
+     "MAE_usd": 15.62,
+     "RMSE_usd": 65.97
+    },
+    "ORD-DFW": {
+     "rows": 16676,
+     "accuracy_pct": 93.122,
+     "within_10pct": 85.1,
+     "MAE_usd": 15.72,
+     "RMSE_usd": 70.77
+    },
+    "ORD-LAX": {
+     "rows": 15785,
+     "accuracy_pct": 94.161,
+     "within_10pct": 85.86,
+     "MAE_usd": 12.26,
+     "RMSE_usd": 49.46
+    },
+    "ORD-LGA": {
+     "rows": 22115,
+     "accuracy_pct": 93.532,
+     "within_10pct": 84.04,
+     "MAE_usd": 12.89,
+     "RMSE_usd": 47.22
+    },
+    "ORD-MSP": {
+     "rows": 13489,
+     "accuracy_pct": 91.254,
+     "within_10pct": 80.56,
+     "MAE_usd": 14.07,
+     "RMSE_usd": 47.68
+    },
+    "ORD-SFO": {
+     "rows": 14316,
+     "accuracy_pct": 94.391,
+     "within_10pct": 85.97,
+     "MAE_usd": 13.95,
+     "RMSE_usd": 57.31
+    },
+    "PHX-LAX": {
+     "rows": 13629,
+     "accuracy_pct": 93.396,
+     "within_10pct": 84.67,
+     "MAE_usd": 9.57,
+     "RMSE_usd": 38.71
+    },
+    "SEA-LAX": {
+     "rows": 17909,
+     "accuracy_pct": 94.891,
+     "within_10pct": 85.18,
+     "MAE_usd": 11.06,
+     "RMSE_usd": 35.36
+    },
+    "SEA-SFO": {
+     "rows": 14596,
+     "accuracy_pct": 93.004,
+     "within_10pct": 80.17,
+     "MAE_usd": 11.98,
+     "RMSE_usd": 36.2
+    },
+    "SFO-DEN": {
+     "rows": 12348,
+     "accuracy_pct": 95.312,
+     "within_10pct": 88.01,
+     "MAE_usd": 10.17,
+     "RMSE_usd": 41.72
+    },
+    "SFO-EWR": {
+     "rows": 12680,
+     "accuracy_pct": 94.004,
+     "within_10pct": 84.35,
+     "MAE_usd": 19.34,
+     "RMSE_usd": 50.15
+    },
+    "SFO-JFK": {
+     "rows": 14281,
+     "accuracy_pct": 93.012,
+     "within_10pct": 79.62,
+     "MAE_usd": 23.59,
+     "RMSE_usd": 50.26
+    },
+    "SFO-LAX": {
+     "rows": 26378,
+     "accuracy_pct": 93.202,
+     "within_10pct": 83.72,
+     "MAE_usd": 8.23,
+     "RMSE_usd": 34.73
+    },
+    "SFO-ORD": {
+     "rows": 14194,
+     "accuracy_pct": 94.324,
+     "within_10pct": 85.87,
+     "MAE_usd": 14.32,
+     "RMSE_usd": 53.2
+    },
+    "SFO-SEA": {
+     "rows": 13302,
+     "accuracy_pct": 91.59,
+     "within_10pct": 76.21,
+     "MAE_usd": 13.92,
+     "RMSE_usd": 40.03
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 751162,
+    "share_actually_unchanged": 68.51,
+    "hit_rate_on_changed_pct": 75.21,
+    "majority_class_pct": 53.77,
+    "pct_changes_that_are_up": 53.77,
+    "hit_rate_changes_over_10pct": 84.28,
+    "rows_changes_over_10pct": 120064,
+    "MAE_change_usd_model": 12.08,
+    "MAE_change_usd_no_change_baseline": 11.56,
+    "hit_rate_route_dbd_median_reversion_pct": 57.37
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 666550,
+    "share_actually_unchanged": 30.47,
+    "hit_rate_on_changed_pct": 89.64,
+    "majority_class_pct": 56.46,
+    "pct_changes_that_are_up": 56.46,
+    "hit_rate_changes_over_10pct": 93.87,
+    "rows_changes_over_10pct": 271811,
+    "MAE_change_usd_model": 11.8,
+    "MAE_change_usd_no_change_baseline": 28.01,
+    "hit_rate_persistence_baseline_pct": 91.39,
+    "persistence_baseline_rows": 419768,
+    "hit_rate_model_on_same_rows_pct": 90.8,
+    "hit_rate_route_dbd_median_reversion_pct": 59.1
+   }
+  },
+  "hgb_R": {
+   "algo": "hgb",
+   "params": {
+    "loss": "squared_error",
+    "clip": 0.25,
+    "max_leaf_nodes": 63
+   },
+   "iterations": 800,
+   "train_rows": 2728230,
+   "val_rows": 321297,
+   "test_rows": 386514,
+   "val": {
+    "rows": 321297,
+    "accuracy_pct": 93.646,
+    "within_10pct": 84.58,
+    "MAE_usd": 12.14,
+    "RMSE_usd": 46.31
+   },
+   "held_out_routes": [
+    "LAX-JFK",
+    "LAX-ORD",
+    "JFK-SFO",
+    "EWR-LAX",
+    "DFW-ORD"
+   ],
+   "reverse_routes_also_removed_from_training": true,
+   "model_all_rows": {
+    "rows": 386514,
+    "accuracy_pct": 93.024,
+    "within_10pct": 81.7,
+    "MAE_usd": 19.18,
+    "RMSE_usd": 58.37
+   },
+   "model_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 93.505,
+    "within_10pct": 83.14,
+    "MAE_usd": 17.5,
+    "RMSE_usd": 50.63
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.18,
+    "within_10pct": 82.81,
+    "MAE_usd": 15.67,
+    "RMSE_usd": 56.8
+   },
+   "naive_route_dbd_median_all_rows": null,
+   "naive_route_dbd_median_rows_with_history": null,
+   "share_rows_with_history_pct": 97.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 17768,
+     "accuracy_pct": 90.517,
+     "within_10pct": 70.72,
+     "MAE_usd": 35.53,
+     "RMSE_usd": 77.45
+    },
+    "15-30": {
+     "rows": 36102,
+     "accuracy_pct": 90.971,
+     "within_10pct": 72.41,
+     "MAE_usd": 27.3,
+     "RMSE_usd": 59.58
+    },
+    "31-60": {
+     "rows": 67137,
+     "accuracy_pct": 92.531,
+     "within_10pct": 78.84,
+     "MAE_usd": 18.77,
+     "RMSE_usd": 42.53
+    },
+    "61-120": {
+     "rows": 134533,
+     "accuracy_pct": 92.925,
+     "within_10pct": 81.94,
+     "MAE_usd": 18.36,
+     "RMSE_usd": 55.39
+    },
+    "121-180": {
+     "rows": 130974,
+     "accuracy_pct": 94.284,
+     "within_10pct": 86.98,
+     "MAE_usd": 15.77,
+     "RMSE_usd": 64.69
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 17471,
+     "accuracy_pct": 91.19,
+     "within_10pct": 71.0,
+     "MAE_usd": 33.06,
+     "RMSE_usd": 77.85
+    },
+    "15-30": {
+     "rows": 35503,
+     "accuracy_pct": 92.007,
+     "within_10pct": 72.26,
+     "MAE_usd": 24.33,
+     "RMSE_usd": 61.52
+    },
+    "31-60": {
+     "rows": 66087,
+     "accuracy_pct": 93.716,
+     "within_10pct": 79.51,
+     "MAE_usd": 16.14,
+     "RMSE_usd": 44.88
+    },
+    "61-120": {
+     "rows": 131373,
+     "accuracy_pct": 94.051,
+     "within_10pct": 83.07,
+     "MAE_usd": 15.15,
+     "RMSE_usd": 55.73
+    },
+    "121-180": {
+     "rows": 125593,
+     "accuracy_pct": 95.59,
+     "within_10pct": 88.89,
+     "MAE_usd": 11.1,
+     "RMSE_usd": 58.62
+    }
+   },
+   "by_dbd_bucket_naive_route_median": null,
+   "by_route_model": {
+    "DFW-ORD": {
+     "rows": 74904,
+     "accuracy_pct": 92.796,
+     "within_10pct": 83.88,
+     "MAE_usd": 15.95,
+     "RMSE_usd": 61.54
+    },
+    "EWR-LAX": {
+     "rows": 55383,
+     "accuracy_pct": 94.507,
+     "within_10pct": 84.05,
+     "MAE_usd": 16.58,
+     "RMSE_usd": 43.99
+    },
+    "JFK-SFO": {
+     "rows": 73910,
+     "accuracy_pct": 92.348,
+     "within_10pct": 78.3,
+     "MAE_usd": 25.38,
+     "RMSE_usd": 59.27
+    },
+    "LAX-JFK": {
+     "rows": 101746,
+     "accuracy_pct": 93.183,
+     "within_10pct": 81.32,
+     "MAE_usd": 21.67,
+     "RMSE_usd": 61.21
+    },
+    "LAX-ORD": {
+     "rows": 80571,
+     "accuracy_pct": 92.635,
+     "within_10pct": 81.66,
+     "MAE_usd": 15.13,
+     "RMSE_usd": 59.52
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 376027,
+    "share_actually_unchanged": 65.39,
+    "hit_rate_on_changed_pct": 70.46,
+    "majority_class_pct": 55.08,
+    "pct_changes_that_are_up": 55.08,
+    "hit_rate_changes_over_10pct": 79.36,
+    "rows_changes_over_10pct": 64750,
+    "MAE_change_usd_model": 17.5,
+    "MAE_change_usd_no_change_baseline": 15.67
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 333173,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 87.44,
+    "majority_class_pct": 58.42,
+    "pct_changes_that_are_up": 58.42,
+    "hit_rate_changes_over_10pct": 92.08,
+    "rows_changes_over_10pct": 133757,
+    "MAE_change_usd_model": 17.26,
+    "MAE_change_usd_no_change_baseline": 35.51,
+    "hit_rate_persistence_baseline_pct": 90.71,
+    "persistence_baseline_rows": 223200,
+    "hit_rate_model_on_same_rows_pct": 89.09
+   }
+  },
+  "rf_T": {
+   "algo": "rf",
+   "params": {
+    "max_features": 0.33,
+    "min_samples_leaf": 5
+   },
+   "iterations": 60,
+   "train_rows": 2932106,
+   "val_rows": 309915,
+   "test_rows": 587197,
+   "fit_seconds": 637.2,
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 92.094,
+    "within_10pct": 83.94,
+    "MAE_usd": 17.2,
+    "RMSE_usd": 68.54
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 91.59,
+    "within_10pct": 80.7,
+    "MAE_usd": 16.25,
+    "RMSE_usd": 45.91
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 91.875,
+    "within_10pct": 81.49,
+    "MAE_usd": 15.4,
+    "RMSE_usd": 41.69
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 66.304,
+    "within_10pct": 22.58,
+    "MAE_usd": 70.6,
+    "RMSE_usd": 118.92
+   },
+   "share_rows_with_history_pct": 98.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 92.34,
+     "within_10pct": 78.84,
+     "MAE_usd": 24.35,
+     "RMSE_usd": 48.33
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 90.215,
+     "within_10pct": 73.09,
+     "MAE_usd": 20.95,
+     "RMSE_usd": 39.66
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 91.454,
+     "within_10pct": 78.95,
+     "MAE_usd": 14.42,
+     "RMSE_usd": 28.3
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 91.8,
+     "within_10pct": 81.85,
+     "MAE_usd": 16.39,
+     "RMSE_usd": 49.92
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 91.743,
+     "within_10pct": 82.99,
+     "MAE_usd": 14.52,
+     "RMSE_usd": 50.53
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 28617,
+     "accuracy_pct": 93.339,
+     "within_10pct": 78.42,
+     "MAE_usd": 21.49,
+     "RMSE_usd": 51.67
+    },
+    "15-30": {
+     "rows": 56942,
+     "accuracy_pct": 91.255,
+     "within_10pct": 73.07,
+     "MAE_usd": 18.74,
+     "RMSE_usd": 42.14
+    },
+    "31-60": {
+     "rows": 105935,
+     "accuracy_pct": 92.713,
+     "within_10pct": 79.06,
+     "MAE_usd": 12.01,
+     "RMSE_usd": 29.55
+    },
+    "61-120": {
+     "rows": 196443,
+     "accuracy_pct": 93.154,
+     "within_10pct": 82.71,
+     "MAE_usd": 13.0,
+     "RMSE_usd": 49.7
+    },
+    "121-180": {
+     "rows": 189246,
+     "accuracy_pct": 93.553,
+     "within_10pct": 85.05,
+     "MAE_usd": 10.38,
+     "RMSE_usd": 50.06
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 28780,
+     "accuracy_pct": 76.524,
+     "within_10pct": 29.02,
+     "MAE_usd": 74.18,
+     "RMSE_usd": 110.2
+    },
+    "15-30": {
+     "rows": 57293,
+     "accuracy_pct": 65.878,
+     "within_10pct": 20.41,
+     "MAE_usd": 72.91,
+     "RMSE_usd": 108.22
+    },
+    "31-60": {
+     "rows": 106567,
+     "accuracy_pct": 62.759,
+     "within_10pct": 21.18,
+     "MAE_usd": 64.19,
+     "RMSE_usd": 98.48
+    },
+    "61-120": {
+     "rows": 199489,
+     "accuracy_pct": 64.677,
+     "within_10pct": 20.07,
+     "MAE_usd": 83.12,
+     "RMSE_usd": 141.08
+    },
+    "121-180": {
+     "rows": 195068,
+     "accuracy_pct": 68.596,
+     "within_10pct": 25.63,
+     "MAE_usd": 60.49,
+     "RMSE_usd": 110.93
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 9960,
+     "accuracy_pct": 91.352,
+     "within_10pct": 85.51,
+     "MAE_usd": 13.88,
+     "RMSE_usd": 49.7
+    },
+    "ATL-LAX": {
+     "rows": 11316,
+     "accuracy_pct": 95.06,
+     "within_10pct": 88.07,
+     "MAE_usd": 13.62,
+     "RMSE_usd": 27.07
+    },
+    "BOS-DCA": {
+     "rows": 13165,
+     "accuracy_pct": 82.176,
+     "within_10pct": 65.92,
+     "MAE_usd": 26.36,
+     "RMSE_usd": 63.08
+    },
+    "BOS-LAX": {
+     "rows": 9973,
+     "accuracy_pct": 93.3,
+     "within_10pct": 81.51,
+     "MAE_usd": 20.11,
+     "RMSE_usd": 43.29
+    },
+    "BOS-ORD": {
+     "rows": 11771,
+     "accuracy_pct": 90.96,
+     "within_10pct": 77.17,
+     "MAE_usd": 16.59,
+     "RMSE_usd": 42.88
+    },
+    "DCA-BOS": {
+     "rows": 12632,
+     "accuracy_pct": 82.528,
+     "within_10pct": 65.58,
+     "MAE_usd": 26.14,
+     "RMSE_usd": 53.96
+    },
+    "DCA-ORD": {
+     "rows": 13601,
+     "accuracy_pct": 93.748,
+     "within_10pct": 87.18,
+     "MAE_usd": 12.32,
+     "RMSE_usd": 47.28
+    },
+    "DEN-LAX": {
+     "rows": 11535,
+     "accuracy_pct": 89.806,
+     "within_10pct": 78.01,
+     "MAE_usd": 13.97,
+     "RMSE_usd": 29.39
+    },
+    "DEN-ORD": {
+     "rows": 9575,
+     "accuracy_pct": 93.084,
+     "within_10pct": 84.0,
+     "MAE_usd": 13.86,
+     "RMSE_usd": 52.28
+    },
+    "DEN-SFO": {
+     "rows": 9858,
+     "accuracy_pct": 91.975,
+     "within_10pct": 79.35,
+     "MAE_usd": 13.25,
+     "RMSE_usd": 25.43
+    },
+    "DFW-ATL": {
+     "rows": 9550,
+     "accuracy_pct": 92.451,
+     "within_10pct": 86.62,
+     "MAE_usd": 12.43,
+     "RMSE_usd": 37.84
+    },
+    "DFW-LAX": {
+     "rows": 10491,
+     "accuracy_pct": 94.284,
+     "within_10pct": 84.82,
+     "MAE_usd": 12.62,
+     "RMSE_usd": 29.0
+    },
+    "DFW-ORD": {
+     "rows": 10914,
+     "accuracy_pct": 92.668,
+     "within_10pct": 80.09,
+     "MAE_usd": 14.89,
+     "RMSE_usd": 37.23
+    },
+    "EWR-LAX": {
+     "rows": 8200,
+     "accuracy_pct": 94.72,
+     "within_10pct": 85.77,
+     "MAE_usd": 18.34,
+     "RMSE_usd": 39.63
+    },
+    "EWR-SFO": {
+     "rows": 11074,
+     "accuracy_pct": 94.589,
+     "within_10pct": 86.51,
+     "MAE_usd": 19.13,
+     "RMSE_usd": 40.91
+    },
+    "IAH-LAX": {
+     "rows": 8353,
+     "accuracy_pct": 93.219,
+     "within_10pct": 83.49,
+     "MAE_usd": 13.58,
+     "RMSE_usd": 36.85
+    },
+    "JFK-LAX": {
+     "rows": 16310,
+     "accuracy_pct": 94.465,
+     "within_10pct": 86.27,
+     "MAE_usd": 20.69,
+     "RMSE_usd": 45.92
+    },
+    "JFK-SFO": {
+     "rows": 10642,
+     "accuracy_pct": 92.153,
+     "within_10pct": 79.03,
+     "MAE_usd": 27.72,
+     "RMSE_usd": 56.57
+    },
+    "LAS-LAX": {
+     "rows": 12269,
+     "accuracy_pct": 89.018,
+     "within_10pct": 77.14,
+     "MAE_usd": 14.31,
+     "RMSE_usd": 56.97
+    },
+    "LAX-ATL": {
+     "rows": 10534,
+     "accuracy_pct": 94.887,
+     "within_10pct": 87.16,
+     "MAE_usd": 14.85,
+     "RMSE_usd": 29.57
+    },
+    "LAX-BOS": {
+     "rows": 9491,
+     "accuracy_pct": 93.754,
+     "within_10pct": 83.62,
+     "MAE_usd": 17.14,
+     "RMSE_usd": 37.74
+    },
+    "LAX-DEN": {
+     "rows": 10861,
+     "accuracy_pct": 89.834,
+     "within_10pct": 77.95,
+     "MAE_usd": 13.4,
+     "RMSE_usd": 26.94
+    },
+    "LAX-DFW": {
+     "rows": 9891,
+     "accuracy_pct": 92.77,
+     "within_10pct": 81.14,
+     "MAE_usd": 15.66,
+     "RMSE_usd": 51.57
+    },
+    "LAX-EWR": {
+     "rows": 7111,
+     "accuracy_pct": 94.342,
+     "within_10pct": 84.38,
+     "MAE_usd": 18.52,
+     "RMSE_usd": 36.54
+    },
+    "LAX-IAH": {
+     "rows": 7297,
+     "accuracy_pct": 93.436,
+     "within_10pct": 83.71,
+     "MAE_usd": 13.33,
+     "RMSE_usd": 28.03
+    },
+    "LAX-JFK": {
+     "rows": 15056,
+     "accuracy_pct": 94.712,
+     "within_10pct": 87.15,
+     "MAE_usd": 19.39,
+     "RMSE_usd": 46.99
+    },
+    "LAX-LAS": {
+     "rows": 13803,
+     "accuracy_pct": 89.74,
+     "within_10pct": 79.27,
+     "MAE_usd": 12.7,
+     "RMSE_usd": 31.47
+    },
+    "LAX-ORD": {
+     "rows": 12421,
+     "accuracy_pct": 92.009,
+     "within_10pct": 81.4,
+     "MAE_usd": 16.31,
+     "RMSE_usd": 49.54
+    },
+    "LAX-PHX": {
+     "rows": 11614,
+     "accuracy_pct": 90.657,
+     "within_10pct": 78.45,
+     "MAE_usd": 13.67,
+     "RMSE_usd": 42.13
+    },
+    "LAX-SEA": {
+     "rows": 13387,
+     "accuracy_pct": 92.18,
+     "within_10pct": 79.12,
+     "MAE_usd": 14.4,
+     "RMSE_usd": 30.02
+    },
+    "LAX-SFO": {
+     "rows": 19497,
+     "accuracy_pct": 90.955,
+     "within_10pct": 80.98,
+     "MAE_usd": 11.18,
+     "RMSE_usd": 47.71
+    },
+    "LGA-ORD": {
+     "rows": 16449,
+     "accuracy_pct": 91.493,
+     "within_10pct": 79.54,
+     "MAE_usd": 16.26,
+     "RMSE_usd": 49.0
+    },
+    "MSP-ORD": {
+     "rows": 10211,
+     "accuracy_pct": 85.5,
+     "within_10pct": 73.84,
+     "MAE_usd": 19.63,
+     "RMSE_usd": 55.73
+    },
+    "ORD-BOS": {
+     "rows": 11766,
+     "accuracy_pct": 90.396,
+     "within_10pct": 76.53,
+     "MAE_usd": 17.92,
+     "RMSE_usd": 55.85
+    },
+    "ORD-DCA": {
+     "rows": 14496,
+     "accuracy_pct": 93.678,
+     "within_10pct": 87.28,
+     "MAE_usd": 12.47,
+     "RMSE_usd": 47.45
+    },
+    "ORD-DEN": {
+     "rows": 10001,
+     "accuracy_pct": 92.018,
+     "within_10pct": 82.58,
+     "MAE_usd": 16.55,
+     "RMSE_usd": 70.17
+    },
+    "ORD-DFW": {
+     "rows": 11711,
+     "accuracy_pct": 92.161,
+     "within_10pct": 80.3,
+     "MAE_usd": 16.9,
+     "RMSE_usd": 64.33
+    },
+    "ORD-LAX": {
+     "rows": 12524,
+     "accuracy_pct": 91.545,
+     "within_10pct": 81.91,
+     "MAE_usd": 17.18,
+     "RMSE_usd": 60.09
+    },
+    "ORD-LGA": {
+     "rows": 17904,
+     "accuracy_pct": 91.497,
+     "within_10pct": 79.81,
+     "MAE_usd": 16.69,
+     "RMSE_usd": 52.86
+    },
+    "ORD-MSP": {
+     "rows": 10736,
+     "accuracy_pct": 85.744,
+     "within_10pct": 73.24,
+     "MAE_usd": 19.49,
+     "RMSE_usd": 51.75
+    },
+    "ORD-SFO": {
+     "rows": 11483,
+     "accuracy_pct": 93.251,
+     "within_10pct": 84.69,
+     "MAE_usd": 15.6,
+     "RMSE_usd": 53.68
+    },
+    "PHX-LAX": {
+     "rows": 10521,
+     "accuracy_pct": 90.389,
+     "within_10pct": 77.79,
+     "MAE_usd": 14.22,
+     "RMSE_usd": 48.13
+    },
+    "SEA-LAX": {
+     "rows": 13472,
+     "accuracy_pct": 92.202,
+     "within_10pct": 78.47,
+     "MAE_usd": 14.38,
+     "RMSE_usd": 25.76
+    },
+    "SEA-SFO": {
+     "rows": 10236,
+     "accuracy_pct": 90.293,
+     "within_10pct": 73.11,
+     "MAE_usd": 14.08,
+     "RMSE_usd": 31.35
+    },
+    "SFO-DEN": {
+     "rows": 9373,
+     "accuracy_pct": 91.837,
+     "within_10pct": 79.95,
+     "MAE_usd": 14.13,
+     "RMSE_usd": 32.94
+    },
+    "SFO-EWR": {
+     "rows": 10607,
+     "accuracy_pct": 94.772,
+     "within_10pct": 87.89,
+     "MAE_usd": 18.2,
+     "RMSE_usd": 42.32
+    },
+    "SFO-JFK": {
+     "rows": 10875,
+     "accuracy_pct": 92.687,
+     "within_10pct": 80.25,
+     "MAE_usd": 25.73,
+     "RMSE_usd": 52.18
+    },
+    "SFO-LAX": {
+     "rows": 20127,
+     "accuracy_pct": 91.496,
+     "within_10pct": 81.47,
+     "MAE_usd": 10.19,
+     "RMSE_usd": 41.71
+    },
+    "SFO-ORD": {
+     "rows": 11839,
+     "accuracy_pct": 93.155,
+     "within_10pct": 84.51,
+     "MAE_usd": 16.57,
+     "RMSE_usd": 56.58
+    },
+    "SFO-SEA": {
+     "rows": 10714,
+     "accuracy_pct": 88.45,
+     "within_10pct": 69.06,
+     "MAE_usd": 16.67,
+     "RMSE_usd": 39.76
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 66.57,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 78.01,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 15.4,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 526944,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 83.89,
+    "majority_class_pct": 58.97,
+    "pct_changes_that_are_up": 58.97,
+    "hit_rate_changes_over_10pct": 92.02,
+    "rows_changes_over_10pct": 223296,
+    "MAE_change_usd_model": 15.41,
+    "MAE_change_usd_no_change_baseline": 30.54,
+    "hit_rate_persistence_baseline_pct": 89.98,
+    "persistence_baseline_rows": 356677,
+    "hit_rate_model_on_same_rows_pct": 86.16,
+    "hit_rate_route_dbd_median_reversion_pct": 58.98
+   },
+   "model_size_mb": 968.3
+  },
+  "rf_F": {
+   "algo": "rf",
+   "params": {
+    "max_features": 0.33,
+    "min_samples_leaf": 5
+   },
+   "iterations": 60,
+   "train_rows": 2750623,
+   "val_rows": 307544,
+   "test_rows": 771051,
+   "fit_seconds": 595.0,
+   "val": {
+    "rows": 307544,
+    "accuracy_pct": 93.694,
+    "within_10pct": 84.66,
+    "MAE_usd": 13.31,
+    "RMSE_usd": 48.85
+   },
+   "model_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 93.579,
+    "within_10pct": 84.31,
+    "MAE_usd": 13.53,
+    "RMSE_usd": 49.19
+   },
+   "model_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.116,
+    "within_10pct": 85.67,
+    "MAE_usd": 11.97,
+    "RMSE_usd": 40.86
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 94.078,
+    "within_10pct": 84.03,
+    "MAE_usd": 11.56,
+    "RMSE_usd": 47.07
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 771051,
+    "accuracy_pct": 67.408,
+    "within_10pct": 24.79,
+    "MAE_usd": 68.47,
+    "RMSE_usd": 113.77
+   },
+   "naive_route_dbd_median_rows_with_history": {
+    "rows": 751162,
+    "accuracy_pct": 67.403,
+    "within_10pct": 24.77,
+    "MAE_usd": 68.09,
+    "RMSE_usd": 111.42
+   },
+   "share_rows_with_history_pct": 97.42,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 92.265,
+     "within_10pct": 76.83,
+     "MAE_usd": 23.52,
+     "RMSE_usd": 50.89
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 91.698,
+     "within_10pct": 76.75,
+     "MAE_usd": 18.42,
+     "RMSE_usd": 41.97
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 93.154,
+     "within_10pct": 82.19,
+     "MAE_usd": 13.0,
+     "RMSE_usd": 34.54
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 93.777,
+     "within_10pct": 85.23,
+     "MAE_usd": 12.5,
+     "RMSE_usd": 47.1
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 94.271,
+     "within_10pct": 87.45,
+     "MAE_usd": 12.18,
+     "RMSE_usd": 58.22
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 35198,
+     "accuracy_pct": 92.842,
+     "within_10pct": 76.02,
+     "MAE_usd": 21.99,
+     "RMSE_usd": 53.78
+    },
+    "15-30": {
+     "rows": 69829,
+     "accuracy_pct": 92.432,
+     "within_10pct": 75.78,
+     "MAE_usd": 16.66,
+     "RMSE_usd": 41.0
+    },
+    "31-60": {
+     "rows": 130476,
+     "accuracy_pct": 93.714,
+     "within_10pct": 81.22,
+     "MAE_usd": 11.66,
+     "RMSE_usd": 36.45
+    },
+    "61-120": {
+     "rows": 261216,
+     "accuracy_pct": 94.217,
+     "within_10pct": 84.85,
+     "MAE_usd": 10.67,
+     "RMSE_usd": 45.65
+    },
+    "121-180": {
+     "rows": 254443,
+     "accuracy_pct": 94.745,
+     "within_10pct": 87.99,
+     "MAE_usd": 9.57,
+     "RMSE_usd": 53.46
+    }
+   },
+   "by_dbd_bucket_naive_route_median": {
+    "7-14": {
+     "rows": 35686,
+     "accuracy_pct": 73.719,
+     "within_10pct": 32.0,
+     "MAE_usd": 74.11,
+     "RMSE_usd": 118.11
+    },
+    "15-30": {
+     "rows": 70775,
+     "accuracy_pct": 66.097,
+     "within_10pct": 24.4,
+     "MAE_usd": 73.01,
+     "RMSE_usd": 113.99
+    },
+    "31-60": {
+     "rows": 132379,
+     "accuracy_pct": 64.667,
+     "within_10pct": 21.26,
+     "MAE_usd": 67.95,
+     "RMSE_usd": 104.66
+    },
+    "61-120": {
+     "rows": 267343,
+     "accuracy_pct": 66.101,
+     "within_10pct": 23.01,
+     "MAE_usd": 69.53,
+     "RMSE_usd": 114.49
+    },
+    "121-180": {
+     "rows": 264868,
+     "accuracy_pct": 69.596,
+     "within_10pct": 27.49,
+     "MAE_usd": 65.68,
+     "RMSE_usd": 116.73
+    }
+   },
+   "by_route_model": {
+    "ATL-DFW": {
+     "rows": 11639,
+     "accuracy_pct": 92.811,
+     "within_10pct": 84.53,
+     "MAE_usd": 11.77,
+     "RMSE_usd": 36.12
+    },
+    "ATL-LAX": {
+     "rows": 13989,
+     "accuracy_pct": 96.401,
+     "within_10pct": 89.99,
+     "MAE_usd": 10.3,
+     "RMSE_usd": 28.22
+    },
+    "BOS-DCA": {
+     "rows": 18862,
+     "accuracy_pct": 89.167,
+     "within_10pct": 76.85,
+     "MAE_usd": 17.15,
+     "RMSE_usd": 47.99
+    },
+    "BOS-LAX": {
+     "rows": 14003,
+     "accuracy_pct": 93.023,
+     "within_10pct": 80.58,
+     "MAE_usd": 20.2,
+     "RMSE_usd": 49.56
+    },
+    "BOS-ORD": {
+     "rows": 18014,
+     "accuracy_pct": 93.019,
+     "within_10pct": 83.75,
+     "MAE_usd": 13.02,
+     "RMSE_usd": 55.05
+    },
+    "DCA-BOS": {
+     "rows": 15293,
+     "accuracy_pct": 88.329,
+     "within_10pct": 75.04,
+     "MAE_usd": 19.46,
+     "RMSE_usd": 51.85
+    },
+    "DCA-ORD": {
+     "rows": 17157,
+     "accuracy_pct": 95.067,
+     "within_10pct": 88.47,
+     "MAE_usd": 9.36,
+     "RMSE_usd": 53.29
+    },
+    "DEN-LAX": {
+     "rows": 14736,
+     "accuracy_pct": 92.928,
+     "within_10pct": 83.11,
+     "MAE_usd": 10.77,
+     "RMSE_usd": 38.54
+    },
+    "DEN-ORD": {
+     "rows": 12654,
+     "accuracy_pct": 93.929,
+     "within_10pct": 86.12,
+     "MAE_usd": 12.73,
+     "RMSE_usd": 53.0
+    },
+    "DEN-SFO": {
+     "rows": 11859,
+     "accuracy_pct": 95.547,
+     "within_10pct": 87.67,
+     "MAE_usd": 7.91,
+     "RMSE_usd": 27.09
+    },
+    "DFW-ATL": {
+     "rows": 13821,
+     "accuracy_pct": 93.1,
+     "within_10pct": 85.94,
+     "MAE_usd": 12.45,
+     "RMSE_usd": 41.13
+    },
+    "DFW-LAX": {
+     "rows": 14510,
+     "accuracy_pct": 96.574,
+     "within_10pct": 91.26,
+     "MAE_usd": 8.87,
+     "RMSE_usd": 38.13
+    },
+    "DFW-ORD": {
+     "rows": 14261,
+     "accuracy_pct": 93.207,
+     "within_10pct": 84.76,
+     "MAE_usd": 14.98,
+     "RMSE_usd": 66.45
+    },
+    "EWR-LAX": {
+     "rows": 12829,
+     "accuracy_pct": 94.563,
+     "within_10pct": 84.17,
+     "MAE_usd": 16.13,
+     "RMSE_usd": 43.35
+    },
+    "EWR-SFO": {
+     "rows": 14881,
+     "accuracy_pct": 94.421,
+     "within_10pct": 84.75,
+     "MAE_usd": 18.11,
+     "RMSE_usd": 44.24
+    },
+    "IAH-LAX": {
+     "rows": 10065,
+     "accuracy_pct": 94.821,
+     "within_10pct": 86.63,
+     "MAE_usd": 10.84,
+     "RMSE_usd": 47.52
+    },
+    "JFK-LAX": {
+     "rows": 20480,
+     "accuracy_pct": 93.931,
+     "within_10pct": 83.7,
+     "MAE_usd": 20.07,
+     "RMSE_usd": 59.47
+    },
+    "JFK-SFO": {
+     "rows": 14459,
+     "accuracy_pct": 92.543,
+     "within_10pct": 78.91,
+     "MAE_usd": 25.58,
+     "RMSE_usd": 54.04
+    },
+    "LAS-LAX": {
+     "rows": 14478,
+     "accuracy_pct": 92.748,
+     "within_10pct": 83.66,
+     "MAE_usd": 10.49,
+     "RMSE_usd": 54.12
+    },
+    "LAX-ATL": {
+     "rows": 15539,
+     "accuracy_pct": 95.889,
+     "within_10pct": 88.22,
+     "MAE_usd": 12.29,
+     "RMSE_usd": 30.63
+    },
+    "LAX-BOS": {
+     "rows": 14353,
+     "accuracy_pct": 92.788,
+     "within_10pct": 80.72,
+     "MAE_usd": 20.21,
+     "RMSE_usd": 54.4
+    },
+    "LAX-DEN": {
+     "rows": 14358,
+     "accuracy_pct": 92.848,
+     "within_10pct": 83.51,
+     "MAE_usd": 10.24,
+     "RMSE_usd": 36.48
+    },
+    "LAX-DFW": {
+     "rows": 15709,
+     "accuracy_pct": 96.068,
+     "within_10pct": 90.95,
+     "MAE_usd": 10.6,
+     "RMSE_usd": 46.28
+    },
+    "LAX-EWR": {
+     "rows": 9687,
+     "accuracy_pct": 94.095,
+     "within_10pct": 82.63,
+     "MAE_usd": 18.15,
+     "RMSE_usd": 62.36
+    },
+    "LAX-IAH": {
+     "rows": 9404,
+     "accuracy_pct": 95.45,
+     "within_10pct": 87.37,
+     "MAE_usd": 9.3,
+     "RMSE_usd": 30.1
+    },
+    "LAX-JFK": {
+     "rows": 18755,
+     "accuracy_pct": 93.759,
+     "within_10pct": 82.66,
+     "MAE_usd": 20.79,
+     "RMSE_usd": 59.08
+    },
+    "LAX-LAS": {
+     "rows": 17189,
+     "accuracy_pct": 92.671,
+     "within_10pct": 84.37,
+     "MAE_usd": 10.17,
+     "RMSE_usd": 64.72
+    },
+    "LAX-ORD": {
+     "rows": 18762,
+     "accuracy_pct": 93.795,
+     "within_10pct": 85.07,
+     "MAE_usd": 13.21,
+     "RMSE_usd": 55.31
+    },
+    "LAX-PHX": {
+     "rows": 13890,
+     "accuracy_pct": 93.127,
+     "within_10pct": 84.85,
+     "MAE_usd": 10.95,
+     "RMSE_usd": 47.87
+    },
+    "LAX-SEA": {
+     "rows": 18212,
+     "accuracy_pct": 95.317,
+     "within_10pct": 86.87,
+     "MAE_usd": 9.68,
+     "RMSE_usd": 25.71
+    },
+    "LAX-SFO": {
+     "rows": 22915,
+     "accuracy_pct": 93.242,
+     "within_10pct": 85.09,
+     "MAE_usd": 8.51,
+     "RMSE_usd": 42.79
+    },
+    "LGA-ORD": {
+     "rows": 20867,
+     "accuracy_pct": 93.759,
+     "within_10pct": 84.2,
+     "MAE_usd": 12.1,
+     "RMSE_usd": 47.96
+    },
+    "MSP-ORD": {
+     "rows": 13190,
+     "accuracy_pct": 90.672,
+     "within_10pct": 82.05,
+     "MAE_usd": 14.23,
+     "RMSE_usd": 58.41
+    },
+    "ORD-BOS": {
+     "rows": 16836,
+     "accuracy_pct": 93.003,
+     "within_10pct": 83.46,
+     "MAE_usd": 13.01,
+     "RMSE_usd": 63.61
+    },
+    "ORD-DCA": {
+     "rows": 17469,
+     "accuracy_pct": 94.876,
+     "within_10pct": 88.31,
+     "MAE_usd": 10.42,
+     "RMSE_usd": 53.7
+    },
+    "ORD-DEN": {
+     "rows": 14228,
+     "accuracy_pct": 93.31,
+     "within_10pct": 85.29,
+     "MAE_usd": 15.52,
+     "RMSE_usd": 66.48
+    },
+    "ORD-DFW": {
+     "rows": 16676,
+     "accuracy_pct": 93.212,
+     "within_10pct": 85.43,
+     "MAE_usd": 15.57,
+     "RMSE_usd": 71.05
+    },
+    "ORD-LAX": {
+     "rows": 15785,
+     "accuracy_pct": 94.344,
+     "within_10pct": 86.12,
+     "MAE_usd": 11.99,
+     "RMSE_usd": 49.8
+    },
+    "ORD-LGA": {
+     "rows": 22115,
+     "accuracy_pct": 93.61,
+     "within_10pct": 83.9,
+     "MAE_usd": 12.86,
+     "RMSE_usd": 47.34
+    },
+    "ORD-MSP": {
+     "rows": 13489,
+     "accuracy_pct": 91.325,
+     "within_10pct": 80.58,
+     "MAE_usd": 14.11,
+     "RMSE_usd": 47.58
+    },
+    "ORD-SFO": {
+     "rows": 14316,
+     "accuracy_pct": 94.452,
+     "within_10pct": 85.91,
+     "MAE_usd": 13.91,
+     "RMSE_usd": 57.66
+    },
+    "PHX-LAX": {
+     "rows": 13629,
+     "accuracy_pct": 93.513,
+     "within_10pct": 85.03,
+     "MAE_usd": 9.47,
+     "RMSE_usd": 39.14
+    },
+    "SEA-LAX": {
+     "rows": 17909,
+     "accuracy_pct": 95.025,
+     "within_10pct": 85.61,
+     "MAE_usd": 10.85,
+     "RMSE_usd": 35.55
+    },
+    "SEA-SFO": {
+     "rows": 14596,
+     "accuracy_pct": 93.118,
+     "within_10pct": 80.43,
+     "MAE_usd": 11.91,
+     "RMSE_usd": 36.26
+    },
+    "SFO-DEN": {
+     "rows": 12348,
+     "accuracy_pct": 95.288,
+     "within_10pct": 87.86,
+     "MAE_usd": 10.35,
+     "RMSE_usd": 41.99
+    },
+    "SFO-EWR": {
+     "rows": 12680,
+     "accuracy_pct": 93.874,
+     "within_10pct": 84.19,
+     "MAE_usd": 19.81,
+     "RMSE_usd": 51.26
+    },
+    "SFO-JFK": {
+     "rows": 14281,
+     "accuracy_pct": 92.921,
+     "within_10pct": 79.92,
+     "MAE_usd": 23.94,
+     "RMSE_usd": 50.89
+    },
+    "SFO-LAX": {
+     "rows": 26378,
+     "accuracy_pct": 93.263,
+     "within_10pct": 84.08,
+     "MAE_usd": 8.18,
+     "RMSE_usd": 34.71
+    },
+    "SFO-ORD": {
+     "rows": 14194,
+     "accuracy_pct": 94.329,
+     "within_10pct": 85.87,
+     "MAE_usd": 14.38,
+     "RMSE_usd": 53.54
+    },
+    "SFO-SEA": {
+     "rows": 13302,
+     "accuracy_pct": 91.551,
+     "within_10pct": 76.39,
+     "MAE_usd": 14.04,
+     "RMSE_usd": 40.21
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 751162,
+    "share_actually_unchanged": 68.51,
+    "hit_rate_on_changed_pct": 75.33,
+    "majority_class_pct": 53.77,
+    "pct_changes_that_are_up": 53.77,
+    "hit_rate_changes_over_10pct": 83.2,
+    "rows_changes_over_10pct": 120064,
+    "MAE_change_usd_model": 11.97,
+    "MAE_change_usd_no_change_baseline": 11.56,
+    "hit_rate_route_dbd_median_reversion_pct": 57.37
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 666550,
+    "share_actually_unchanged": 30.47,
+    "hit_rate_on_changed_pct": 89.9,
+    "majority_class_pct": 56.46,
+    "pct_changes_that_are_up": 56.46,
+    "hit_rate_changes_over_10pct": 93.73,
+    "rows_changes_over_10pct": 271811,
+    "MAE_change_usd_model": 11.68,
+    "MAE_change_usd_no_change_baseline": 28.01,
+    "hit_rate_persistence_baseline_pct": 91.39,
+    "persistence_baseline_rows": 419768,
+    "hit_rate_model_on_same_rows_pct": 90.96,
+    "hit_rate_route_dbd_median_reversion_pct": 59.1
+   },
+   "model_size_mb": 920.6
+  },
+  "rf_R": {
+   "algo": "rf",
+   "params": {
+    "max_features": 0.33,
+    "min_samples_leaf": 5
+   },
+   "iterations": 60,
+   "train_rows": 2728230,
+   "val_rows": 321297,
+   "test_rows": 386514,
+   "fit_seconds": 551.7,
+   "val": {
+    "rows": 321297,
+    "accuracy_pct": 93.769,
+    "within_10pct": 84.91,
+    "MAE_usd": 12.0,
+    "RMSE_usd": 46.44
+   },
+   "held_out_routes": [
+    "LAX-JFK",
+    "LAX-ORD",
+    "JFK-SFO",
+    "EWR-LAX",
+    "DFW-ORD"
+   ],
+   "reverse_routes_also_removed_from_training": true,
+   "model_all_rows": {
+    "rows": 386514,
+    "accuracy_pct": 93.091,
+    "within_10pct": 82.25,
+    "MAE_usd": 19.15,
+    "RMSE_usd": 58.97
+   },
+   "model_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 93.6,
+    "within_10pct": 83.71,
+    "MAE_usd": 17.39,
+    "RMSE_usd": 51.03
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 376027,
+    "accuracy_pct": 94.18,
+    "within_10pct": 82.81,
+    "MAE_usd": 15.67,
+    "RMSE_usd": 56.8
+   },
+   "naive_route_dbd_median_all_rows": null,
+   "naive_route_dbd_median_rows_with_history": null,
+   "share_rows_with_history_pct": 97.29,
+   "by_dbd_bucket_model": {
+    "7-14": {
+     "rows": 17768,
+     "accuracy_pct": 90.163,
+     "within_10pct": 70.36,
+     "MAE_usd": 36.7,
+     "RMSE_usd": 78.88
+    },
+    "15-30": {
+     "rows": 36102,
+     "accuracy_pct": 90.906,
+     "within_10pct": 72.77,
+     "MAE_usd": 27.65,
+     "RMSE_usd": 60.37
+    },
+    "31-60": {
+     "rows": 67137,
+     "accuracy_pct": 92.643,
+     "within_10pct": 79.76,
+     "MAE_usd": 18.7,
+     "RMSE_usd": 43.14
+    },
+    "61-120": {
+     "rows": 134533,
+     "accuracy_pct": 93.056,
+     "within_10pct": 82.81,
+     "MAE_usd": 18.17,
+     "RMSE_usd": 55.96
+    },
+    "121-180": {
+     "rows": 130974,
+     "accuracy_pct": 94.356,
+     "within_10pct": 87.16,
+     "MAE_usd": 15.66,
+     "RMSE_usd": 65.13
+    }
+   },
+   "by_dbd_bucket_naive_last": {
+    "7-14": {
+     "rows": 17471,
+     "accuracy_pct": 91.19,
+     "within_10pct": 71.0,
+     "MAE_usd": 33.06,
+     "RMSE_usd": 77.85
+    },
+    "15-30": {
+     "rows": 35503,
+     "accuracy_pct": 92.007,
+     "within_10pct": 72.26,
+     "MAE_usd": 24.33,
+     "RMSE_usd": 61.52
+    },
+    "31-60": {
+     "rows": 66087,
+     "accuracy_pct": 93.716,
+     "within_10pct": 79.51,
+     "MAE_usd": 16.14,
+     "RMSE_usd": 44.88
+    },
+    "61-120": {
+     "rows": 131373,
+     "accuracy_pct": 94.051,
+     "within_10pct": 83.07,
+     "MAE_usd": 15.15,
+     "RMSE_usd": 55.73
+    },
+    "121-180": {
+     "rows": 125593,
+     "accuracy_pct": 95.59,
+     "within_10pct": 88.89,
+     "MAE_usd": 11.1,
+     "RMSE_usd": 58.62
+    }
+   },
+   "by_dbd_bucket_naive_route_median": null,
+   "by_route_model": {
+    "DFW-ORD": {
+     "rows": 74904,
+     "accuracy_pct": 92.855,
+     "within_10pct": 83.88,
+     "MAE_usd": 15.54,
+     "RMSE_usd": 61.52
+    },
+    "EWR-LAX": {
+     "rows": 55383,
+     "accuracy_pct": 94.41,
+     "within_10pct": 83.84,
+     "MAE_usd": 16.79,
+     "RMSE_usd": 44.66
+    },
+    "JFK-SFO": {
+     "rows": 73910,
+     "accuracy_pct": 92.342,
+     "within_10pct": 78.85,
+     "MAE_usd": 25.6,
+     "RMSE_usd": 60.36
+    },
+    "LAX-JFK": {
+     "rows": 101746,
+     "accuracy_pct": 93.301,
+     "within_10pct": 82.21,
+     "MAE_usd": 21.64,
+     "RMSE_usd": 62.01
+    },
+    "LAX-ORD": {
+     "rows": 80571,
+     "accuracy_pct": 92.827,
+     "within_10pct": 82.79,
+     "MAE_usd": 15.05,
+     "RMSE_usd": 59.94
+    }
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 376027,
+    "share_actually_unchanged": 65.39,
+    "hit_rate_on_changed_pct": 69.62,
+    "majority_class_pct": 55.08,
+    "pct_changes_that_are_up": 55.08,
+    "hit_rate_changes_over_10pct": 78.24,
+    "rows_changes_over_10pct": 64750,
+    "MAE_change_usd_model": 17.39,
+    "MAE_change_usd_no_change_baseline": 15.67
+   },
+   "direction_vs_price_7d_earlier": {
+    "rows_with_reference": 333173,
+    "share_actually_unchanged": 26.11,
+    "hit_rate_on_changed_pct": 87.51,
+    "majority_class_pct": 58.42,
+    "pct_changes_that_are_up": 58.42,
+    "hit_rate_changes_over_10pct": 91.66,
+    "rows_changes_over_10pct": 133757,
+    "MAE_change_usd_model": 17.15,
+    "MAE_change_usd_no_change_baseline": 35.51,
+    "hit_rate_persistence_baseline_pct": 90.71,
+    "persistence_baseline_rows": 223200,
+    "hit_rate_model_on_same_rows_pct": 89.22
+   },
+   "model_size_mb": 892.7
+  }
+ },
+ "ablation_ladder_T_lightgbm_early_stopping": {
+  "basics": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 74.448,
+    "within_10pct": 31.37,
+    "MAE_usd": 56.12,
+    "RMSE_usd": 109.3
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 71.679,
+    "within_10pct": 24.73,
+    "MAE_usd": 62.02,
+    "RMSE_usd": 107.13
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 71.659,
+    "within_10pct": 24.75,
+    "MAE_usd": 61.84,
+    "RMSE_usd": 106.06
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.76,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 67.87,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 61.84,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 798,
+   "train_rows": 2932106,
+   "families": [
+    "basics"
+   ]
+  },
+  "+history": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 94.103,
+    "within_10pct": 83.36,
+    "MAE_usd": 13.89,
+    "RMSE_usd": 60.59
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.988,
+    "within_10pct": 80.48,
+    "MAE_usd": 13.58,
+    "RMSE_usd": 43.47
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.311,
+    "within_10pct": 81.35,
+    "MAE_usd": 12.61,
+    "RMSE_usd": 38.65
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.66,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 64.71,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.61,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 253,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history"
+   ]
+  },
+  "+route_market": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 93.036,
+    "within_10pct": 83.74,
+    "MAE_usd": 15.41,
+    "RMSE_usd": 75.72
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.627,
+    "within_10pct": 80.71,
+    "MAE_usd": 14.0,
+    "RMSE_usd": 50.28
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.63,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 52.28,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 52.32,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.94,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 1,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market"
+   ]
+  },
+  "+calendar": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 93.049,
+    "within_10pct": 83.77,
+    "MAE_usd": 15.4,
+    "RMSE_usd": 75.72
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.642,
+    "within_10pct": 80.73,
+    "MAE_usd": 13.98,
+    "RMSE_usd": 50.25
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.024,
+    "within_10pct": 81.63,
+    "MAE_usd": 12.95,
+    "RMSE_usd": 46.15
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 53.42,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 54.35,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.95,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 15,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar"
+   ]
+  },
+  "+fuel": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 93.047,
+    "within_10pct": 83.76,
+    "MAE_usd": 15.39,
+    "RMSE_usd": 75.71
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.64,
+    "within_10pct": 80.73,
+    "MAE_usd": 13.98,
+    "RMSE_usd": 50.25
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.63,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 53.27,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 53.79,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.94,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 7,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel"
+   ]
+  },
+  "+weather": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 94.07,
+    "within_10pct": 83.86,
+    "MAE_usd": 14.01,
+    "RMSE_usd": 61.29
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.969,
+    "within_10pct": 80.83,
+    "MAE_usd": 13.53,
+    "RMSE_usd": 43.48
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.276,
+    "within_10pct": 81.65,
+    "MAE_usd": 12.62,
+    "RMSE_usd": 38.84
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.96,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.78,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.62,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel",
+    "weather"
+   ]
+  },
+  "basics+route_market": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 93.159,
+    "within_10pct": 82.58,
+    "MAE_usd": 16.09,
+    "RMSE_usd": 63.76
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.154,
+    "within_10pct": 79.8,
+    "MAE_usd": 15.41,
+    "RMSE_usd": 45.4
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 92.438,
+    "within_10pct": 80.64,
+    "MAE_usd": 14.53,
+    "RMSE_usd": 41.03
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 57.65,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 62.61,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 14.53,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 263,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "route_market"
+   ]
+  },
+  "basics+calendar": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 79.941,
+    "within_10pct": 37.84,
+    "MAE_usd": 44.4,
+    "RMSE_usd": 92.88
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 76.856,
+    "within_10pct": 28.37,
+    "MAE_usd": 50.65,
+    "RMSE_usd": 89.34
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 76.857,
+    "within_10pct": 28.37,
+    "MAE_usd": 50.43,
+    "RMSE_usd": 87.94
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 60.9,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 70.12,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 50.43,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 800,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "calendar"
+   ]
+  },
+  "basics+fuel": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 73.778,
+    "within_10pct": 29.87,
+    "MAE_usd": 57.93,
+    "RMSE_usd": 111.71
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 70.014,
+    "within_10pct": 24.23,
+    "MAE_usd": 64.24,
+    "RMSE_usd": 110.23
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 69.986,
+    "within_10pct": 24.26,
+    "MAE_usd": 64.05,
+    "RMSE_usd": 109.2
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.48,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 67.55,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 64.05,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 797,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "fuel"
+   ]
+  },
+  "basics+weather": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 78.101,
+    "within_10pct": 37.07,
+    "MAE_usd": 45.89,
+    "RMSE_usd": 94.7
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 75.961,
+    "within_10pct": 28.9,
+    "MAE_usd": 51.97,
+    "RMSE_usd": 92.35
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 75.945,
+    "within_10pct": 28.89,
+    "MAE_usd": 51.78,
+    "RMSE_usd": 91.03
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 60.77,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 69.79,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 51.78,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 800,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "weather"
+   ]
+  },
+  "all+weather_ORACLE(actual dep-date weather, not known at booking)": {
+   "val": {
+    "rows": 309915,
+    "accuracy_pct": 93.053,
+    "within_10pct": 83.78,
+    "MAE_usd": 15.38,
+    "RMSE_usd": 75.7
+   },
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.642,
+    "within_10pct": 80.75,
+    "MAE_usd": 13.97,
+    "RMSE_usd": 50.23
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.017,
+    "within_10pct": 81.63,
+    "MAE_usd": 12.95,
+    "RMSE_usd": 46.15
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "naive_route_dbd_median_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 66.329,
+    "within_10pct": 22.59,
+    "MAE_usd": 70.73,
+    "RMSE_usd": 119.78
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 52.99,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 53.81,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.95,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 10,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel",
+    "weather",
+    "weather_oracle"
+   ]
+  }
+ },
+ "ablation_ladder_T_lightgbm_fixed_124_rounds": {
+  "basics": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 72.135,
+    "within_10pct": 25.73,
+    "MAE_usd": 61.53,
+    "RMSE_usd": 108.7
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 72.104,
+    "within_10pct": 25.74,
+    "MAE_usd": 61.37,
+    "RMSE_usd": 107.67
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.68,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 68.19,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 61.37,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics"
+   ]
+  },
+  "+history": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.87,
+    "within_10pct": 80.52,
+    "MAE_usd": 13.69,
+    "RMSE_usd": 44.49
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.205,
+    "within_10pct": 81.39,
+    "MAE_usd": 12.71,
+    "RMSE_usd": 39.77
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 57.81,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 61.34,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.71,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history"
+   ]
+  },
+  "+route_market": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.775,
+    "within_10pct": 80.55,
+    "MAE_usd": 13.83,
+    "RMSE_usd": 46.88
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.088,
+    "within_10pct": 81.37,
+    "MAE_usd": 12.89,
+    "RMSE_usd": 42.53
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 57.61,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 60.98,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.89,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market"
+   ]
+  },
+  "+calendar": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.933,
+    "within_10pct": 80.81,
+    "MAE_usd": 13.59,
+    "RMSE_usd": 43.62
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.234,
+    "within_10pct": 81.61,
+    "MAE_usd": 12.68,
+    "RMSE_usd": 38.95
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.49,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.98,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.68,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar"
+   ]
+  },
+  "+fuel": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.892,
+    "within_10pct": 80.55,
+    "MAE_usd": 13.61,
+    "RMSE_usd": 43.89
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.19,
+    "within_10pct": 81.35,
+    "MAE_usd": 12.7,
+    "RMSE_usd": 39.26
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.53,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 64.41,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.7,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel"
+   ]
+  },
+  "+weather (= all)": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.969,
+    "within_10pct": 80.83,
+    "MAE_usd": 13.53,
+    "RMSE_usd": 43.48
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.276,
+    "within_10pct": 81.65,
+    "MAE_usd": 12.62,
+    "RMSE_usd": 38.84
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.96,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.78,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.62,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel",
+    "weather"
+   ]
+  },
+  "all minus history": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 91.799,
+    "within_10pct": 79.46,
+    "MAE_usd": 16.23,
+    "RMSE_usd": 45.31
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 92.062,
+    "within_10pct": 80.23,
+    "MAE_usd": 15.41,
+    "RMSE_usd": 41.11
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.27,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 66.07,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 15.41,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "route_market",
+    "calendar",
+    "fuel",
+    "weather"
+   ]
+  },
+  "all minus route_market": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.937,
+    "within_10pct": 80.81,
+    "MAE_usd": 13.63,
+    "RMSE_usd": 44.43
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.258,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.69,
+    "RMSE_usd": 39.85
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.25,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.52,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.69,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "calendar",
+    "fuel",
+    "weather"
+   ]
+  },
+  "all minus calendar": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.885,
+    "within_10pct": 80.73,
+    "MAE_usd": 13.7,
+    "RMSE_usd": 45.02
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.188,
+    "within_10pct": 81.55,
+    "MAE_usd": 12.77,
+    "RMSE_usd": 40.47
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 56.31,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 58.81,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.77,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "fuel",
+    "weather"
+   ]
+  },
+  "all minus fuel": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.746,
+    "within_10pct": 80.57,
+    "MAE_usd": 13.8,
+    "RMSE_usd": 45.19
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.049,
+    "within_10pct": 81.38,
+    "MAE_usd": 12.88,
+    "RMSE_usd": 40.71
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.34,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 63.28,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.88,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "weather"
+   ]
+  },
+  "all minus weather": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.892,
+    "within_10pct": 80.55,
+    "MAE_usd": 13.61,
+    "RMSE_usd": 43.89
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.19,
+    "within_10pct": 81.35,
+    "MAE_usd": 12.7,
+    "RMSE_usd": 39.26
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 59.53,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 64.41,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.7,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel"
+   ]
+  },
+  "all + weather_ORACLE": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 92.907,
+    "within_10pct": 80.48,
+    "MAE_usd": 13.69,
+    "RMSE_usd": 43.53
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.206,
+    "within_10pct": 81.28,
+    "MAE_usd": 12.79,
+    "RMSE_usd": 38.88
+   },
+   "naive_last_price_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 93.025,
+    "within_10pct": 81.64,
+    "MAE_usd": 12.94,
+    "RMSE_usd": 46.15
+   },
+   "direction_vs_last_observation": {
+    "rows_with_reference": 577183,
+    "share_actually_unchanged": 64.69,
+    "hit_rate_on_changed_pct": 58.81,
+    "majority_class_pct": 53.75,
+    "pct_changes_that_are_up": 53.75,
+    "hit_rate_changes_over_10pct": 62.99,
+    "rows_changes_over_10pct": 105417,
+    "MAE_change_usd_model": 12.79,
+    "MAE_change_usd_no_change_baseline": 12.94,
+    "hit_rate_route_dbd_median_reversion_pct": 57.42
+   },
+   "iterations": 124,
+   "train_rows": 2932106,
+   "families": [
+    "basics",
+    "history",
+    "route_market",
+    "calendar",
+    "fuel",
+    "weather",
+    "weather_oracle"
+   ]
+  }
+ },
+ "permutation_importance_T_test": {
+  "baseline_accuracy_pct": 92.947,
+  "rows": 250000,
+  "features": {
+   "dbd": 0.036,
+   "search_dow": 0.011,
+   "dep_dow": 0.025,
+   "dep_hour": 0.0,
+   "dep_month": 0.004,
+   "airline_id": 0.026,
+   "route_id": 0.331,
+   "stops": 0.012,
+   "dur": 0.035,
+   "distance_mi": 0.078,
+   "last_price": 66.965,
+   "last_gap": 0.006,
+   "p_1d": 0.037,
+   "p_3d": 0.023,
+   "p_7d": 0.002,
+   "min3": 0.025,
+   "mean3": -0.007,
+   "std3": 0.149,
+   "min7": 0.02,
+   "mean7": 0.01,
+   "std7": 0.027,
+   "run_min": 0.008,
+   "run_max": 0.152,
+   "days_since_change": 0.005,
+   "n_changes": 0.002,
+   "n_obs": 0.0,
+   "lr_p1": 0.0,
+   "lr_p3": 0.004,
+   "lr_p7": 0.043,
+   "lr_min3": 0.008,
+   "lr_mean7": 0.024,
+   "lr_runmin": 0.01,
+   "lr_runmax": 0.037,
+   "lr_route": 0.03,
+   "route_med7": 0.593,
+   "airline_rel7": 0.034,
+   "airline_rank7": 0.0,
+   "n_airlines": 0.035,
+   "n_flights_day": 0.0,
+   "day_coverage": 0.0,
+   "s_is_holiday": 0.003,
+   "s_days_to_hol": -0.006,
+   "s_days_since_hol": -0.002,
+   "s_hol_weekend": 0.0,
+   "s_days_to_easter": 0.0,
+   "s_school_summer": 0.0,
+   "s_school_spring_break": 0.0,
+   "s_school_winter": 0.0,
+   "s_thanksgiving_window": 0.0,
+   "s_school_break_any": 0.0,
+   "s_is_weekend": 0.0,
+   "d_is_holiday": 0.0,
+   "d_days_to_hol": 0.0,
+   "d_days_since_hol": 0.001,
+   "d_hol_weekend": 0.0,
+   "d_days_to_easter": -0.002,
+   "d_school_summer": 0.0,
+   "d_school_spring_break": 0.0,
+   "d_school_winter": 0.008,
+   "d_thanksgiving_window": 0.0,
+   "d_school_break_any": 0.01,
+   "d_is_weekend": 0.0,
+   "fx_jet": 0.0,
+   "fx_jet_chg7": 0.012,
+   "fx_jet_chg30": 0.0,
+   "fx_brent": 0.0,
+   "fx_brent_chg7": 0.002,
+   "fx_brent_chg30": 0.0,
+   "wxl_o_tmax": 0.0,
+   "wxl_o_tmin": 0.0,
+   "wxl_o_precip": 0.0,
+   "wxl_o_snow": 0.0,
+   "wxl_o_wind": 0.0,
+   "wxl_d_tmax": 0.0,
+   "wxl_d_tmin": 0.0,
+   "wxl_d_precip": 0.0,
+   "wxl_d_snow": 0.0,
+   "wxl_d_wind": 0.0
+  },
+  "families": {
+   "basics": {
+    "mean_drop_pct_points": 0.5587,
+    "std": 0.0054
+   },
+   "history": {
+    "mean_drop_pct_points": 66.9913,
+    "std": 0.0547
+   },
+   "route_market": {
+    "mean_drop_pct_points": 0.633,
+    "std": 0.0008
+   },
+   "calendar": {
+    "mean_drop_pct_points": 0.0123,
+    "std": 0.0005
+   },
+   "fuel": {
+    "mean_drop_pct_points": 0.01,
+    "std": 0.0
+   },
+   "weather": {
+    "mean_drop_pct_points": 0.0,
+    "std": 0.0
+   }
+  },
+  "note": "accuracy drop (percentage points) when the column(s) are shuffled on the test window; whole family shuffled together with one permutation. The anchor is recomputed from the shuffled last_price/route_med7."
+ },
+ "direction_classifier_T": {
+  "test_rows_that_changed": 203824,
+  "hit_rate_pct": 69.18,
+  "majority_class_pct": 53.75,
+  "auc": 0.7733,
+  "iterations": 74,
+  "train_rows": 883887,
+  "hit_rate_mean_reversion_vs_route_pct": 58.98,
+  "note": "only rows whose price differs from the last observed price; this answers 'given a move, up or down?'. P(any move) is a separate question: 65% of next observations are unchanged.",
+  "top_gain_features": {
+   "lr_mean7": 0.2096,
+   "lr_min3": 0.1233,
+   "lr_route": 0.0693,
+   "route_id": 0.0615,
+   "dbd": 0.0513,
+   "s_days_to_easter": 0.0454,
+   "airline_id": 0.0395,
+   "lr_runmax": 0.0336,
+   "fx_brent": 0.0292,
+   "lr_p7": 0.0251
+  }
+ },
+ "random_forest_ablation_T": {
+  "basics": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 65.709,
+    "within_10pct": 26.87,
+    "MAE_usd": 70.06,
+    "RMSE_usd": 121.76
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 65.615,
+    "within_10pct": 26.84,
+    "MAE_usd": 70.0,
+    "RMSE_usd": 121.02
+   },
+   "fit_seconds": 38.3
+  },
+  "+history": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 91.823,
+    "within_10pct": 80.34,
+    "MAE_usd": 15.7,
+    "RMSE_usd": 46.06
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 92.191,
+    "within_10pct": 81.23,
+    "MAE_usd": 14.69,
+    "RMSE_usd": 41.5
+   },
+   "fit_seconds": 226.4
+  },
+  "all": {
+   "model_all_rows": {
+    "rows": 587197,
+    "accuracy_pct": 91.59,
+    "within_10pct": 80.7,
+    "MAE_usd": 16.25,
+    "RMSE_usd": 45.91
+   },
+   "model_rows_with_history": {
+    "rows": 577183,
+    "accuracy_pct": 91.875,
+    "within_10pct": 81.49,
+    "MAE_usd": 15.4,
+    "RMSE_usd": 41.69
+   },
+   "fit_seconds": 707.4
+  }
+ },
+ "random_forest_importance_T": {
+  "baseline_accuracy_pct": 91.525,
+  "rows": 150000,
+  "features": {
+   "dbd": 0.293,
+   "search_dow": 0.101,
+   "dep_dow": 0.032,
+   "dep_hour": 0.003,
+   "dep_month": -0.004,
+   "airline_id": 0.036,
+   "route_id": 0.005,
+   "stops": 0.014,
+   "dur": 0.056,
+   "distance_mi": 0.065,
+   "last_price": 66.1,
+   "last_gap": 0.012,
+   "p_1d": -0.007,
+   "p_3d": 0.034,
+   "p_7d": 0.034,
+   "min3": 0.034,
+   "mean3": 0.043,
+   "std3": 0.018,
+   "min7": 0.035,
+   "mean7": 0.068,
+   "std7": 0.014,
+   "run_min": 0.078,
+   "run_max": 0.05,
+   "days_since_change": 0.027,
+   "n_changes": 0.02,
+   "n_obs": 0.013,
+   "lr_p1": 0.004,
+   "lr_p3": 0.061,
+   "lr_p7": -0.001,
+   "lr_min3": 0.026,
+   "lr_mean7": 0.229,
+   "lr_runmin": 0.02,
+   "lr_runmax": -0.081,
+   "lr_route": 0.087,
+   "route_med7": 0.32,
+   "airline_rel7": 0.034,
+   "airline_rank7": 0.018,
+   "n_airlines": 0.007,
+   "n_flights_day": 0.01,
+   "day_coverage": 0.003,
+   "s_is_holiday": 0.001,
+   "s_days_to_hol": 0.009,
+   "s_days_since_hol": 0.0,
+   "s_hol_weekend": 0.0,
+   "s_days_to_easter": 0.0,
+   "s_school_summer": 0.0,
+   "s_school_spring_break": 0.0,
+   "s_school_winter": 0.0,
+   "s_thanksgiving_window": 0.0,
+   "s_school_break_any": 0.0,
+   "s_is_weekend": 0.011,
+   "d_is_holiday": 0.001,
+   "d_days_to_hol": 0.005,
+   "d_days_since_hol": 0.0,
+   "d_hol_weekend": 0.001,
+   "d_days_to_easter": -0.007,
+   "d_school_summer": 0.0,
+   "d_school_spring_break": 0.003,
+   "d_school_winter": 0.005,
+   "d_thanksgiving_window": 0.002,
+   "d_school_break_any": 0.02,
+   "d_is_weekend": 0.005,
+   "fx_jet": -0.002,
+   "fx_jet_chg7": 0.026,
+   "fx_jet_chg30": 0.002,
+   "fx_brent": 0.0,
+   "fx_brent_chg7": 0.007,
+   "fx_brent_chg30": 0.002,
+   "wxl_o_tmax": 0.005,
+   "wxl_o_tmin": 0.007,
+   "wxl_o_precip": 0.006,
+   "wxl_o_snow": 0.0,
+   "wxl_o_wind": 0.005,
+   "wxl_d_tmax": 0.005,
+   "wxl_d_tmin": 0.007,
+   "wxl_d_precip": 0.002,
+   "wxl_d_snow": 0.001,
+   "wxl_d_wind": 0.003
+  },
+  "families": {
+   "basics": {
+    "mean_drop_pct_points": 0.5493,
+    "std": 0.0029
+   },
+   "history": {
+    "mean_drop_pct_points": 64.9127,
+    "std": 0.0289
+   },
+   "route_market": {
+    "mean_drop_pct_points": 0.4393,
+    "std": 0.0041
+   },
+   "calendar": {
+    "mean_drop_pct_points": 0.0497,
+    "std": 0.0017
+   },
+   "fuel": {
+    "mean_drop_pct_points": 0.0273,
+    "std": 0.0005
+   },
+   "weather": {
+    "mean_drop_pct_points": 0.0197,
+    "std": 0.0021
+   }
+  },
+  "note": "accuracy drop (percentage points) when the column(s) are shuffled on the test window; whole family shuffled together with one permutation. The anchor is recomputed from the shuffled last_price/route_med7.",
+  "mdi_impurity_importance": {
+   "lr_mean7": 0.05843,
+   "dbd": 0.04102,
+   "airline_rel7": 0.03463,
+   "lr_route": 0.03065,
+   "dur": 0.02793,
+   "airline_rank7": 0.02379,
+   "route_med7": 0.02308,
+   "lr_min3": 0.02283,
+   "dep_dow": 0.02021,
+   "lr_p7": 0.01969,
+   "distance_mi": 0.01916,
+   "lr_runmax": 0.01899,
+   "std7": 0.01893,
+   "s_days_to_easter": 0.01881,
+   "dep_hour": 0.01874,
+   "lr_runmin": 0.01755,
+   "day_coverage": 0.01723,
+   "wxl_d_wind": 0.01716,
+   "wxl_o_wind": 0.01711,
+   "d_days_to_easter": 0.01684,
+   "wxl_d_precip": 0.01676,
+   "wxl_o_precip": 0.01669,
+   "s_days_to_hol": 0.01595,
+   "n_flights_day": 0.01584,
+   "airline_id": 0.01563,
+   "wxl_d_tmin": 0.0154,
+   "wxl_d_tmax": 0.01539,
+   "d_days_to_hol": 0.01521,
+   "wxl_o_tmax": 0.01518,
+   "wxl_o_tmin": 0.01511,
+   "std3": 0.01499,
+   "d_days_since_hol": 0.01496,
+   "lr_p3": 0.01493,
+   "search_dow": 0.01469,
+   "fx_brent_chg30": 0.01464,
+   "fx_jet_chg30": 0.01434,
+   "fx_brent_chg7": 0.01423,
+   "fx_jet_chg7": 0.01385,
+   "mean7": 0.01356,
+   "s_days_since_hol": 0.01344,
+   "fx_brent": 0.01314,
+   "route_id": 0.01273,
+   "run_min": 0.01258,
+   "run_max": 0.01248,
+   "n_obs": 0.01242,
+   "mean3": 0.0122,
+   "fx_jet": 0.01193,
+   "n_changes": 0.01113,
+   "p_1d": 0.01098,
+   "last_price": 0.01078,
+   "p_7d": 0.01059,
+   "min7": 0.01036,
+   "p_3d": 0.00972,
+   "days_since_change": 0.00927,
+   "min3": 0.00893,
+   "n_airlines": 0.00715,
+   "stops": 0.00653,
+   "last_gap": 0.00647,
+   "dep_month": 0.00452,
+   "d_school_break_any": 0.00439,
+   "s_is_weekend": 0.00265,
+   "d_is_weekend": 0.00256,
+   "wxl_d_snow": 0.00239,
+   "wxl_o_snow": 0.00231,
+   "d_school_winter": 0.00221,
+   "d_school_summer": 0.00088,
+   "d_hol_weekend": 0.00083,
+   "s_school_summer": 0.0008,
+   "s_school_break_any": 0.00075,
+   "d_thanksgiving_window": 0.00065,
+   "s_is_holiday": 0.00049,
+   "lr_p1": 0.00044,
+   "d_is_holiday": 0.00036,
+   "s_school_spring_break": 0.00036,
+   "s_hol_weekend": 0.00036,
+   "d_school_spring_break": 0.0001,
+   "s_school_winter": 0.0,
+   "s_thanksgiving_window": 0.0
+  }
+ },
+ "scale_check": {}
+}
