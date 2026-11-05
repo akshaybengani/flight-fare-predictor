@@ -250,7 +250,7 @@
       "train_seconds": 36.8,
       "predict_ms_per_1k": 9.96,
       "model_mb": 919.96,
-      "notes": "train seconds A=37, C=34, E=26 (final fit, excludes tuning); fit info {\"A\": {\"n_trees\": 120}, \"C\": {\"n_trees\": 120}, \"E\": {\"n_trees\": 120}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
+      "notes": "requested_by: portfolio manager; train seconds A=37, C=34, E=26 (final fit, excludes tuning); fit info {\"A\": {\"n_trees\": 120}, \"C\": {\"n_trees\": 120}, \"E\": {\"n_trees\": 120}}; train_seconds / predict_ms_per_1k / model_mb are for scenario A (predict time excludes feature encoding)"
     },
     {
       "algorithm": "Extra Trees",

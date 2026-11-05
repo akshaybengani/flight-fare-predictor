@@ -124,3 +124,17 @@ Timing was measured on a shared, heavily loaded MacBook (4 threads), so treat se
 - Scenario C is limited by data (two scrape periods), not by algorithm, and its algorithm ranking is unstable (see CatBoost's 3.8 pt seed range).
 - Tuning validation splits are random within the training period, so they under-represent the shift seen in C; tuned parameters may favour A-style fit.
 - Timings come from a shared, loaded laptop and are only comparable with each other.
+
+## Second pass: enriched features (top 3 algorithms)
+
+The three best algorithms by mean accuracy (XGBoost, HGB, CatBoost) were re-run on the `+all_booking_time` enriched set from the enrich-features work (calendar/holidays, lagged weather climatology, fuel/FX, static airport features; 73–87 new columns used depending on scenario, 90–105 features in total; no same-day weather). Same splits, protocol and tuning budget. Results: `models/algorithms_enriched.json`. The HGB row reproduces `models/metrics_v2.json` (93.21 / 86.59 / 67.20).
+
+| Algorithm | A baseline → enriched | E baseline → enriched | C baseline → enriched |
+|---|---|---|---|
+| HGB (current config) | 93.04 → 93.21 (+0.17) | 87.00 → 86.59 (−0.41) | 66.17 → 67.20 (+1.03) |
+| XGBoost | 93.42 → 93.59 (+0.17) | 86.88 → 86.49 (−0.39) | 67.74 → 68.50 (+0.76) |
+| CatBoost | 91.47 → 91.72 (+0.25) | 86.25 → 85.88 (−0.38) | 67.39 → 64.23 (−3.16) |
+
+- The enriched features do **not** change the algorithm ranking: XGBoost still leads A and C; on E, HGB (86.59) edges XGBoost (86.49).
+- The effect of the extra features is about the same size as the differences between algorithms (a few tenths of a point), slightly positive on A, slightly negative on E, and mixed on C (CatBoost's C result is seed-unstable, see above). Only one seed per cell here, so none of these gaps is established.
+- Training seconds on the enriched set are not comparable with the baseline table (different machine load).
