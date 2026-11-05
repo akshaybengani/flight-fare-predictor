@@ -13,6 +13,7 @@ from features import add_basic, COORDS
 
 ROOT = Path(__file__).resolve().parents[1]
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"), static_url_path="/static")
+app.json.sort_keys = False   # keep field order (the US feature families are shown in the order the model groups them)
 
 bundle = joblib.load(ROOT / "models/fare_model.joblib")
 MODEL, ENC = bundle["model"], bundle["enc"]
@@ -42,6 +43,8 @@ DEFAULTS = {
     "listed_window_days": 3,         # listed price = median real fare within +/- this many days-left
     "curve_days": [45, 40, 30, 21, 14, 7, 3, 1],
     "flag_threshold_pct": 10,        # changes bigger than this are highlighted
+    "big_save_threshold_pct": 20,    # a "may drop" flight is a big save at or above this predicted fall (%)
+    "big_save_min_inr": 1500,        # ...or at or above this rupee saving (0 switches the rupee test off)
     "default_sort": "listed",
     "show_curve": True,
 }
@@ -74,6 +77,8 @@ def validate_config(raw):
     intval("predict_at_days_left", 1, 45)
     intval("listed_window_days", 0, 10)
     intval("flag_threshold_pct", 1, 100)
+    intval("big_save_threshold_pct", 5, 80)
+    intval("big_save_min_inr", 0, 50000)
     if raw.get("price_period", DEFAULTS["price_period"]) in (2022, 2023):
         cfg["price_period"] = int(raw.get("price_period", DEFAULTS["price_period"]))
     else:
@@ -123,6 +128,32 @@ def clean(v):
             return None
         return int(v) if float(v).is_integer() else round(float(v), 2)
     return v
+
+
+def add_drop_fields(f, days_left, cfg):
+    """May-drop flag from numbers the search already computed (no extra model calls).
+
+    A flight may drop when the model's predicted price at any point from today onward (curve points with
+    days-before-departure <= today's, plus the configured horizon prediction) is below the listed price by
+    at least flag_threshold_pct.
+    """
+    pts = [(c["d"], c["p"]) for c in f["curve"] if c["d"] <= days_left]
+    if cfg["predict_at_days_left"] <= days_left:
+        pts.append((cfg["predict_at_days_left"], f["predicted"]))
+    drop_pct, best_d, best_p = 0.0, None, None
+    if pts and f["listed"] > 0:
+        d, p = min(pts, key=lambda t: (t[1], -t[0]))   # lowest price; the earlier point on a tie
+        drop_pct = max(0.0, round((f["listed"] - p) / f["listed"] * 100, 1))
+        best_d, best_p = d, p
+    f["may_drop"] = bool(drop_pct >= cfg["flag_threshold_pct"])
+    f["drop_pct"] = drop_pct if f["may_drop"] else 0
+    f["drop_best_days_left"] = best_d if f["may_drop"] else None
+    f["drop_price"] = best_p if f["may_drop"] else None
+    # big save: a may-drop flight whose expected fall is large in percent, or in rupees (rupee test off at 0)
+    f["save_inr"] = int(max(0, f["listed"] - best_p)) if f["may_drop"] else 0
+    min_inr = cfg["big_save_min_inr"]
+    f["big_save"] = bool(f["may_drop"] and (f["drop_pct"] >= cfg["big_save_threshold_pct"]
+                                            or (min_inr > 0 and f["save_inr"] >= min_inr)))
 
 
 @app.get("/")
@@ -180,6 +211,8 @@ def search():
                 "route_airline_price_level_inr": clean(math.exp(f.te_route_airline)) if not math.isnan(f.te_route_airline) else None,
             },
         })
+    for f in flights:
+        add_drop_fields(f, days_left, cfg)
     return jsonify(source=src, destination=dst, date=travel.isoformat(), days_out=days_out,
                    clamped=days_out > MAX_DAYS, model_days=days_left, page_size=PAGE_SIZE,
                    config=cfg, flights=flights)
@@ -294,6 +327,94 @@ def algorithms():
     sets = {k: v for k, v in (("baseline18", base), ("enriched", enr)) if v}
     return jsonify(status="ready" if sets else "pending", mock=mock, sets=sets,
                    message=None if sets else "No comparison results yet. They appear here once models/algorithms.json exists.")
+
+
+# ---------------------------------------------------------------- United States market (optional, lazy)
+# us_service is imported on first use, so the app starts and India works when the US model files are missing.
+# Development only: FARESIGHT_MOCK=1 falls back to src/us_mock.py (sample data, flagged "mock": true) when the real
+# service cannot load.
+_US = {"mod": None, "err": None, "mock": False, "tried": 0.0}
+US_MISSING = "US data is not installed on this server."
+
+
+def us_module():
+    """Return the US service module, or None. Failures are retried at most every 20 seconds."""
+    import time
+    if _US["mod"] is not None:
+        return _US["mod"]
+    if _US["err"] and time.time() - _US["tried"] < 20:
+        return None
+    _US["tried"] = time.time()
+    try:
+        import us_service
+        us_service.us_meta()                      # forces the lazy model and snapshot load
+        _US.update(mod=us_service, err=None, mock=False)
+    except Exception as e:                        # missing files, missing optional libraries, anything
+        _US["err"] = f"{type(e).__name__}: {e}"
+        if os.environ.get("FARESIGHT_MOCK") == "1":
+            try:
+                import us_mock
+                _US.update(mod=us_mock, mock=True)
+            except Exception as e2:
+                _US["err"] += f" (mock also failed: {e2})"
+    return _US["mod"]
+
+
+def finite_json(o):
+    """Replace NaN and infinity with None, recursively. Browsers cannot parse the bare NaN that Python's JSON writes,
+    and some US inputs are missing (for example price history on a flight's first quote)."""
+    if isinstance(o, float) or isinstance(o, np.floating):
+        return float(o) if math.isfinite(float(o)) else None
+    if isinstance(o, dict):
+        return {k: finite_json(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [finite_json(v) for v in o]
+    return o
+
+
+@app.get("/api/us/meta")
+def us_meta_api():
+    mod = us_module()
+    if mod is None:
+        return jsonify(available=False, error=US_MISSING), 503
+    try:
+        meta = mod.us_meta()
+    except Exception as e:
+        return jsonify(available=False, error=US_MISSING, detail=str(e)), 503
+    return jsonify(finite_json(dict(available=True, mock=_US["mock"], **{k: v for k, v in meta.items() if k != "mock"})))
+
+
+@app.post("/api/us/search")
+def us_search_api():
+    import time
+    mod = us_module()
+    if mod is None:
+        return jsonify(available=False, error=US_MISSING), 503
+    q = request.get_json(force=True, silent=True)
+    if not isinstance(q, dict):
+        return jsonify(error="Send a JSON body with source, destination and date."), 400
+    src, dst, date = q.get("source"), q.get("destination"), q.get("date")
+    if not src or not dst or not date:
+        return jsonify(error="Pick an origin, a destination and a departure date."), 400
+    if str(src).upper() == str(dst).upper():
+        return jsonify(error="Pick two different airports."), 400
+    cfg = load_config()
+    ucfg = {"flag_threshold_pct": cfg["flag_threshold_pct"], "big_save_threshold_pct": cfg["big_save_threshold_pct"]}
+    try:
+        if q.get("ahead") is not None:
+            ucfg["predict_ahead_days"] = int(q["ahead"])
+        t0 = time.time()
+        res = mod.us_search(src, dst, date, q.get("cabin"), ucfg)
+        res["elapsed_ms"] = round((time.time() - t0) * 1000)
+    except (TypeError, ValueError) as e:
+        return jsonify(error=f"Invalid input: {e}"), 400
+    except Exception:
+        app.logger.exception("us_search failed")
+        return jsonify(error="The US search failed on the server. Try another route or date."), 500
+    if not res.get("ok", True):
+        return jsonify(error=res.get("error", "Search failed.")), 404
+    res["mock"] = _US["mock"]
+    return jsonify(finite_json(res))
 
 
 if __name__ == "__main__":

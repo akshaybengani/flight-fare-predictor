@@ -161,3 +161,42 @@ Boarding-pass strips and perforation notches (the notches are masks, so they sho
 - At 760 px and below, every table with a header row stacks into labelled rows instead of scrolling sideways; tickets switch to the stacked layout at the same width.
 - The speed-against-accuracy scatter sizes to the viewport. On a phone it numbers the dots and lists names below, since long names cannot be labelled in place.
 - Audited at 1440, 1024, 768 and 390 px in the dark theme on every Model & Insights tab with a script that checks for page overflow, clipped text and scrolling containers: no findings. Search results and Details were checked by eye at 1280 and 390 in both themes.
+
+## "May drop" flag
+
+Server side (`add_drop_fields` in `src/app.py`, no extra model calls): a flight may drop when the lowest predicted price among the curve points at or after today's days-before-departure, plus the configured horizon prediction, is at least `flag_threshold_pct` below the listed price. The search response gains `may_drop`, `drop_pct`, `drop_best_days_left` and `drop_price`.
+
+UI:
+- A quiet line at the foot of the ticket's main part: a small down-arrow, the words "May drop" and "about 12% by 14 days out", set in the "down" green, separated by a dotted rule. A thin green line runs along the top of the stub. It is distinct from the red up-arrow and "Large rise" label, and carries meaning in words and arrow shape, not colour alone.
+- Filter "Price may drop (n)" beside the airline and stops filters. The count follows the airline and stops filters, so it always equals the number of results when ticked. It works with sorting and the pager (page resets to 1), and stays ticked across a new search. If a route has no drops the empty state says so and offers "Show all flights".
+- Sort option "Biggest expected drop".
+- In Details, the lowest point is ringed on the curve with a direct label, and one sentence states when and how much, ending "It is an estimate, not a promise."
+- The footer states that a "may drop" flag is an estimate, not a promise.
+
+## "Big save" sticker
+
+A may-drop flight is a big save when its expected fall is at least `big_save_threshold_pct` (default 20, range 5 to 80) or its expected rupee saving is at least `big_save_min_inr` (default 1500, range 0 to 50000; 0 turns the rupee test off). Both settings live in `DEFAULTS`/`validate_config`, in `GET/POST /api/config` (reset restores them) and in the Settings tab. The search response adds `big_save` and `save_inr` (0 when not a may-drop flight).
+
+UI: the sticker replaces the quieter "May drop" line on big-save tickets and keeps its detail text ("about 57% by 21 days out"). It is a filled badge in the "meaning" green with a dashed outer outline, a slight tilt, a hand-drawn price-tag-with-down-arrow icon, "BIG SAVE" in heavy capitals and "Save about ₹3,409". It has an `aria-label` such as "Big save: about 22 percent, 1,840 rupees cheaper". Text on the badge uses `--on-ink` over `--on-bg` (6.3:1 in light, white on `#2B6B4E`; 8.6:1 in dark, `#10140F` on `#86BD94`; both pass AA), and the words and icon carry the meaning as well as the colour. A "Big saves (n)" filter sits beside "Price may drop (n)", with the same count rule (counts follow the airline and stops filters), the pager and sorting. "Biggest expected drop" puts big saves first, then orders by percentage. The Details heading carries a small "Big save" tag and the sentence adds the rupee saving.
+
+## United States market
+
+**Switch.** A two-part segmented control above the search card: "India (INR)" and "United States (USD)". The choice is remembered per visitor in `localStorage` (`fs-market`, in try/catch). India is the default and its behaviour, endpoints and look are unchanged.
+
+**Backend (`src/app.py`).** `GET /api/us/meta` and `POST /api/us/search` delegate to `src/us_service.py`, imported lazily on first use, so the app starts and India works when the US files are missing. Failures return `503 {"available": false, "error": "US data is not installed on this server."}` and are retried at most every 20 seconds. Bad input returns a JSON `400` (missing fields, same airport twice, bad body) or `404` (unknown route or date format, from the service); an out-of-range date returns `200` with an empty list and the service's note. Each search response includes `elapsed_ms`. The "may drop" and "big save" percentage thresholds come from the shared config; the US dollar amount uses the service default. JSON key order is now preserved (`app.json.sort_keys = False`) so the feature families stay in model order.
+
+**Search card in US mode.** Origins and destinations come from `us_meta()`, and the destination list only offers valid pairs for the chosen origin. The date picker is limited to the searchable range. The class selector is replaced by a read-only "Listed as of" field, since cabin is not in the data and the prices are a snapshot. The results show the snapshot date in the facts line and in a note, and an honest sentence that the model improves only slightly on "the price stays the same".
+
+**Results.** The same list, pager, filters, sorting, Approve, "May drop" and "Big save" tags and Details are reused through an adapter that maps a US flight to the India shape. Money is formatted through one function (`$1,234` or `$85.18`). Times are real clock times with a +1 marker for next-day arrivals. "Parameters the model used" is grouped by feature family, each with its column count, as collapsible sections (the first two open).
+
+**Model & Insights, "United States" tab.** Honest note, key counts, the headline accuracy next to the two naive baselines, the inputs by family with column counts, accuracy by horizon, data sources and licence notes (Open-Meteo is non-commercial) and data limits. Tables the service returns in unknown shapes go through a generic renderer. If the service is missing the tab shows the "not installed" state.
+
+**Mock (kept, gated, unused in normal runs).** `src/us_mock.py` mirrors the `us_service` output shape and is used only when `FARESIGHT_MOCK=1` *and* the real service cannot load. With the real service installed it is never imported. Its responses carry `"mock": true` and the UI marks them "Sample data".
+
+**Verified against the real service** (`us_service`, snapshot listed as of 2026-09-30, departures 2026-10-07 to 2027-03-29):
+- 50 routes, 14 airlines, 197,189 flights in the snapshot, **78** model inputs in six families (basics 11, price history 22, route market 7, holidays and calendar 22, fuel 6, weather 10). The brief mentioned 84 to 88; the service reports 78.
+- Searches took about 20 to 60 ms server-side and about 0.5 s end to end in the browser (the first request after a restart loads the model and takes longer; not timed).
+- Most flights show predicted close to listed, as the model note says. Drops are rare: of 51 sampled route and date combinations (17 routes, 3 dates) the most was 4 may-drop flights (ORD to BOS, 15 Nov 2026, all four also big saves); ORD to BOS on 20 Jan 2027 has two plain "May drop" flights; ATL to DFW on 15 Oct 2026 has none, which shows the friendly empty state when the filter is on.
+- Out-of-range dates return an empty list plus a note (shown as "No flights on that date"); same airport, unknown pair, bad date and non-numeric horizon return JSON errors.
+- **Bug found and fixed:** some inputs are missing (for example price history on a flight's first quote). `us_service` returned them as NaN, and Python writes a bare `NaN` that browsers cannot parse, so those searches showed "We could not reach the server". `src/app.py` now converts NaN and infinity to null in the US responses (`finite_json`), and the parameter list shows "not available". The cause is in `us_service._fmt`, which checks `isinstance(v, float)` and so misses numpy float32 values; the service owner may want to change that to `np.floating`.
+- Insights, "United States": real headline accuracy (model 93.3% against 93.0% for "price stays the same" and 66.3% for the route median), the family table, a compact horizon table (the model is only clearly better than the last price from 5 days ahead, by 0.3 to 3.7 points), and sources with licences.

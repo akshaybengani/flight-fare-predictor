@@ -33,7 +33,7 @@ Two pages, served by Flask on `http://localhost:5055`.
 **`/` Demo**
 - Search by origin, destination, travel date and cabin class.
 - Each flight shows the **listed price** (the real scraped fare for that flight near the booking window), the **predicted price** and the percentage change. Changes above a threshold are highlighted.
-- **10 flights per page** with page numbers, plus filters (airline, stops) and sorting (listed, predicted, biggest drop, biggest rise, airline).
+- **10 flights per page** with page numbers, plus filters (airline, stops, "price may drop") and sorting (listed, predicted, biggest predicted drop, biggest predicted rise, biggest expected drop, airline).
 - An **Approve** button per flight (and "approve all on this page") strikes through the listed price and keeps the predicted one.
 - **Details** on any flight shows the predicted-price curve by days before departure and a table of **the exact parameters the model received**: airline, route, departure hour, distance, days before departure, weekday, route supply, the typical price level of that flight, and so on.
 
@@ -182,7 +182,8 @@ scripts/download_data.sh
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/search` | `{source, destination, date, class}` returns flights with listed price, predicted price, curve and the model inputs |
+| `POST /api/search` | `{source, destination, date, class}` returns flights with listed price, predicted price, curve and the model inputs, plus the "may drop" fields `may_drop` (bool), `drop_pct` (largest predicted fall below the listed price, or 0), `drop_best_days_left` and `drop_price` (the lowest predicted point from today onward; null when `may_drop` is false). A flight may drop when that fall is at least `flag_threshold_pct` (default 10%). A model estimate, not a promise |
+| `GET /api/us/meta`, `POST /api/us/search` | United States market (needs the US model files; otherwise `503` with `{available: false}`). Search takes `{source, destination, date}` (airport codes, `YYYY-MM-DD`) and returns flights with USD prices, the same `may_drop`/`big_save` fields (`save_usd`), a `curve` and `inputs` grouped by feature family |
 | `GET/POST /api/config` | read or save demo settings (`{"reset": true}` restores defaults) |
 | `GET /api/meta` | model, data, metrics, experiments and importance (powers the config page) |
 

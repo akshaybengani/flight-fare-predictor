@@ -1,0 +1,355 @@
+{
+ "generated": "2026-11-05 15:47",
+ "type": "one LightGBM per horizon (1,2,3,5,7,10,14 days ahead); other horizons are interpolated; test window = target dates 2026-09-01..09-30",
+ "horizons_trained": [
+  1,
+  2,
+  3,
+  5,
+  7,
+  10,
+  14
+ ],
+ "best_iterations": {
+  "1": 1,
+  "2": 1,
+  "3": 1,
+  "5": 2,
+  "7": 137,
+  "10": 542,
+  "14": 382
+ },
+ "numpy_vs_lightgbm_max_abs_diff_log": {
+  "1": 0.0,
+  "2": 0.0,
+  "3": 0.0,
+  "5": 0.0,
+  "7": 0.0,
+  "10": 0.0,
+  "14": 0.0
+ },
+ "by_horizon": {
+  "1": {
+   "model": {
+    "rows": 565631,
+    "accuracy_pct": 93.186,
+    "within_10pct": 82.03,
+    "MAE_usd": 12.61,
+    "RMSE_usd": 43.78
+   },
+   "naive_last_price": {
+    "rows": 565631,
+    "accuracy_pct": 93.128,
+    "within_10pct": 82.04,
+    "MAE_usd": 12.69,
+    "RMSE_usd": 45.91
+   },
+   "naive_route_days_out_median": {
+    "rows": 565631,
+    "accuracy_pct": 66.298,
+    "within_10pct": 22.61,
+    "MAE_usd": 70.71,
+    "RMSE_usd": 119.23
+   },
+   "delta_vs_naive_points": 0.058,
+   "share_price_unchanged_pct": 65.4,
+   "direction_hit_rate_when_changed_pct": 1.3,
+   "best_iteration": 1,
+   "train_rows": 1606672,
+   "val_rows": 147866,
+   "verdict": "no better than carrying the last price forward"
+  },
+  "2": {
+   "model": {
+    "rows": 554043,
+    "accuracy_pct": 89.226,
+    "within_10pct": 72.13,
+    "MAE_usd": 19.23,
+    "RMSE_usd": 54.11
+   },
+   "naive_last_price": {
+    "rows": 554043,
+    "accuracy_pct": 89.149,
+    "within_10pct": 72.09,
+    "MAE_usd": 19.34,
+    "RMSE_usd": 56.02
+   },
+   "naive_route_days_out_median": {
+    "rows": 554043,
+    "accuracy_pct": 66.278,
+    "within_10pct": 22.62,
+    "MAE_usd": 70.84,
+    "RMSE_usd": 119.58
+   },
+   "delta_vs_naive_points": 0.077,
+   "share_price_unchanged_pct": 49.0,
+   "direction_hit_rate_when_changed_pct": 10.6,
+   "best_iteration": 1,
+   "train_rows": 1549302,
+   "val_rows": 143491,
+   "verdict": "no better than carrying the last price forward"
+  },
+  "3": {
+   "model": {
+    "rows": 543353,
+    "accuracy_pct": 86.505,
+    "within_10pct": 64.89,
+    "MAE_usd": 23.7,
+    "RMSE_usd": 57.85
+   },
+   "naive_last_price": {
+    "rows": 543353,
+    "accuracy_pct": 86.415,
+    "within_10pct": 64.84,
+    "MAE_usd": 23.82,
+    "RMSE_usd": 59.62
+   },
+   "naive_route_days_out_median": {
+    "rows": 543353,
+    "accuracy_pct": 66.248,
+    "within_10pct": 22.62,
+    "MAE_usd": 70.97,
+    "RMSE_usd": 119.77
+   },
+   "delta_vs_naive_points": 0.09,
+   "share_price_unchanged_pct": 38.8,
+   "direction_hit_rate_when_changed_pct": 19.2,
+   "best_iteration": 1,
+   "train_rows": 1511353,
+   "val_rows": 140949,
+   "verdict": "no better than carrying the last price forward"
+  },
+  "5": {
+   "model": {
+    "rows": 525629,
+    "accuracy_pct": 84.934,
+    "within_10pct": 60.45,
+    "MAE_usd": 27.49,
+    "RMSE_usd": 61.26
+   },
+   "naive_last_price": {
+    "rows": 525629,
+    "accuracy_pct": 84.653,
+    "within_10pct": 59.91,
+    "MAE_usd": 27.86,
+    "RMSE_usd": 63.41
+   },
+   "naive_route_days_out_median": {
+    "rows": 525629,
+    "accuracy_pct": 66.172,
+    "within_10pct": 22.61,
+    "MAE_usd": 71.19,
+    "RMSE_usd": 120.0
+   },
+   "delta_vs_naive_points": 0.281,
+   "share_price_unchanged_pct": 30.3,
+   "direction_hit_rate_when_changed_pct": 45.1,
+   "best_iteration": 2,
+   "train_rows": 1450804,
+   "val_rows": 135619,
+   "verdict": "better than carrying the last price forward"
+  },
+  "7": {
+   "model": {
+    "rows": 509143,
+    "accuracy_pct": 84.802,
+    "within_10pct": 52.3,
+    "MAE_usd": 28.92,
+    "RMSE_usd": 53.3
+   },
+   "naive_last_price": {
+    "rows": 509143,
+    "accuracy_pct": 83.939,
+    "within_10pct": 57.76,
+    "MAE_usd": 30.47,
+    "RMSE_usd": 65.77
+   },
+   "naive_route_days_out_median": {
+    "rows": 509143,
+    "accuracy_pct": 66.103,
+    "within_10pct": 22.54,
+    "MAE_usd": 71.42,
+    "RMSE_usd": 120.24
+   },
+   "delta_vs_naive_points": 0.863,
+   "share_price_unchanged_pct": 26.5,
+   "direction_hit_rate_when_changed_pct": 63.7,
+   "best_iteration": 137,
+   "train_rows": 1386816,
+   "val_rows": 130380,
+   "verdict": "better than carrying the last price forward"
+  },
+  "10": {
+   "model": {
+    "rows": 483281,
+    "accuracy_pct": 82.845,
+    "within_10pct": 47.73,
+    "MAE_usd": 32.55,
+    "RMSE_usd": 56.62
+   },
+   "naive_last_price": {
+    "rows": 483281,
+    "accuracy_pct": 79.864,
+    "within_10pct": 49.86,
+    "MAE_usd": 37.55,
+    "RMSE_usd": 75.9
+   },
+   "naive_route_days_out_median": {
+    "rows": 483281,
+    "accuracy_pct": 66.088,
+    "within_10pct": 22.37,
+    "MAE_usd": 71.72,
+    "RMSE_usd": 120.42
+   },
+   "delta_vs_naive_points": 2.981,
+   "share_price_unchanged_pct": 18.1,
+   "direction_hit_rate_when_changed_pct": 66.0,
+   "best_iteration": 542,
+   "train_rows": 1286645,
+   "val_rows": 122403,
+   "verdict": "better than carrying the last price forward"
+  },
+  "14": {
+   "model": {
+    "rows": 449479,
+    "accuracy_pct": 81.661,
+    "within_10pct": 43.85,
+    "MAE_usd": 35.92,
+    "RMSE_usd": 61.01
+   },
+   "naive_last_price": {
+    "rows": 449479,
+    "accuracy_pct": 77.969,
+    "within_10pct": 45.02,
+    "MAE_usd": 42.69,
+    "RMSE_usd": 81.69
+   },
+   "naive_route_days_out_median": {
+    "rows": 449479,
+    "accuracy_pct": 66.189,
+    "within_10pct": 22.21,
+    "MAE_usd": 72.19,
+    "RMSE_usd": 121.04
+   },
+   "delta_vs_naive_points": 3.692,
+   "share_price_unchanged_pct": 12.5,
+   "direction_hit_rate_when_changed_pct": 64.9,
+   "best_iteration": 382,
+   "train_rows": 1169559,
+   "val_rows": 114111,
+   "verdict": "better than carrying the last price forward"
+  }
+ },
+ "summary": [
+  {
+   "horizon_days": 1,
+   "model_accuracy_pct": 93.186,
+   "last_price_accuracy_pct": 93.128,
+   "route_days_out_median_accuracy_pct": 66.298,
+   "delta_points": 0.058,
+   "within_10pct_model": 82.03,
+   "within_10pct_last_price": 82.04,
+   "verdict": "no better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 2,
+   "model_accuracy_pct": 89.226,
+   "last_price_accuracy_pct": 89.149,
+   "route_days_out_median_accuracy_pct": 66.278,
+   "delta_points": 0.077,
+   "within_10pct_model": 72.13,
+   "within_10pct_last_price": 72.09,
+   "verdict": "no better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 3,
+   "model_accuracy_pct": 86.505,
+   "last_price_accuracy_pct": 86.415,
+   "route_days_out_median_accuracy_pct": 66.248,
+   "delta_points": 0.09,
+   "within_10pct_model": 64.89,
+   "within_10pct_last_price": 64.84,
+   "verdict": "no better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 5,
+   "model_accuracy_pct": 84.934,
+   "last_price_accuracy_pct": 84.653,
+   "route_days_out_median_accuracy_pct": 66.172,
+   "delta_points": 0.281,
+   "within_10pct_model": 60.45,
+   "within_10pct_last_price": 59.91,
+   "verdict": "better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 7,
+   "model_accuracy_pct": 84.802,
+   "last_price_accuracy_pct": 83.939,
+   "route_days_out_median_accuracy_pct": 66.103,
+   "delta_points": 0.863,
+   "within_10pct_model": 52.3,
+   "within_10pct_last_price": 57.76,
+   "verdict": "better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 10,
+   "model_accuracy_pct": 82.845,
+   "last_price_accuracy_pct": 79.864,
+   "route_days_out_median_accuracy_pct": 66.088,
+   "delta_points": 2.981,
+   "within_10pct_model": 47.73,
+   "within_10pct_last_price": 49.86,
+   "verdict": "better than carrying the last price forward"
+  },
+  {
+   "horizon_days": 14,
+   "model_accuracy_pct": 81.661,
+   "last_price_accuracy_pct": 77.969,
+   "route_days_out_median_accuracy_pct": 66.189,
+   "delta_points": 3.692,
+   "within_10pct_model": 43.85,
+   "within_10pct_last_price": 45.02,
+   "verdict": "better than carrying the last price forward"
+  }
+ ],
+ "note": "One seed, 10% flight sample. Rows: flights quoted both on the as-of day and on the target day. Fuel and route-market features are held at their as-of values for every horizon. Differences under about 0.3 points are not proven.",
+ "drop_flag_precision_test_window": {
+  "h7_pred_drop_ge_5": {
+   "flagged_share_pct": 25.56,
+   "n": 130153,
+   "actually_fell_pct": 45.8,
+   "actually_fell_ge_thr_pct": 39.6,
+   "mean_actual_change_pct": -5.2,
+   "base_rate_fell_pct": 30.2,
+   "base_rate_fell_ge_thr_pct": 24.4
+  },
+  "h7_pred_drop_ge_10": {
+   "flagged_share_pct": 13.8,
+   "n": 70268,
+   "actually_fell_pct": 49.7,
+   "actually_fell_ge_thr_pct": 38.0,
+   "mean_actual_change_pct": -8.0,
+   "base_rate_fell_pct": 30.2,
+   "base_rate_fell_ge_thr_pct": 18.5
+  },
+  "h14_pred_drop_ge_5": {
+   "flagged_share_pct": 31.2,
+   "n": 140255,
+   "actually_fell_pct": 56.2,
+   "actually_fell_ge_thr_pct": 50.0,
+   "mean_actual_change_pct": -6.48,
+   "base_rate_fell_pct": 34.6,
+   "base_rate_fell_ge_thr_pct": 28.7
+  },
+  "h14_pred_drop_ge_10": {
+   "flagged_share_pct": 15.49,
+   "n": 69604,
+   "actually_fell_pct": 62.3,
+   "actually_fell_ge_thr_pct": 49.9,
+   "mean_actual_change_pct": -11.65,
+   "base_rate_fell_pct": 34.6,
+   "base_rate_fell_ge_thr_pct": 22.3
+  }
+ },
+ "drop_flag_precision_note": "Among test rows where the horizon model predicted a fall of at least X%, how often the price really fell. The base rate is all test rows."
+}

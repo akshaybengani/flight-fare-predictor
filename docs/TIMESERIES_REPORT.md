@@ -157,4 +157,24 @@ You need the same flight observed on many search days, which is the missing ingr
 
 ## 10. Files
 
-`src/ts_features.py`, `src/ts_train.py`, `models/ts_metrics.json`, `models/fare_model_ts.joblib`, `models/ts_work/*.json` (checkpoints), `data/external_us/` (cached joins, DuckDB file, `features.parquet`, logs; gitignored).
+`src/ts_features.py`, `src/ts_train.py`, `models/ts_metrics.json`, `models/fare_model_ts.joblib` (demo model, see 'Horizon accuracy for the demo'), `models/fare_model_ts_nextday_v1.joblib`, `models/ts_horizon_metrics.json`, `src/us_horizon.py`, `src/us_service.py`, `models/ts_work/*.json` (checkpoints), `data/external_us/` (cached joins, DuckDB file, `features.parquet`, logs; gitignored).
+
+## 11. Horizon accuracy for the demo
+
+The demo app serves US listings with a "predicted price" some days ahead and a price curve for the next 14 days. The next-day model above cannot do that, so `src/us_horizon.py` trains **one LightGBM model per horizon (1, 2, 3, 5, 7, 10, 14 days ahead)**; other horizons are interpolated between them (in log price ratio). It is a direct model, not a recursive roll-forward: each model sees only information known at the end of the as-of day (the flight's own quotes up to that day, route-market over the 7 days to that day, fuel at that day) plus things known in advance about the target day (weekday, holidays, days before departure) and climatological weather. Target: log(price on day s+h / price on day s); L1 loss; the number of rounds is chosen on the validation window (target dates 16-31 Aug). Test = target dates 1-30 September 2026, 10% flight sample (about 450k to 565k rows per horizon), the flight must be quoted on both days. Fuel and route-market features are held at their as-of values for every horizon.
+
+| days ahead | model | last price carried forward | route × days-out median | gain vs last price | within 10% (model / last price) | verdict |
+|---|---|---|---|---|---|---|
+| 1 | 93.19 | 93.13 | 66.30 | +0.06 | 82.0 / 82.0 | no better |
+| 2 | 89.23 | 89.15 | 66.28 | +0.08 | 72.1 / 72.1 | no better |
+| 3 | 86.51 | 86.42 | 66.25 | +0.09 | 64.9 / 64.8 | no better |
+| 5 | 84.93 | 84.65 | 66.17 | +0.28 | 60.5 / 59.9 | better (small) |
+| 7 | 84.80 | 83.94 | 66.10 | +0.86 | 52.3 / 57.8 | better on average error, worse on "within 10%" |
+| 10 | 82.85 | 79.86 | 66.09 | +2.98 | 47.7 / 49.9 | better on average error, worse on "within 10%" |
+| 14 | 81.66 | 77.97 | 66.19 | +3.69 | 43.9 / 45.0 | better on average error, worse on "within 10%" |
+
+Accuracy = 100 − MAPE. Verdict rule: at least +0.1 point is "better", within ±0.1 is "no better". **Reading it:** up to 3 days ahead the model is no better than "the price stays the same" (at 1 to 3 days the early-stopped models are essentially the last price: they stop after 1 round). From about a week ahead it does beat carrying the price forward on average error (+0.9 to +3.7 points), because at that range prices really move (only 12.5% of prices are unchanged 14 days later, vs 65% a day later) and the model captures the typical rise toward departure and some bounce-back. But it loses on "within ±10%" at 7+ days: it cuts the big misses and gives up some of the small ones. Single seed; differences under about 0.3 points are not proven. These numbers are for the evaluation (train to 15 Aug) models; the served models are refit on all target dates up to 30 Sep with the same settings.
+
+**Do "may drop" flags mean anything?** Among September test rows where the model predicted a fall of at least 10%: at 7 days ahead 49.7% really fell (base rate 30.2%), 38.0% fell by 10% or more (base 18.5%); at 14 days ahead 62.3% fell (base 34.6%) and 49.9% fell by 10% or more (base 22.3%), with a mean actual change of −11.7%. So at the long horizon a flag carries real information, roughly doubling the chance of a 10% fall, but it is wrong half the time. The flag in the demo uses the lowest predicted price at or after the chosen horizon within the 14-day curve, so it is driven by the 7 to 14-day models, not by the 1-day one. In the 2026-09-30 snapshot about 5.6% of flights are flagged at the default 10% threshold.
+
+Limitations specific to the demo: the snapshot is as of 2026-09-30 (the data ends there), the curve cannot extend below 7 days before departure (the data never shows closer quotes), the model files were trained on 10% of flights, and the same US caveats as above apply.

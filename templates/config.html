@@ -23,6 +23,10 @@
           <div class="help">The listed price is the median real scraped fare for the flight within this many days of the search's booking window.</div></div>
         <div><label for="c_flag">Mark changes of at least, %</label><input type="number" id="c_flag" min="1" max="100">
           <div class="help">Tickets whose predicted change is at least this big get a coloured edge and a label.</div></div>
+        <div><label for="c_bigpct">Big save: fall of at least, %</label><input type="number" id="c_bigpct" min="5" max="80">
+          <div class="help">A flight the model expects to get cheaper (see the change threshold above) gets a BIG SAVE sticker when the expected fall reaches this share of the listed price.</div></div>
+        <div><label for="c_bigmin">Big save: or saving of at least, ₹</label><input type="number" id="c_bigmin" min="0" max="50000">
+          <div class="help">Also a big save when the expected rupee saving reaches this amount. Set to 0 to use the percentage test only.</div></div>
         <div><label for="c_sort">Default sort</label><select id="c_sort"></select></div>
         <div><label for="c_curve">Price curve points, days before departure</label><input type="text" id="c_curve">
           <div class="help">3 to 12 values between 1 and 50, comma separated. Day 50 is sparse in the data, so predictions there are less reliable.</div></div>
@@ -39,11 +43,12 @@
   <div class="pane" id="p-model" role="tabpanel"></div>
   <div class="pane" id="p-data" role="tabpanel"></div>
   <div class="pane" id="p-algos" role="tabpanel"></div>
+  <div class="pane" id="p-us" role="tabpanel"></div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-const TABS = [['settings','Settings'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources'],['algos','Algorithm comparison']];
+const TABS = [['settings','Settings'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources'],['algos','Algorithm comparison'],['us','United States']];
 let M = null, A = null;
 const $ = id => document.getElementById(id), tabs = $('tabs');
 tabs.innerHTML = TABS.map(([k, l]) => `<button role="tab" id="t-${k}" data-t="${k}" aria-controls="p-${k}">${esc(l)}</button>`).join('');
@@ -74,11 +79,11 @@ function stackify(root) {
 
 /* ---------- settings ---------- */
 function fillSettings(c) {
-  $('c_pred').value = c.predict_at_days_left; $('c_period').value = c.price_period; $('c_win').value = c.listed_window_days; $('c_flag').value = c.flag_threshold_pct;
+  $('c_pred').value = c.predict_at_days_left; $('c_period').value = c.price_period; $('c_win').value = c.listed_window_days; $('c_flag').value = c.flag_threshold_pct; $('c_bigpct').value = c.big_save_threshold_pct; $('c_bigmin').value = c.big_save_min_inr;
   $('c_sort').value = c.default_sort; $('c_curve').value = c.curve_days.join(', '); $('c_show').checked = c.show_curve; $('c_page').value = M.page_size + ' (fixed)';
 }
 function readSettings() {
-  return { predict_at_days_left: +$('c_pred').value, price_period: +$('c_period').value, listed_window_days: +$('c_win').value, flag_threshold_pct: +$('c_flag').value,
+  return { predict_at_days_left: +$('c_pred').value, price_period: +$('c_period').value, listed_window_days: +$('c_win').value, flag_threshold_pct: +$('c_flag').value, big_save_threshold_pct: +$('c_bigpct').value, big_save_min_inr: +$('c_bigmin').value,
     default_sort: $('c_sort').value, curve_days: $('c_curve').value.split(',').map(s => s.trim()).filter(Boolean).map(Number), show_curve: $('c_show').checked };
 }
 async function post(body) {
@@ -183,6 +188,79 @@ function data() {
       <li>Jaipur is not in any dataset found, so it is not supported.</li></ul></div>`;
 }
 
+/* ---------- United States ---------- */
+let UM = null;
+const humanize = k => String(k).replace(/_pct$/, ' (%)').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+const cell = v => v == null ? '–' : typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-US') : v.toFixed(2)) : typeof v === 'object' ? esc(JSON.stringify(v)) : esc(v);
+// show whatever shape the service returns: a list of rows, a table keyed by row, or plain key/value pairs
+function anyTable(x) {
+  if (x == null) return '<p class="muted">Not available.</p>';
+  if (Array.isArray(x) && x.length && typeof x[0] === 'object') { const ks = [...new Set(x.flatMap(r => Object.keys(r)))];
+    return `<div class="tablewrap"><table class="ed"><tr>${ks.map((k, i) => `<th class="${i ? 'num' : ''}">${esc(humanize(k))}</th>`).join('')}</tr>${x.map(r => `<tr>${ks.map((k, i) => `<td class="${i ? 'num' : ''}">${cell(r[k])}</td>`).join('')}</tr>`).join('')}</table></div>`; }
+  if (Array.isArray(x)) return `<ul>${x.map(v => `<li>${cell(v)}</li>`).join('')}</ul>`;
+  if (typeof x === 'object') { const vals = Object.values(x);
+    // sources come as {name: [description, link, licence]}
+    if (vals.length && vals.every(v => Array.isArray(v) && v.every(e => typeof e === 'string'))) {
+      const link = t => /^https?:\/\//.test(t) ? `<a href="${esc(t)}" rel="noopener noreferrer" target="_blank">${esc(t.replace(/^https?:\/\//, '').slice(0, 48))}</a>` : esc(t);
+      return `<div class="tablewrap"><table class="ed"><tr><th>Source</th><th>What it is</th><th>Link</th><th>Licence and credit</th></tr>${Object.entries(x).map(([k, v]) => `<tr><td><b>${esc({ fred: 'FRED / EIA', openmeteo: 'Open-Meteo', holidays: 'Holidays', dataset: 'Fare data' }[k] || humanize(k))}</b></td><td>${esc(v[0] || '')}</td><td>${link(v[1] || '')}</td><td>${esc(v.slice(2).join(' '))}</td></tr>`).join('')}</table></div>`; }
+    if (vals.length && vals.every(v => v && typeof v === 'object' && !Array.isArray(v))) return anyTable(Object.entries(x).map(([k, v]) => ({ key: k, ...v })));
+    return `<table class="ed">${Object.entries(x).map(([k, v]) => `<tr><td><b>${esc(humanize(k))}</b></td><td>${cell(v)}</td></tr>`).join('')}</table>`; }
+  return `<p>${cell(x)}</p>`;
+}
+// horizon accuracy: compact columns, the verdict text shown once when it is the same on every row
+function horizonTable(rows) {
+  if (!Array.isArray(rows) || !rows.length || rows[0].horizon_days == null) return anyTable(rows);
+  const p = v => v == null ? '–' : Number(v).toFixed(1) + '%', verdicts = [...new Set(rows.map(r => r.verdict).filter(Boolean))];
+  return `<div class="tablewrap"><table class="ed"><tr><th>Days ahead</th><th class="num">Model</th><th class="num">Naive: last price</th><th class="num">Naive: route median</th><th class="num">Model minus last price (points)</th><th class="num">Within ±10%: model</th><th class="num">Within ±10%: last price</th></tr>
+    ${rows.map(r => `<tr><td><b>${r.horizon_days} ${r.horizon_days === 1 ? 'day' : 'days'} ahead</b></td><td class="num">${p(r.model_accuracy_pct)}</td><td class="num">${p(r.last_price_accuracy_pct)}</td><td class="num">${p(r.route_days_out_median_accuracy_pct)}</td><td class="num">${r.delta_points == null ? '–' : (r.delta_points > 0 ? '+' : '') + Number(r.delta_points).toFixed(2)}</td><td class="num">${p(r.within_10pct_model)}</td><td class="num">${p(r.within_10pct_last_price)}</td></tr>`).join('')}</table></div>
+    ${verdicts.length === 1 ? `<p class="muted small">Verdict at every horizon: ${esc(verdicts[0])}.</p>` : verdicts.length ? `<ul class="small">${rows.filter(r => r.verdict).map(r => `<li>${r.horizon_days} days: ${esc(r.verdict)}</li>`).join('')}</ul>` : ''}`;
+}
+async function usTab() {
+  const el = $('p-us');
+  try { const r = await fetch('/api/us/meta'); UM = await r.json(); if (!r.ok || UM.available === false) UM = { available: false }; } catch (e) { UM = { available: false }; }
+  if (!UM.available) {
+    el.innerHTML = `<div class="block"><h2>United States</h2><p class="lede">FareSight can also show US fares, with a model that uses far more inputs than the India one.</p>
+      <div class="state" style="margin-top:8px"><svg viewBox="0 0 120 80" aria-hidden="true" style="fill:var(--sheet);stroke:var(--ink-3);stroke-width:1.4"><path d="M8 56 H112" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/><svg x="38" y="14" width="44" height="44" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink)"><use href="#plane"/></svg></svg>
+      <div><h3>US data is not installed on this server</h3><p>The US model files are missing here, so this section has nothing to show yet. The India market is not affected.</p></div></div></div>`; return; }
+  const u = UM, hm = u.headline_metrics, cn = u.counts || {};
+  const sample = u.mock ? '<span class="sample" title="Placeholder numbers for layout only">Sample data</span>' : '';
+  const pc = v => v == null ? '–' : Number(v).toFixed(1) + '%';
+  el.innerHTML = `
+    <div class="block"><h2>United States market${sample}</h2>
+      <p class="lede">A second market in the demo: ${u.pairs.length} routes between major US airports, with prices in US dollars. These are a snapshot, listed as of <b>${esc(u.listed_as_of)}</b>, not live fares. Departures from ${esc(u.departure_date_range.min)} to ${esc(u.departure_date_range.max)} can be searched.</p>
+      <div class="note"><b>Read this first.</b> This model improves only slightly on &ldquo;the price stays the same&rdquo;. The best guess for tomorrow's price is nearly always today's price, so expect predicted prices close to listed ones and few &ldquo;may drop&rdquo; flags. Cabin is not recorded; each listed price is the cheapest quote found for that flight.</div>
+      <div class="figs">
+        <div class="fig"><div class="k">Routes</div><div class="v">${u.pairs.length}</div></div>
+        <div class="fig"><div class="k">Inputs per flight</div><div class="v">${u.feature_columns_total}</div><div class="s">${u.feature_families.length} families</div></div>
+        <div class="fig"><div class="k">Flights in snapshot</div><div class="v">${(cn.flights_in_snapshot || 0).toLocaleString('en-US')}</div><div class="s">${cn.airlines || ''} airlines</div></div>
+        <div class="fig"><div class="k">Price quotes in training data</div><div class="v">${cn.quotes_in_dataset ? (cn.quotes_in_dataset / 1e6).toFixed(1) + ' m' : '–'}</div><div class="s">${esc(cn.search_dates || '')}</div></div></div></div>
+    <div class="block"><h2>Accuracy, next to the naive baselines</h2>
+      ${hm ? `<p class="lede">${esc(hm.split || '')}. Accuracy is 100 minus the average percentage error. A &ldquo;naive&rdquo; baseline needs no model: it simply repeats a known price.</p>
+      <div class="figs">
+        <div class="fig"><div class="k">FareSight model</div><div class="v">${pc(hm.model_accuracy_pct)}</div><div class="s">next search day</div></div>
+        <div class="fig"><div class="k">Naive: price stays the same</div><div class="v">${pc(hm.naive_last_price_accuracy_pct)}</div><div class="s">repeat the last quote</div></div>
+        <div class="fig"><div class="k">Naive: route median</div><div class="v">${pc(hm.naive_route_days_out_median_accuracy_pct)}</div><div class="s">typical price for the route and days out</div></div></div>
+      <table class="ed"><tr><td><b>Prices that did not change</b></td><td>${pc(hm.share_next_prices_unchanged_pct)} of next-day prices were identical to the last quote, which is why &ldquo;stays the same&rdquo; is hard to beat.</td></tr>
+      <tr><td><b>Direction, when a price does move</b></td><td>${pc(hm.direction_given_a_move)} of moves were called in the right direction.</td></tr>
+      <tr><td><b>Which inputs help</b></td><td>${esc(hm.feature_families || '')}</td></tr></table>` : '<p class="muted">Headline metrics are not available on this server.</p>'}</div>
+    <div class="block"><h2>The ${u.feature_columns_total} inputs, by family</h2>
+      <p class="lede">The India model uses 18 inputs. The US model uses these, far more, including the history of the same flight. Open any flight on the search page to see the values it was given.</p>
+      <div class="tablewrap"><table class="ed"><tr><th>Family</th><th class="num">Columns</th><th>What it contains</th></tr>
+      ${u.feature_families.map(f => `<tr><td><b>${esc(f.title)}</b></td><td class="num">${f.columns}</td><td>${esc(f.description || '')}</td></tr>`).join('')}
+      <tr><td><b>Total</b></td><td class="num"><b>${u.feature_columns_total}</b></td><td></td></tr></table></div></div>
+    <div class="block"><h2>Accuracy by prediction horizon</h2>
+      <p class="lede">How the model does when asked for a price further ahead, with the naive baseline where the file provides it.</p>
+      ${horizonTable(u.horizon && u.horizon.accuracy)}${u.horizon && u.horizon.note ? `<p class="muted small">${esc(u.horizon.note)}</p>` : ''}</div>
+    <div class="block"><h2>Data sources and licences</h2>
+      ${anyTable(u.sources)}
+      <div class="note"><b>Licence note.</b> Weather data comes from the Open-Meteo free API, which is licensed for non-commercial use only. Before any commercial use of this demo, that source needs a commercial licence or must be replaced.</div>
+      <h3>Limits of the data</h3><ul>${(u.data_limits || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
+    <div class="block"><h2>How the search page uses this</h2>
+      <ul><li>The &ldquo;May drop&rdquo; and &ldquo;Big save&rdquo; thresholds in Settings are shared: the percentage settings apply to both markets. The rupee amount applies to India only; the US default is ${u.defaults ? '$' + u.defaults.big_save_min_usd : 'set by the service'}.</li>
+      <li>The curve on a US flight runs from the listing date forward, up to ${u.horizon ? u.horizon.max : 14} days, and stops where the departure would be under a week away, since the data never shows quotes that close.</li>
+      <li>Cabin is not recorded for US fares. Each listed price is the cheapest quote found for that flight.</li></ul></div>`;
+}
+
 /* ---------- algorithm comparison ---------- */
 const ST = { set: null, scen: 'A' };
 const norm = v => v == null ? null : (v <= 1.5 ? v * 100 : v);
@@ -271,7 +349,7 @@ let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() 
   M = await (await fetch('/api/meta')).json();
   try { A = await (await fetch('/api/algorithms')).json(); } catch (e) { A = null; }
   $('c_sort').innerHTML = M.sorts.map(s => `<option>${s}</option>`).join('');
-  fillSettings(M.config); metrics(); how(); model(); data(); algos();
+  fillSettings(M.config); metrics(); how(); model(); data(); algos(); usTab();
   show((location.hash || '#settings').slice(1));
 })();
 </script>

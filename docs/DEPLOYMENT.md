@@ -29,3 +29,16 @@ Each worker loads the 110 MB model, so budget about 1 GB of RAM per worker. Put 
 - **Templates are cached** when debug is off, so restart workers after editing `templates/`.
 - **Licences of data.** The code is MIT. Open-Meteo's free API is non-commercial only and one of the downloaded fare sets (Goibibo) is CC BY-NC-SA, so check each source's terms before commercial use. See `docs/ENRICHED_FEATURES.md` and `docs/DATA_SCOUT_REPORT.md`.
 - Predictions are model estimates from historical scraped fares, not booking advice.
+
+## United States market (optional second market)
+The app has an India / US switch. The US side needs three extra files that are not in git (copy them from the `faresight/us/` folder of the file share, verify with `SHA256SUMS`):
+
+| file | goes to | size |
+|---|---|---|
+| `fare_model_ts.joblib` | `models/` | 3.3 MB |
+| `snapshot.parquet` | `data/external_us/` | 8.4 MB |
+| `ts_metrics.json`, `ts_horizon_metrics.json` | `models/` | small |
+
+Paths can be overridden with the environment variables `US_MODEL` and `US_SNAPSHOT`. Without these files the app still starts, India works, and the US market shows "US data is not installed on this server". Extra memory: about 275 MB. The US side needs only numpy, pandas, pyarrow and joblib (see `docs/US_SERVICE.md`). Check it with `python src/us_service_selftest.py`.
+
+The US prices are a snapshot ("listed as of 2026-09-30"), and the US model improves only slightly on "the price stays the same", so predicted prices there are often close to the listed ones.
