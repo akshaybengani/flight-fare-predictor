@@ -1,0 +1,170 @@
+{
+  "tuned_params_A": {
+    "max_features": 0.8,
+    "min_samples_leaf": 3
+  },
+  "n_train": 356178,
+  "n_test": 89044,
+  "tradeoffs": [
+    {
+      "config": "reference (tuned, 120 trees)",
+      "params": {
+        "n_estimators": 120,
+        "max_features": 0.8,
+        "min_samples_leaf": 3
+      },
+      "accuracy": 92.008,
+      "within10": 72.72,
+      "mae": 1819.8,
+      "train_seconds": 34.8,
+      "model_mb": 920.0
+    },
+    {
+      "config": "60 trees",
+      "params": {
+        "n_estimators": 60,
+        "max_features": 0.8,
+        "min_samples_leaf": 3
+      },
+      "accuracy": 91.977,
+      "within10": 72.56,
+      "mae": 1826.3,
+      "train_seconds": 17.8,
+      "model_mb": 459.9
+    },
+    {
+      "config": "30 trees",
+      "params": {
+        "n_estimators": 30,
+        "max_features": 0.8,
+        "min_samples_leaf": 3
+      },
+      "accuracy": 91.91,
+      "within10": 72.43,
+      "mae": 1840.5,
+      "train_seconds": 8.8,
+      "model_mb": 229.9
+    },
+    {
+      "config": "min_samples_leaf=5",
+      "params": {
+        "n_estimators": 120,
+        "max_features": 0.8,
+        "min_samples_leaf": 5
+      },
+      "accuracy": 91.692,
+      "within10": 71.37,
+      "mae": 1883.9,
+      "train_seconds": 30.5,
+      "model_mb": 562.6
+    },
+    {
+      "config": "min_samples_leaf=10",
+      "params": {
+        "n_estimators": 120,
+        "max_features": 0.8,
+        "min_samples_leaf": 10
+      },
+      "accuracy": 91.07,
+      "within10": 69.01,
+      "mae": 2005.7,
+      "train_seconds": 29.7,
+      "model_mb": 286.5
+    },
+    {
+      "config": "min_samples_leaf=20",
+      "params": {
+        "n_estimators": 120,
+        "max_features": 0.8,
+        "min_samples_leaf": 20
+      },
+      "accuracy": 90.268,
+      "within10": 66.1,
+      "mae": 2158.2,
+      "train_seconds": 27.6,
+      "model_mb": 145.2
+    },
+    {
+      "config": "max_samples=0.5",
+      "params": {
+        "n_estimators": 120,
+        "max_samples": 0.5,
+        "max_features": 0.8,
+        "min_samples_leaf": 3
+      },
+      "accuracy": 91.486,
+      "within10": 70.61,
+      "mae": 1925.6,
+      "train_seconds": 20.5,
+      "model_mb": 587.7
+    },
+    {
+      "config": "max_samples=0.25",
+      "params": {
+        "n_estimators": 120,
+        "max_samples": 0.25,
+        "max_features": 0.8,
+        "min_samples_leaf": 3
+      },
+      "accuracy": 90.793,
+      "within10": 68.03,
+      "mae": 2061.1,
+      "train_seconds": 11.9,
+      "model_mb": 340.1
+    },
+    {
+      "config": "30 trees + leaf 10 + max_samples 0.5",
+      "params": {
+        "n_estimators": 30,
+        "max_samples": 0.5,
+        "max_features": 0.8,
+        "min_samples_leaf": 10
+      },
+      "accuracy": 90.385,
+      "within10": 66.62,
+      "mae": 2138.7,
+      "train_seconds": 5.7,
+      "model_mb": 45.3
+    }
+  ],
+  "impurity_importance": {
+    "te_flight": 0.6682,
+    "te_route_airline": 0.1278,
+    "class": 0.0664,
+    "duration_h": 0.0519,
+    "days_left": 0.0298,
+    "stops": 0.0104,
+    "distance_km": 0.0095,
+    "route_supply": 0.0077,
+    "arr_hour": 0.0056,
+    "destination": 0.0051,
+    "dow": 0.004,
+    "month": 0.0037,
+    "dep_hour": 0.0037,
+    "source": 0.0023,
+    "airline": 0.0022,
+    "arr_bucket": 0.001,
+    "dep_bucket": 0.0008,
+    "period": 0.0
+  },
+  "permutation_importance_accuracy_pts": {
+    "te_flight": 80.026,
+    "te_route_airline": 15.695,
+    "days_left": 9.389,
+    "duration_h": 8.424,
+    "distance_km": 4.348,
+    "destination": 2.936,
+    "class": 2.608,
+    "route_supply": 2.396,
+    "stops": 1.967,
+    "arr_hour": 1.595,
+    "airline": 1.319,
+    "dow": 1.279,
+    "source": 1.263,
+    "dep_hour": 0.925,
+    "month": 0.334,
+    "arr_bucket": 0.282,
+    "dep_bucket": 0.191,
+    "period": 0.0
+  }
+}

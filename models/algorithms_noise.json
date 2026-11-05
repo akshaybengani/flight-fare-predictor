@@ -1,0 +1,106 @@
+{
+  "note": "model seed 1 and 2 re-fits of the top 3 algorithms (same splits, same tuned params); seed 0 is the headline run",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "algorithms": {
+    "XGBoost": {
+      "A": {
+        "accuracy_by_seed": [
+          93.421,
+          93.421,
+          93.421
+        ],
+        "mean": 93.421,
+        "std": 0.0,
+        "range": 0.0
+      },
+      "E": {
+        "accuracy_by_seed": [
+          86.877,
+          86.877,
+          86.877
+        ],
+        "mean": 86.877,
+        "std": 0.0,
+        "range": 0.0
+      },
+      "C": {
+        "accuracy_by_seed": [
+          67.74,
+          67.74,
+          67.74
+        ],
+        "mean": 67.74,
+        "std": 0.0,
+        "range": 0.0
+      }
+    },
+    "HistGradientBoosting (current model)": {
+      "A": {
+        "accuracy_by_seed": [
+          93.037,
+          93.061,
+          93.043
+        ],
+        "mean": 93.047,
+        "std": 0.012,
+        "range": 0.024
+      },
+      "E": {
+        "accuracy_by_seed": [
+          87.0,
+          86.937,
+          86.966
+        ],
+        "mean": 86.968,
+        "std": 0.032,
+        "range": 0.063
+      },
+      "C": {
+        "accuracy_by_seed": [
+          66.167,
+          66.0,
+          66.051
+        ],
+        "mean": 66.073,
+        "std": 0.086,
+        "range": 0.167
+      }
+    },
+    "CatBoost": {
+      "A": {
+        "accuracy_by_seed": [
+          91.471,
+          91.489,
+          91.465
+        ],
+        "mean": 91.475,
+        "std": 0.012,
+        "range": 0.024
+      },
+      "E": {
+        "accuracy_by_seed": [
+          86.253,
+          86.236,
+          86.297
+        ],
+        "mean": 86.262,
+        "std": 0.031,
+        "range": 0.061
+      },
+      "C": {
+        "accuracy_by_seed": [
+          67.391,
+          63.649,
+          63.631
+        ],
+        "mean": 64.89,
+        "std": 2.166,
+        "range": 3.76
+      }
+    }
+  }
+}
