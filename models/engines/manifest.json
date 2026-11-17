@@ -1,0 +1,914 @@
+{
+  "generated": "2026-11-17",
+  "feature_set": "baseline18",
+  "encoder": "the deployed ENC in models/fare_model.joblib (one encoder serves every engine)",
+  "default_engine": "xgboost",
+  "interface": "load_engine(key).predict(feats) -> predicted log price (numpy)",
+  "engines": [
+    {
+      "key": "hgb",
+      "label": "HistGradientBoosting (current)",
+      "family": "boosting",
+      "default": false,
+      "description": "Builds thousands of small decision trees one after another, each fixing the previous ones' mistakes (scikit-learn gradient boosting). This is the current model.",
+      "file": "models/fare_model.joblib",
+      "size_mb": 109.2,
+      "load_seconds": 0.22,
+      "predict_ms_per_1k": 21.58,
+      "memory_mb_peak": 317.0,
+      "accuracy": {
+        "A": 93.037,
+        "E": 87.0,
+        "C": 66.167
+      },
+      "within10": {
+        "A": 77.55,
+        "E": 55.12,
+        "C": 19.93
+      },
+      "mae": {
+        "A": 1499.6,
+        "E": 2716.8,
+        "C": 5889.4
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {},
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 94.42,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0347,
+        "benchmark_p95_abs_log_diff": 0.1107,
+        "benchmark_corr": 0.9979,
+        "benchmark_accuracy_same_rows": 93.02,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4545,
+          "mean_inr": 7753,
+          "max_inr": 15025
+        }
+      },
+      "notes": "the deployed model, wrapped as is (not retrained)",
+      "scores": {
+        "A": {
+          "accuracy": 93.037,
+          "within10": 77.55,
+          "mae": 1499.6,
+          "rmse": 2971.4,
+          "r2": 0.9788
+        },
+        "E": {
+          "accuracy": 87.0,
+          "within10": 55.12,
+          "mae": 2716.8,
+          "rmse": 5094.1,
+          "r2": 0.9376
+        },
+        "C": {
+          "accuracy": 66.167,
+          "within10": 19.93,
+          "mae": 5889.4,
+          "rmse": 8230.0,
+          "r2": 0.837
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 7753,
+        "Ahmedabad -> Mumbai": 5941
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": -0.2,
+        "Ahmedabad -> Mumbai": 0.7
+      },
+      "demo_safe": true
+    },
+    {
+      "key": "xgboost",
+      "label": "XGBoost",
+      "family": "boosting",
+      "default": true,
+      "description": "Another gradient-boosting tree ensemble: many small trees added in sequence, each correcting the errors left so far. Typically the most accurate here.",
+      "file": "models/engines/xgboost.joblib",
+      "size_mb": 135.6,
+      "load_seconds": 0.15,
+      "predict_ms_per_1k": 30.42,
+      "memory_mb_peak": 935.0,
+      "accuracy": {
+        "A": 93.421,
+        "E": 86.877,
+        "C": 67.74
+      },
+      "within10": {
+        "A": 79.36,
+        "E": 54.48,
+        "C": 21.29
+      },
+      "mae": {
+        "A": 1395.0,
+        "E": 2759.3,
+        "C": 5798.4
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib",
+        "xgboost"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "max_leaves": 511,
+        "min_child_weight": 3,
+        "reg_lambda": 1.0,
+        "colsample_bytree": 1.0
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 95.67,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0387,
+        "benchmark_p95_abs_log_diff": 0.1357,
+        "benchmark_corr": 0.997,
+        "benchmark_accuracy_same_rows": 93.41,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4433,
+          "mean_inr": 7648,
+          "max_inr": 15634
+        }
+      },
+      "notes": "",
+      "scores": {
+        "A": {
+          "accuracy": 93.421,
+          "within10": 79.36,
+          "mae": 1395.0,
+          "rmse": 2817.5,
+          "r2": 0.9809
+        },
+        "E": {
+          "accuracy": 86.877,
+          "within10": 54.48,
+          "mae": 2759.3,
+          "rmse": 5197.5,
+          "r2": 0.935
+        },
+        "C": {
+          "accuracy": 67.74,
+          "within10": 21.29,
+          "mae": 5798.4,
+          "rmse": 8561.1,
+          "r2": 0.8236
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 7648,
+        "Ahmedabad -> Mumbai": 5614
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": -1.6,
+        "Ahmedabad -> Mumbai": -4.8
+      },
+      "demo_safe": true
+    },
+    {
+      "key": "lightgbm",
+      "label": "LightGBM",
+      "family": "boosting",
+      "default": false,
+      "description": "Gradient boosting that grows trees leaf by leaf; very similar accuracy to the others and quick to train.",
+      "file": "models/engines/lightgbm.joblib",
+      "size_mb": 163.5,
+      "load_seconds": 0.32,
+      "predict_ms_per_1k": 105.27,
+      "memory_mb_peak": 640.0,
+      "accuracy": {
+        "A": 93.19,
+        "E": 87.224,
+        "C": 60.87
+      },
+      "within10": {
+        "A": 78.42,
+        "E": 55.84,
+        "C": 19.22
+      },
+      "mae": {
+        "A": 1464.8,
+        "E": 2703.9,
+        "C": 6847.6
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib",
+        "lightgbm"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "num_leaves": 511,
+        "min_child_samples": 20,
+        "reg_lambda": 10.0,
+        "colsample_bytree": 0.8
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 95.0,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0345,
+        "benchmark_p95_abs_log_diff": 0.1126,
+        "benchmark_corr": 0.9979,
+        "benchmark_accuracy_same_rows": 93.17,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4757,
+          "mean_inr": 7830,
+          "max_inr": 16349
+        }
+      },
+      "notes": "",
+      "scores": {
+        "A": {
+          "accuracy": 93.19,
+          "within10": 78.42,
+          "mae": 1464.8,
+          "rmse": 2932.2,
+          "r2": 0.9793
+        },
+        "E": {
+          "accuracy": 87.224,
+          "within10": 55.84,
+          "mae": 2703.9,
+          "rmse": 5064.5,
+          "r2": 0.9383
+        },
+        "C": {
+          "accuracy": 60.87,
+          "within10": 19.22,
+          "mae": 6847.6,
+          "rmse": 10088.2,
+          "r2": 0.755
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 7830,
+        "Ahmedabad -> Mumbai": 5859
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": 0.8,
+        "Ahmedabad -> Mumbai": -0.7
+      },
+      "demo_safe": true
+    },
+    {
+      "key": "catboost",
+      "label": "CatBoost",
+      "family": "boosting",
+      "default": false,
+      "description": "Gradient boosting with 'symmetric' trees and built-in handling of text-like categories (airline, route); small and fast to run, less accurate on this data.",
+      "file": "models/engines/catboost.joblib",
+      "size_mb": 50.6,
+      "load_seconds": 0.05,
+      "predict_ms_per_1k": 2.76,
+      "memory_mb_peak": 190.0,
+      "accuracy": {
+        "A": 91.471,
+        "E": 86.253,
+        "C": 67.391
+      },
+      "within10": {
+        "A": 70.21,
+        "E": 51.78,
+        "C": 20.44
+      },
+      "mae": {
+        "A": 1905.9,
+        "E": 2889.0,
+        "C": 6909.2
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib",
+        "catboost"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "depth": 10,
+        "l2_leaf_reg": 1.0,
+        "rsm": 0.7
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 91.62,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0272,
+        "benchmark_p95_abs_log_diff": 0.0791,
+        "benchmark_corr": 0.9989,
+        "benchmark_accuracy_same_rows": 91.5,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4845,
+          "mean_inr": 8059,
+          "max_inr": 17137
+        }
+      },
+      "notes": "",
+      "scores": {
+        "A": {
+          "accuracy": 91.471,
+          "within10": 70.21,
+          "mae": 1905.9,
+          "rmse": 3709.7,
+          "r2": 0.9669
+        },
+        "E": {
+          "accuracy": 86.253,
+          "within10": 51.78,
+          "mae": 2889.0,
+          "rmse": 5367.8,
+          "r2": 0.9307
+        },
+        "C": {
+          "accuracy": 67.391,
+          "within10": 20.44,
+          "mae": 6909.2,
+          "rmse": 11776.0,
+          "r2": 0.6662
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 8059,
+        "Ahmedabad -> Mumbai": 6869
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": 3.7,
+        "Ahmedabad -> Mumbai": 16.4
+      },
+      "demo_safe": true
+    },
+    {
+      "key": "random_forest",
+      "label": "Random Forest",
+      "family": "bagging",
+      "default": false,
+      "description": "Averages hundreds of independent decision trees, each trained on a random sample of flights. Simple and robust, but cannot extrapolate beyond price levels it has seen.",
+      "file": "models/engines/random_forest.joblib",
+      "size_mb": 113.2,
+      "load_seconds": 0.09,
+      "predict_ms_per_1k": 1.37,
+      "memory_mb_peak": 407.0,
+      "accuracy": {
+        "A": 92.008,
+        "E": 86.523,
+        "C": 43.931
+      },
+      "within10": {
+        "A": 72.72,
+        "E": 54.8,
+        "C": 19.03
+      },
+      "mae": {
+        "A": 1819.8,
+        "E": 2830.5,
+        "C": 8553.0
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "max_features": 0.8,
+        "min_samples_leaf": 5,
+        "n_estimators": 12,
+        "bootstrap": true
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 93.2,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0344,
+        "benchmark_p95_abs_log_diff": 0.119,
+        "benchmark_corr": 0.9977,
+        "benchmark_accuracy_same_rows": 92.02,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4532,
+          "mean_inr": 7789,
+          "max_inr": 18359
+        }
+      },
+      "notes": "size-capped for deployment (<= 150 MB); full-size benchmark model was 920 MB",
+      "scores": {
+        "A": {
+          "accuracy": 92.008,
+          "within10": 72.72,
+          "mae": 1819.8,
+          "rmse": 3819.1,
+          "r2": 0.9649
+        },
+        "E": {
+          "accuracy": 86.523,
+          "within10": 54.8,
+          "mae": 2830.5,
+          "rmse": 5535.4,
+          "r2": 0.9263
+        },
+        "C": {
+          "accuracy": 43.931,
+          "within10": 19.03,
+          "mae": 8553.0,
+          "rmse": 12598.1,
+          "r2": 0.618
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 7789,
+        "Ahmedabad -> Mumbai": 5521
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": 0.2,
+        "Ahmedabad -> Mumbai": -6.4
+      },
+      "demo_safe": true,
+      "capped": {
+        "cap_mb": 150.0,
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 5,
+          "n_estimators": 12,
+          "bootstrap": true
+        },
+        "scenario_A_scores": {
+          "accuracy": 91.467,
+          "within10": 70.67,
+          "mae": 1925.4,
+          "rmse": 3985.5,
+          "r2": 0.9618
+        },
+        "scenario_A_model_mb": 56.3,
+        "measured_on": "scenario A: capped config retrained on the A train split (356,178 rows), scored on the A test split (89,044 rows)"
+      },
+      "full_size": {
+        "model_mb": 919.96,
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 3
+        },
+        "accuracy": {
+          "A": 92.008,
+          "E": 86.523,
+          "C": 43.931
+        },
+        "within10": {
+          "A": 72.72,
+          "E": 54.8,
+          "C": 19.03
+        },
+        "mae": {
+          "A": 1819.8,
+          "E": 2830.5,
+          "C": 8553.0
+        }
+      },
+      "accuracy_A_capped": 91.467
+    },
+    {
+      "key": "extra_trees",
+      "label": "Extra Trees",
+      "family": "bagging",
+      "default": false,
+      "description": "Like a random forest but with more randomness in where each tree splits; fast to train, a little better than a random forest here.",
+      "file": "models/engines/extra_trees.joblib",
+      "size_mb": 111.9,
+      "load_seconds": 0.11,
+      "predict_ms_per_1k": 1.37,
+      "memory_mb_peak": 427.0,
+      "accuracy": {
+        "A": 92.638,
+        "E": 87.12,
+        "C": 57.334
+      },
+      "within10": {
+        "A": 75.18,
+        "E": 56.51,
+        "C": 18.98
+      },
+      "mae": {
+        "A": 1671.8,
+        "E": 2708.4,
+        "C": 7178.8
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "max_features": 0.8,
+        "min_samples_leaf": 10,
+        "n_estimators": 16,
+        "bootstrap": false
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 92.07,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0332,
+        "benchmark_p95_abs_log_diff": 0.1128,
+        "benchmark_corr": 0.998,
+        "benchmark_accuracy_same_rows": 92.64,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 5373,
+          "mean_inr": 8044,
+          "max_inr": 16027
+        }
+      },
+      "notes": "size-capped for deployment (<= 150 MB); full-size benchmark model was 2057 MB",
+      "scores": {
+        "A": {
+          "accuracy": 92.638,
+          "within10": 75.18,
+          "mae": 1671.8,
+          "rmse": 3574.7,
+          "r2": 0.9693
+        },
+        "E": {
+          "accuracy": 87.12,
+          "within10": 56.51,
+          "mae": 2708.4,
+          "rmse": 5243.9,
+          "r2": 0.9339
+        },
+        "C": {
+          "accuracy": 57.334,
+          "within10": 18.98,
+          "mae": 7178.8,
+          "rmse": 10352.5,
+          "r2": 0.742
+        }
+      },
+      "december_check": {
+        "Delhi -> Mumbai": 8044,
+        "Ahmedabad -> Mumbai": 6435
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": 3.5,
+        "Ahmedabad -> Mumbai": 9.1
+      },
+      "demo_safe": true,
+      "capped": {
+        "cap_mb": 150.0,
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 10,
+          "n_estimators": 16,
+          "bootstrap": false
+        },
+        "scenario_A_scores": {
+          "accuracy": 90.863,
+          "within10": 68.19,
+          "mae": 2039.9,
+          "rmse": 4125.9,
+          "r2": 0.959
+        },
+        "scenario_A_model_mb": 55.1,
+        "measured_on": "scenario A: capped config retrained on the A train split (356,178 rows), scored on the A test split (89,044 rows)"
+      },
+      "full_size": {
+        "model_mb": 2057.08,
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 2
+        },
+        "accuracy": {
+          "A": 92.638,
+          "E": 87.12,
+          "C": 57.334
+        },
+        "within10": {
+          "A": 75.18,
+          "E": 56.51,
+          "C": 18.98
+        },
+        "mae": {
+          "A": 1671.8,
+          "E": 2708.4,
+          "C": 7178.8
+        }
+      },
+      "accuracy_A_capped": 90.863
+    },
+    {
+      "key": "ridge",
+      "label": "Ridge regression (linear)",
+      "family": "linear",
+      "default": false,
+      "description": "A straight-line (linear) formula over the flight details, one weight per feature. A simple baseline that shows how much the non-linear models add.",
+      "file": "models/engines/ridge.joblib",
+      "size_mb": 0.0,
+      "load_seconds": 0.01,
+      "predict_ms_per_1k": 0.48,
+      "memory_mb_peak": 195.0,
+      "accuracy": {
+        "A": 81.461,
+        "E": 72.428,
+        "C": 66.266
+      },
+      "within10": {
+        "A": 36.93,
+        "E": 23.91,
+        "C": 17.6
+      },
+      "mae": {
+        "A": 3823.7,
+        "E": 6327.0,
+        "C": 8276.0
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "alpha": 1.0
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 78.8,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0902,
+        "benchmark_p95_abs_log_diff": 0.2163,
+        "benchmark_corr": 0.9932,
+        "benchmark_accuracy_same_rows": 81.59,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": false,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 4051,
+          "mean_inr": 7021,
+          "max_inr": 14213
+        }
+      },
+      "notes": "",
+      "scores": {
+        "A": {
+          "accuracy": 81.461,
+          "within10": 36.93,
+          "mae": 3823.7,
+          "rmse": 6284.4,
+          "r2": 0.905
+        },
+        "E": {
+          "accuracy": 72.428,
+          "within10": 23.91,
+          "mae": 6327.0,
+          "rmse": 10653.7,
+          "r2": 0.7271
+        },
+        "C": {
+          "accuracy": 66.266,
+          "within10": 17.6,
+          "mae": 8276.0,
+          "rmse": 14125.3,
+          "r2": 0.5198
+        }
+      },
+      "input_clipping": "month, weekday, days_left and every other plain-number input are clipped to the range seen in training before predicting (a December search is treated like the nearest trained month, April)",
+      "december_check": {
+        "Delhi -> Mumbai": 7021,
+        "Ahmedabad -> Mumbai": 6263
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": -9.7,
+        "Ahmedabad -> Mumbai": 6.2
+      },
+      "demo_safe": true
+    },
+    {
+      "key": "mlp",
+      "label": "Neural net (MLP)",
+      "family": "neural",
+      "default": false,
+      "description": "A small neural network (a few layers of weighted sums) over the flight details; here it learns less well than tree models on this table-style data.",
+      "file": "models/engines/mlp.joblib",
+      "size_mb": 0.4,
+      "load_seconds": 0.01,
+      "predict_ms_per_1k": 0.77,
+      "memory_mb_peak": 198.0,
+      "accuracy": {
+        "A": 86.803,
+        "E": 80.462,
+        "C": 47.29
+      },
+      "within10": {
+        "A": 51.55,
+        "E": 36.66,
+        "C": 13.14
+      },
+      "mae": {
+        "A": 2936.0,
+        "E": 3837.1,
+        "C": 9933.1
+      },
+      "scores_note": "A/E/C scores are the benchmark runs (models/algorithms.json, full-size model trained on each scenario's train split), not this deployed file",
+      "requires": [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib"
+      ],
+      "versions_built_with": {
+        "python": "3.12.3",
+        "numpy": "2.5.5",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "params": {
+        "hidden_layer_sizes": [
+          128,
+          64,
+          32
+        ],
+        "alpha": 0.0001,
+        "learning_rate_init": 0.01
+      },
+      "sanity": {
+        "rows": 20000,
+        "finite": true,
+        "accuracy_on_heldin_rows": 85.5,
+        "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+        "benchmark_mean_abs_log_diff": 0.0772,
+        "benchmark_p95_abs_log_diff": 0.2013,
+        "benchmark_corr": 0.9928,
+        "benchmark_accuracy_same_rows": 86.83,
+        "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+        "agrees_with_benchmark": true,
+        "sample_search": {
+          "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+          "flights": 207,
+          "finite": true,
+          "min_inr": 3413,
+          "mean_inr": 6451,
+          "max_inr": 14191
+        }
+      },
+      "notes": "",
+      "scores": {
+        "A": {
+          "accuracy": 86.803,
+          "within10": 51.55,
+          "mae": 2936.0,
+          "rmse": 5260.4,
+          "r2": 0.9334
+        },
+        "E": {
+          "accuracy": 80.462,
+          "within10": 36.66,
+          "mae": 3837.1,
+          "rmse": 6583.9,
+          "r2": 0.8958
+        },
+        "C": {
+          "accuracy": 47.29,
+          "within10": 13.14,
+          "mae": 9933.1,
+          "rmse": 15204.3,
+          "r2": 0.4436
+        }
+      },
+      "input_clipping": "month, weekday, days_left and every other plain-number input are clipped to the range seen in training before predicting (a December search is treated like the nearest trained month, April)",
+      "december_check": {
+        "Delhi -> Mumbai": 6451,
+        "Ahmedabad -> Mumbai": 5744
+      },
+      "december_vs_median_engine_pct": {
+        "Delhi -> Mumbai": -17.0,
+        "Ahmedabad -> Mumbai": -2.6
+      },
+      "demo_safe": true
+    }
+  ]
+}

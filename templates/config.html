@@ -8,12 +8,14 @@
     <p class="lede">Change how the search page behaves, then read how the model was built, how its score was measured and how other algorithms compare.</p>
   </div>
 
+  <div class="chipbar" id="engChipBar" aria-live="polite"></div>
   <div class="tabs" id="tabs" role="tablist" aria-label="Sections"></div>
 
   <div class="pane" id="p-settings" role="tabpanel">
+    <div class="block" id="engineBlock"><h2>Prediction engine</h2><p class="muted">Loading the engines…</p></div>
     <div class="block">
       <h2>Search settings</h2>
-      <p class="lede">Saved to <code>config.json</code> and applied to the next search. The model itself is not retrained by these settings.</p>
+      <p class="lede">Saved on the server and applied to the next search. The model itself is not retrained by these settings.</p>
       <div class="fields">
         <div><label for="c_pred">Prediction horizon, days before departure</label><input type="number" id="c_pred" min="1" max="45">
           <div class="help">The predicted fare is the model's estimate this many days before departure. 1 means the last-minute fare.</div></div>
@@ -21,12 +23,14 @@
           <div class="help">Fares differ by about 55% between the two scrapes, so this moves every prediction.</div></div>
         <div><label for="c_win">Listed price window, ± days</label><input type="number" id="c_win" min="0" max="10">
           <div class="help">The listed price is the median real scraped fare for the flight within this many days of the search's booking window.</div></div>
-        <div><label for="c_flag">Mark changes of at least, %</label><input type="number" id="c_flag" min="1" max="100">
-          <div class="help">Tickets whose predicted change is at least this big get a coloured edge and a label.</div></div>
+        <div><label for="c_flag">Smallest fall to call a May drop, %</label><input type="number" id="c_flag" min="1" max="100">
+          <div class="help">This also decides May drop and Big save. A flight is a May drop only when the model expects its price to settle at least this far below both the listed fare and its own estimate for today.</div></div>
         <div><label for="c_bigpct">Big save: fall of at least, %</label><input type="number" id="c_bigpct" min="5" max="80">
           <div class="help">A flight the model expects to get cheaper (see the change threshold above) gets a BIG SAVE sticker when the expected fall reaches this share of the listed price.</div></div>
         <div><label for="c_bigmin">Big save: or saving of at least, ₹</label><input type="number" id="c_bigmin" min="0" max="50000">
-          <div class="help">Also a big save when the expected rupee saving reaches this amount. Set to 0 to use the percentage test only.</div></div>
+          <div class="help">Also a big save when the expected rupee saving reaches this amount, but only if it is also a fall of at least 10%, so a small fall on a very dear fare never counts. Set to 0 to use the percentage test only.</div></div>
+        <div><label for="c_defunct" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink);font-weight:500"><input type="checkbox" id="c_defunct"> Include airlines that no longer operate</label>
+          <div class="help">GO FIRST, Vistara and AirAsia India are in the 2022 and 2023 data but no longer sell flights. They are hidden by default and marked as historical data when shown.</div></div>
         <div><label for="c_sort">Default sort</label><select id="c_sort"></select></div>
         <div><label for="c_curve">Price curve points, days before departure</label><input type="text" id="c_curve">
           <div class="help">3 to 12 values between 1 and 50, comma separated. Day 50 is sparse in the data, so predictions there are less reliable.</div></div>
@@ -34,7 +38,20 @@
         <div><label for="c_page">Flights per page</label><input type="text" id="c_page" disabled><div class="help">Fixed at 10.</div></div>
       </div>
       <div class="btn-row"><button class="btn" id="save" type="button">Save settings</button><button class="btn line" id="reset" type="button">Reset to defaults</button><a class="btn text" href="/">Open search</a></div>
+      <p class="muted small" style="margin-top:12px">These settings are saved on the server and apply to everyone who uses this demo, not just you.</p>
       <div id="msg" class="note" hidden></div>
+    </div>
+    <div class="block">
+      <h2>How the "May drop" tag works</h2>
+      <p class="lede">The tag is a model estimate, not a promise. A flight gets it only when all of these hold:</p>
+      <ol>
+        <li><b>Only the future counts.</b> The model prices the flight at several dates between today and departure. Dates already past are ignored.</li>
+        <li><b>A dip must last.</b> The expected low is the lowest price the model keeps for two dates in a row, so one odd point cannot trigger the tag.</li>
+        <li><b>It must be a real fall.</b> That low must be at least the percentage above below the listed fare <em>and</em> below FareSight's own estimate for today. Today's estimate is the fair comparison, because the listed fare is a scraped fare and can differ from what the model thinks today.</li>
+        <li><b>The card agrees.</b> The big FareSight price on the card must also be below the listed fare, so a May drop card never shows a rise. The expected low appears as a second, green line.</li>
+        <li><b>Big save.</b> A May drop is a big save when the expected low is below the listed fare by the big-save percentage, or by the rupee amount above provided that is also a fall of at least 10%.</li>
+      </ol>
+      <p class="muted small">Most fares are expected to rise toward departure, so on many routes and dates no flight is tagged. That is the honest result, not a fault.</p>
     </div>
   </div>
 
@@ -49,7 +66,7 @@
 {% block scripts %}
 <script>
 const TABS = [['settings','Settings'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources'],['algos','Algorithm comparison'],['us','United States']];
-let M = null, A = null;
+let M = null, A = null, ENG = null, engBusy = false;
 const $ = id => document.getElementById(id), tabs = $('tabs');
 tabs.innerHTML = TABS.map(([k, l]) => `<button role="tab" id="t-${k}" data-t="${k}" aria-controls="p-${k}">${esc(l)}</button>`).join('');
 function show(k) {
@@ -58,13 +75,15 @@ function show(k) {
   history.replaceState(null, '', '#' + k);
 }
 tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.t); });
+show((location.hash || '#settings').slice(1));   // the first tab is visible straight away, before the data arrives
 tabs.addEventListener('keydown', e => {
   const i = TABS.findIndex(t => t[0] === location.hash.slice(1)), n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
   if (n != null) { const k = TABS[(n + TABS.length) % TABS.length][0]; show(k); $('t-' + k).focus(); }
 });
 
 const bar = (v, max, alt) => `<div class="t"><div class="b ${alt ? 'alt' : ''}" style="width:${Math.max(1, v / max * 100)}%"></div></div>`;
-const acc = x => x.toFixed(1) + '%';
+const r1 = v => (Math.round(Number(v) * 10 + 1e-7) / 10).toFixed(1);   // one rounding rule for every score on every tab
+const acc = x => r1(x) + '%';
 // allow a break inside long CamelCase names such as HistGradientBoostingRegressor
 const brk = t => esc(t).replace(/([a-z])([A-Z])/g, '$1<wbr>$2');
 // label every cell with its column header so tables can stack on a phone
@@ -79,12 +98,12 @@ function stackify(root) {
 
 /* ---------- settings ---------- */
 function fillSettings(c) {
-  $('c_pred').value = c.predict_at_days_left; $('c_period').value = c.price_period; $('c_win').value = c.listed_window_days; $('c_flag').value = c.flag_threshold_pct; $('c_bigpct').value = c.big_save_threshold_pct; $('c_bigmin').value = c.big_save_min_inr;
+  $('c_pred').value = c.predict_at_days_left; $('c_period').value = c.price_period; $('c_win').value = c.listed_window_days; $('c_flag').value = c.flag_threshold_pct; $('c_defunct').checked = !!c.include_defunct; $('c_bigpct').value = c.big_save_threshold_pct; $('c_bigmin').value = c.big_save_min_inr;
   $('c_sort').value = c.default_sort; $('c_curve').value = c.curve_days.join(', '); $('c_show').checked = c.show_curve; $('c_page').value = M.page_size + ' (fixed)';
 }
 function readSettings() {
-  return { predict_at_days_left: +$('c_pred').value, price_period: +$('c_period').value, listed_window_days: +$('c_win').value, flag_threshold_pct: +$('c_flag').value, big_save_threshold_pct: +$('c_bigpct').value, big_save_min_inr: +$('c_bigmin').value,
-    default_sort: $('c_sort').value, curve_days: $('c_curve').value.split(',').map(s => s.trim()).filter(Boolean).map(Number), show_curve: $('c_show').checked };
+  return { algorithm: (ENG && ENG.active) || 'hgb', predict_at_days_left: +$('c_pred').value, price_period: +$('c_period').value, listed_window_days: +$('c_win').value, flag_threshold_pct: +$('c_flag').value, big_save_threshold_pct: +$('c_bigpct').value, big_save_min_inr: +$('c_bigmin').value,
+    default_sort: $('c_sort').value, curve_days: $('c_curve').value.split(',').map(s => s.trim()).filter(Boolean).map(Number), show_curve: $('c_show').checked, include_defunct: $('c_defunct').checked };
 }
 async function post(body) {
   const r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return [r.ok, await r.json()];
@@ -93,26 +112,110 @@ function note(ok, text) { const m = $('msg'); m.hidden = false; m.className = 'n
 $('save').onclick = async () => { const [ok, j] = await post(readSettings()); ok ? (fillSettings(j.config), note(true, 'Saved. The next search uses these settings.')) : note(false, j.errors.map(esc).join('<br>')); };
 $('reset').onclick = async () => { const [ok, j] = await post({ reset: true }); fillSettings(j.config); note(true, 'Back to the defaults.'); };
 
+/* ---------- prediction engine ---------- */
+const ENG_SCEN = [['A', 'Same period', 'a random 20% of 2023 held out'], ['E', 'Recalibrated', '2022 plus 10% of 2023 in training'], ['C', 'Unseen period', 'trained on 2022 only, tested on all of 2023']];
+const engVal = (e, field, k) => { const v = e[field]; return v && typeof v === 'object' ? v[k] : null; };
+function toast(text, bad) {
+  let t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = text; t.className = 'toast' + (bad ? ' bad' : '') + ' show'; clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 5200);
+}
+let pendingEngine = null;
+const REC_KEY = 'xgboost';
+const TAGS = { recommended: ['rec', 'Recommended'], reliable: ['rel', 'Reliable'] };
+function renderChip() {
+  const el = $('engChipBar'); if (!ENG) { el.innerHTML = ''; return; }
+  const a = activeEng(), rec = ENG.engines.find(e => e.key === REC_KEY && e.available !== false);
+  el.innerHTML = a ? `Active engine: <b>${esc(a.label)}</b>${TAGS[a.tier] ? ` <span class="tag ${TAGS[a.tier][0]}">${TAGS[a.tier][1]}</span>` : a.caution ? ' <span class="tag warn">For comparison</span>' : ''}
+    <span class="muted">Applies to everyone using this server.</span>${a.key !== REC_KEY && rec ? ' <button class="btn line sm" id="engReset" type="button">Back to recommended (' + esc(rec.label) + ')</button>' : ''}` : '';
+}
+function engines() {
+  const el = $('engineBlock'); if (!ENG) { el.innerHTML = '<h2>Prediction engine</h2><p class="muted">The engine list is not available on this server.</p>'; return; }
+  const L = ENG.engines, best = {};
+  ENG_SCEN.forEach(([k]) => { const sc = L.filter(e => e.available !== false).map(e => engVal(e, 'accuracy', k)).filter(v => v != null); best[k] = sc.length ? Math.max(...sc) : null; });
+  const sel = (document.querySelector('input[name=eng]:checked') || {}).value || ENG.active;
+  const rows = L.map(e => {
+    const ok = e.available !== false, a = e.active, tg = TAGS[e.tier];
+    const cells = ENG_SCEN.map(([k]) => { const v = engVal(e, 'accuracy', k), w = engVal(e, 'within10', k), m = engVal(e, 'mae', k);
+      return `<td class="num" data-l="${esc(ENG_SCEN.find(x => x[0] === k)[1])}">${v == null ? '–' : `<b>${r1(v)}%</b>${ok && v === best[k] ? ' <span class="tag win">best</span>' : ''}`}<div class="muted">${w == null ? '' : 'within ±10%: ' + r1(w) + '%'}${m == null ? '' : '<br>average miss ' + inr(m)}</div></td>`; }).join('');
+    const c = engVal(e, 'accuracy', 'C'), bc = best.C, weak = e.caution && c != null && bc != null ? `<div class="engwarn">${esc(e.caution)} On an unseen period it scores ${r1(c)}% against ${r1(bc)}% for the best engine.</div>` : '';
+    const tech = [ok ? '' : `Reason: ${e.unavailable_reason || 'unknown'}`, e.key === 'random_forest' ? 'This engine was requested by the portfolio manager.' : '', e.notes ? e.notes : ''].filter(Boolean);
+    return `<tr class="${a ? 'cur' : ''} ${ok ? '' : 'off'}"><td><input type="radio" name="eng" id="eng_${esc(e.key)}" value="${esc(e.key)}" ${ok ? '' : 'disabled'} ${e.key === sel ? 'checked' : ''} aria-label="Select ${esc(e.label)}"></td>
+      <td><label class="engname" for="eng_${esc(e.key)}"><b>${esc(e.label)}</b> ${a ? '<span class="tag cur">Active</span>' : ''} ${tg ? `<span class="tag ${tg[0]}">${tg[1]}</span>` : '<span class="tag">Also evaluated</span>'}</label>
+        <div class="muted">${esc(e.family || '')}</div><div class="muted engdesc">${esc(e.description || '')}</div>${weak}${ok ? '' : '<div class="engwhy">Not installed on this server.</div>'}
+        ${tech.length ? `<details class="eng-tech"><summary>Technical details</summary><div>${tech.map(esc).join('<br>')}</div></details>` : ''}</td>
+      <td class="num" data-l="Size and speed">${e.size_mb != null ? Number(e.size_mb).toLocaleString('en-IN') + ' MB' : '–'}<div class="muted">${e.predict_ms_per_1k != null ? Number(e.predict_ms_per_1k).toLocaleString('en-IN') + ' ms per 1,000' : ''}${e.load_seconds != null ? '<br>loads in ' + Number(e.load_seconds).toFixed(1) + ' s' : ''}</div></td>${cells}</tr>`; }).join('');
+  const pe = pendingEngine && L.find(x => x.key === pendingEngine);
+  el.innerHTML = `<h2>Prediction engine${ENG.mock ? '<span class="sample" title="Placeholder engines and numbers for layout only">Sample data</span>' : ''}</h2>
+    <p class="lede">Pick the algorithm that produces the India predictions on the search page. Everything else (the May drop and Big save tags, filters and sorting) works the same with any engine. <b>The US market uses its own price-history model</b> and is not affected. <b>This setting applies to everyone using this server.</b></p>
+    ${ENG.fallback ? `<div class="note bad"><b>${esc(ENG.fallback.wanted_label)} is the default but is not installed on this server.</b> Predictions are using the first model (HistGradientBoosting) instead.<details class="eng-tech"><summary>Technical details</summary><div>${esc(ENG.fallback.reason)}</div></details></div>` : ''}
+    <div class="note">All engines were trained on the same data. On periods they have seen they differ by tenths of a point; on a period they have never seen they differ by several points. A higher score here is not a promise about any fare.</div>
+    <div class="tablewrap"><table class="ed engines"><tr><th></th><th>Engine</th><th class="num">Size and speed</th>${ENG_SCEN.map(([, n, d]) => `<th class="num" title="${esc(d)}">${esc(n)}</th>`).join('')}</tr>${rows}</table></div>
+    <p class="muted small">${ENG_SCEN.map(([k, n, d]) => `<b>${esc(n)}</b>: ${esc(d)}`).join(' · ')}. Scores come from the benchmark runs, not from the engine files.</p>
+    ${pe ? `<div class="engine-confirm" role="alert"><b>Switch to ${esc(pe.label)}?</b> ${esc(pe.caution || 'This engine is less tested.')} Searches will show prices from this engine for everyone using this server until it is changed back.
+      <div class="btn-row"><button class="btn" id="engConfirm" type="button">Switch anyway</button><button class="btn line" id="engCancel" type="button">Cancel</button></div></div>` : ''}
+    <div class="btn-row"><button class="btn" id="useEngine" type="button">Use this engine</button><span id="engStatus" class="muted small" aria-live="polite"></span></div>`;
+  renderChip(); syncUse();
+}
+function syncUse() {
+  const b = $('useEngine'); if (!b) return; const v = (document.querySelector('input[name=eng]:checked') || {}).value;
+  b.disabled = engBusy || !v || v === ENG.active;
+}
+async function switchEngine(key) {
+  const e = ENG.engines.find(x => x.key === key), b = $('useEngine'), st = $('engStatus'); engBusy = true; b.disabled = true;
+  b.textContent = `Loading ${e.label}…`; st.innerHTML = '<span class="track-inline" aria-hidden="true"><svg class="mark-svg" viewBox="0 0 64 64"><use href="#fs-mark"/></svg></span>';
+  try {
+    const [ok, j] = await post({ algorithm: key });
+    if (!ok) { toast((j.errors || ['That engine could not be loaded.']).join(' '), true); return; }
+    try { ENG = await (await fetch('/api/engines')).json(); } catch (e) { ENG.active = key; ENG.engines.forEach(x => x.active = x.key === key); }
+    if (M) M.config = j.config;
+    const t = j.engine && j.engine.load_seconds != null ? ` (ready in ${Number(j.engine.load_seconds).toFixed(1)} s)` : '';
+    toast(`Now predicting with ${e.label}${t}. Search again to see new prices.`);
+  } catch (err) { toast('Could not reach the server.', true); }
+  finally { engBusy = false; engines(); rerenderModelTabs(); }
+}
+document.addEventListener('change', e => { if (e.target.name === 'eng') syncUse(); });
+document.addEventListener('click', e => {
+  const id = e.target.id;
+  if (id === 'useEngine') { const v = (document.querySelector('input[name=eng]:checked') || {}).value; if (!v || v === ENG.active || engBusy) return;
+    const en = ENG.engines.find(x => x.key === v); if (en && en.caution) { pendingEngine = v; engines(); const c = document.querySelector('.engine-confirm'); if (c) c.scrollIntoView({ block: 'nearest' }); } else switchEngine(v); }
+  if (id === 'engConfirm' && pendingEngine && !engBusy) { const v = pendingEngine; pendingEngine = null; switchEngine(v); }
+  if (id === 'engCancel') { pendingEngine = null; engines(); }
+  if (id === 'engReset' && !engBusy) { pendingEngine = null; switchEngine(REC_KEY); }
+});
+
+const activeEng = () => ENG && ENG.engines.find(e => e.active);
+const SCEN_KEYS = { A: 'A_same_period_random_20pct', E: 'E_2022_plus_10pct_of_2023', C: 'C_train_2022_test_2023' };
+// the held-out scores of the ACTIVE engine (from the benchmark runs in models/algorithms.json via the manifest), else the deployed model's
+function scores() {
+  const e = activeEng(), out = {};
+  for (const [k, key] of Object.entries(SCEN_KEYS)) { const b = M.metrics[key];
+    out[key] = e && e.accuracy && e.accuracy[k] != null ? { accuracy_pct: e.accuracy[k], within_10pct: (e.within10 || {})[k] ?? b.within_10pct, MAE_inr: (e.mae || {})[k] ?? b.MAE_inr, rows: b.rows } : b; }
+  return out;
+}
+const engName = () => { const e = activeEng(); return e ? e.label.replace(/\s*\(.*\)\s*$/, '') : 'the deployed model'; };
+const isHgb = () => { const e = activeEng(); return !e || e.key === 'hgb'; };
+function rerenderModelTabs() { metrics(); how(); model(); if (A) algos(); }
+
 /* ---------- metrics ---------- */
 const SCEN = [
-  ['A_same_period_random_20pct', 'Same period', 'A random 20% of the 2023 rows is held out. Other days of the same flights are in training, so this is an interpolation score.'],
+  ['A_same_period_random_20pct', 'Same period', 'A random 20% of the 2023 rows is held out. Other days of the same flights are in training, so this is the easiest of the three tests.'],
   ['E_2022_plus_10pct_of_2023', 'Recalibrated', 'Train on the 2022 scrape plus a random 10% of 2023 flight-days, test on the other 90%. This mimics having a small recent sample.'],
   ['C_train_2022_test_2023', 'Unseen period', 'Train on 2022 only and test on all of 2023. No 2023 flight or price level is seen. The hardest and most honest test of forecasting a new period.']];
 function metrics() {
-  const m = M.metrics;
+  const m = scores();
   $('p-metrics').innerHTML = `
     <div class="block"><h2>Held-out accuracy</h2>
-      <p class="lede">Target: 95%. Accuracy is 100 minus the mean absolute percentage error between predicted and actual fare, on rows the model never trained on.</p>
+      <p class="lede">Scores for the active engine, <b>${esc(engName())}</b> (change it under Settings). Goal: 95%. Accuracy is 100 minus the average percentage error between predicted and actual fare, measured on flights the model never trained on.</p>
       <div class="figs">${SCEN.map(([k, n]) => { const r = m[k]; return `<div class="fig"><div class="k">${n}</div><div class="v" style="color:${r.accuracy_pct >= 95 ? 'var(--down)' : 'var(--ink)'}">${acc(r.accuracy_pct)}</div>
-        <div class="s">${r.within_10pct}% of fares within ±10%</div><div class="s">Average miss ${inr(r.MAE_inr)}</div><div class="s muted">${r.rows.toLocaleString()} test rows</div></div>`; }).join('')}</div></div>
+        <div class="s">${r1(r.within_10pct)}% of fares within ±10%</div><div class="s">Average miss ${inr(r.MAE_inr)}</div><div class="s muted">${r.rows.toLocaleString()} test rows</div></div>`; }).join('')}</div></div>
     <div class="block"><h2>What each test means</h2><div class="tablewrap"><table class="ed"><tr><th>Test</th><th>Setup</th><th class="num">Accuracy</th><th class="num">Within ±10%</th></tr>
-      ${SCEN.map(([k, n, d]) => `<tr><td><b>${n}</b></td><td>${d}</td><td class="num">${acc(m[k].accuracy_pct)}</td><td class="num">${m[k].within_10pct}%</td></tr>`).join('')}</table></div></div>
+      ${SCEN.map(([k, n, d]) => `<tr><td><b>${n}</b></td><td>${d}</td><td class="num">${acc(m[k].accuracy_pct)}</td><td class="num">${r1(m[k].within_10pct)}%</td></tr>`).join('')}</table></div></div>
     <div class="block"><h2>How the metrics are defined</h2><table class="ed">
-      <tr><td><b>Accuracy</b></td><td>100 − MAPE, where MAPE is the average of |predicted − actual| ÷ actual over the test rows.</td></tr>
+      <tr><td><b>Accuracy</b></td><td>100 minus the average percentage error: how far each prediction is from the actual fare, as a share of that fare, averaged over the test flights.</td></tr>
       <tr><td><b>Within ±10%</b></td><td>Share of test fares where the prediction is within 10% of the actual fare.</td></tr>
       <tr><td><b>Average miss (MAE)</b></td><td>Average absolute error in rupees.</td></tr>
-      <tr><td><b>Target</b></td><td>The model predicts log(price), so a ₹500 miss on a ₹3,000 fare counts for more than on a ₹50,000 business fare. Predictions are converted back to rupees before scoring.</td></tr></table></div>
-    <div class="block"><h2>Reading these numbers honestly</h2><ul>${M.experiments.findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
+      <tr><td><b>How errors are counted</b></td><td>The model works on the logarithm of the price, so a ₹500 miss on a ₹3,000 fare counts for more than on a ₹50,000 business fare. Predictions are converted back to rupees before scoring.</td></tr></table></div>
+    <div class="block"><h2>Reading these numbers honestly${isHgb() ? '' : ' (written for the first model, HistGradientBoosting)'}</h2><ul>${M.experiments.findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
 }
 
 /* ---------- how we got the score ---------- */
@@ -122,48 +225,56 @@ function how() {
     <div class="brow"><span class="muted">Same period</span>${bar(r.same_period - 75, 20)}<span class="v">${acc(r.same_period)}</span></div>
     <div class="brow"><span class="muted">Recalibrated</span>${bar(r.recalibrated - 75, 20, true)}<span class="v">${acc(r.recalibrated)}</span></div></div>`).join('');
   $('p-how').innerHTML = `
-    <div class="block"><h2>The path from 86.9% to 93.0%</h2>
+    <div class="block"><h2>${isHgb() ? 'The path from 86.9% to 93.0%' : 'How the first model (HistGradientBoosting) got from 86.9% to 93.0%'}</h2>
+      ${isHgb() ? '' : `<p class="lede">The default engine is now <b>${esc(engName())}</b>, with the scores shown under Metrics. The steps below are how the first model was built; the data and inputs are the same for every engine.</p>`}
       <ol><li><b>First model.</b> A gradient boosting model on basic fare attributes scored 86.9% on a random split inside 2023.</li>
         <li><b>Add real signal.</b> Exact departure and arrival hour (recovered from the raw scrape), route distance, route supply, and the typical price level of each flight and airline-route. Same-period accuracy rose to 89.6%.</li>
-        <li><b>Make the model bigger and tune it.</b> More boosting rounds, more leaves, smaller steps, L2 regularisation and early stopping. This was the biggest single gain, up to 93.0%.</li>
+        <li><b>Make the model bigger and tune it.</b> More trees, bigger trees, smaller steps, a gentle penalty against over-fitting, and stopping when scores stop improving. This was the biggest single gain, up to 93.0%.</li>
         <li><b>Test more honestly.</b> The recalibrated and unseen-period tests show how much of the score survives outside the training period.</li></ol></div>
     <div class="block"><h2>Step 1: features added, one at a time</h2><p class="lede">Bars start at 75% to make the differences visible. Model size was held fixed at 400 rounds.</p><div class="bars">${ladder}</div></div>
     <div class="block"><h2>Step 2: model size and tuning</h2><div class="tablewrap"><table class="ed"><tr><th>Setting</th><th class="num">Same period</th><th class="num">Recalibrated</th></tr>
       ${X.tuning.map(r => `<tr><td>${esc(r.step)}</td><td class="num">${acc(r.same_period)}</td><td class="num">${r.recalibrated == null ? 'not run' : acc(r.recalibrated)}</td></tr>`).join('')}</table></div>
       <p class="muted small">The final model hit the 3,500-round cap while still improving, so a little more is possible, with diminishing returns.</p></div>
-    <div class="block"><h2>What the model relies on</h2>
-      <p class="lede">Permutation importance on ${imp ? imp.sample_rows.toLocaleString() : '?'} fares: accuracy points lost when one feature is shuffled. These rows were part of the shipped model's training data (baseline ${imp ? acc(imp.baseline_accuracy_pct) : '?'}, higher than the held-out scores), and target-encoded features use the full training set. Read this as a ranking of what the model uses, not as out-of-sample effect sizes.</p>
-      <div class="bars">${imp ? imp.features.map(f => `<div class="brow"><span>${esc(f.feature)}</span>${bar(f.accuracy_drop_pts, imp.features[0].accuracy_drop_pts)}<span class="v">${f.accuracy_drop_pts.toFixed(1)}</span></div>`).join('') : '<p class="muted">Importance file not found. Run <code>src/importance.py</code>.</p>'}</div></div>
+    <div class="block"><h2>What the first model relied on</h2>
+      <p class="lede">How much each input matters, measured on the first model (HistGradientBoosting) with ${imp ? imp.sample_rows.toLocaleString() : '?'} fares: by how many accuracy points the score falls when that input is scrambled. These rows were part of the shipped model's training data (baseline ${imp ? acc(imp.baseline_accuracy_pct) : '?'}, higher than the held-out scores), and target-encoded features use the full training set. Read this as a ranking of what the model uses, not as out-of-sample effect sizes.</p>
+      <div class="bars">${imp ? imp.features.map(f => `<div class="brow"><span>${esc(feat(f.feature))}</span>${bar(f.accuracy_drop_pts, imp.features[0].accuracy_drop_pts)}<span class="v">${f.accuracy_drop_pts.toFixed(1)}</span></div>`).join('') : '<p class="muted">Importance file not found. Run <code>src/importance.py</code>.</p>'}</div></div>
     <div class="block"><h2>First-version tests, for the record</h2><table class="ed"><tr><th>Split</th><th class="num">Accuracy</th></tr>
       ${X.first_version.map(r => `<tr><td>${esc(r.split)}${r.caveat ? `<div class="muted">${esc(r.caveat)}</div>` : ''}</td><td class="num">${acc(r.accuracy)}</td></tr>`).join('')}</table></div>
     <div class="block"><h2>Why not 95%</h2><ul>
       <li>Each scrape is a single day. The model sees a flight's price once, never moving over time, so it cannot learn repricing or festival effects.</li>
-      <li>The unseen-period score (66%) is limited by the price level shift between 2022 and 2023.</li>
+      <li>The unseen-period score is limited by the shift in fare levels between 2022 and 2023: ${engName()} reaches ${r1(scores()[SCEN_KEYS.C].accuracy_pct)}% there (the first model, HistGradientBoosting, reached 66.2%).</li>
       <li>The next real gain needs repeated daily prices for the same flights, for example a scheduled capture on the target routes, so that "yesterday's price for this flight" becomes a feature.</li></ul></div>`;
 }
 
 /* ---------- model ---------- */
-const HP_DOC = { loss:'Squared error on log price', max_iter:'Maximum boosting rounds (trees)', learning_rate:'Step size for each tree', max_leaf_nodes:'Leaves per tree (model complexity)',
-  min_samples_leaf:'Minimum rows in a leaf', l2_regularization:'Penalty on large leaf values', early_stopping:'Stop when the validation score stops improving',
-  validation_fraction:'Share of training rows used to decide when to stop', n_iter_no_change:'Rounds without improvement before stopping', random_state:'Seed for reproducibility' };
+const FEAT = { te_flight: 'Typical fare of this flight number', te_route_airline: 'Typical fare of this airline on the route', dep_hour: 'Departure time', arr_hour: 'Arrival time', dep_bucket: 'Departure time window', arr_bucket: 'Arrival time window',
+  days_left: 'Days before departure', dow: 'Weekday of travel', month: 'Month of travel', period: 'Scrape year (fare level)', route_supply: 'Number of flights on the route', distance_km: 'Route distance', duration_h: 'Journey time', stops: 'Number of stops',
+  airline: 'Airline', source: 'Origin city', destination: 'Destination city', class: 'Class of travel' };
+const feat = n => FEAT[n] || n;
+const HP_DOC = { loss:'How an error is scored (squared error on the log price)', max_iter:'Most trees the model may build', learning_rate:'How big a step each new tree takes', max_leaf_nodes:'Size of each tree',
+  min_samples_leaf:'Fewest flights allowed in a leaf', l2_regularization:'Gentle penalty that keeps the model from over-fitting', early_stopping:'Stop when the held-back score stops improving',
+  validation_fraction:'Share of training rows used to decide when to stop', n_iter_no_change:'Rounds without improvement before stopping', random_state:'Seed for reproducibility',
+  max_leaves:'Most leaves allowed per tree', min_child_weight:'Smallest amount of evidence needed to split a tree further', reg_lambda:'Gentle penalty that keeps the model from over-fitting', colsample_bytree:'Share of inputs each tree may look at',
+  n_estimators:'Number of trees', max_depth:'How deep each tree may grow', subsample:'Share of flights each tree trains on', tree_method:'How the trees are built', num_leaves:'Most leaves allowed per tree', min_child_samples:'Fewest flights allowed in a leaf',
+  reg_alpha:'Penalty that removes weak splits', depth:'How deep each tree may grow', l2_leaf_reg:'Gentle penalty that keeps the model from over-fitting', rsm:'Share of inputs each tree may look at', max_features:'Share of inputs each split may look at', min_samples_split:'Fewest flights needed to split', alpha:'Strength of the penalty on large weights', hidden_layer_sizes:'Size of each layer of the network' };
 function model() {
   const mo = M.model, imp = M.importance, impMap = imp ? Object.fromEntries(imp.features.map(f => [f.feature, f.accuracy_drop_pts])) : {};
   $('p-model').innerHTML = `
-    <div class="block"><h2>Model</h2><div class="figs">
-      <div class="fig"><div class="k">Algorithm</div><div class="v sm">${brk(mo.type)}</div></div>
+    <div class="block"><h2>Model</h2><p class="lede">The active engine is <b>${esc(engName())}</b>${activeEng() && activeEng().description ? ': ' + esc(activeEng().description) : ''} Engines are chosen under Settings.</p><div class="figs">
+      <div class="fig"><div class="k">Algorithm</div><div class="v sm">${brk(activeEng() ? activeEng().label : String(mo.type).replace('Regressor', ''))}</div><div class="s">${esc(activeEng() ? activeEng().family || '' : '')}</div></div>
       <div class="fig"><div class="k">Predicts</div><div class="v sm">${brk(mo.target)}</div></div>
-      <div class="fig"><div class="k">Rounds fitted</div><div class="v">${mo.rounds_fitted.toLocaleString()}</div></div>
+      ${isHgb() ? `<div class="fig"><div class="k">Rounds fitted</div><div class="v">${mo.rounds_fitted.toLocaleString()}</div></div>` : `<div class="fig"><div class="k">Size on disk</div><div class="v">${activeEng().size_mb != null ? Number(activeEng().size_mb).toLocaleString('en-IN') + ' MB' : '–'}</div></div>`}
       <div class="fig"><div class="k">Features</div><div class="v">${mo.n_features}</div></div></div></div>
-    <div class="block"><h2>Hyperparameters</h2><div class="tablewrap"><table class="ed"><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
-      ${Object.entries(mo.hyperparameters).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(v)}</td><td>${esc(HP_DOC[k] || '')}</td></tr>`).join('')}</table></div></div>
-    <div class="block"><h2>Features used (${mo.n_features})</h2><div class="tablewrap"><table class="ed"><tr><th>Feature</th><th>Kind</th><th>Description</th><th class="num">Importance</th></tr>
-      ${mo.features.map(f => `<tr><td><code>${esc(f.name)}</code></td><td>${esc(f.kind)}</td><td>${esc(f.doc)}</td><td class="num">${impMap[f.name] != null ? impMap[f.name].toFixed(1) + ' pts' : ''}</td></tr>`).join('')}</table></div></div>
+    <details class="tech"><summary>Technical details</summary>
+    <div class="block"><h2>Settings of ${isHgb() ? 'HistGradientBoosting' : esc(engName())}</h2><div class="tablewrap"><table class="ed"><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+      ${Object.entries(isHgb() || !activeEng().params || !Object.keys(activeEng().params).length ? mo.hyperparameters : activeEng().params).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(v)}</td><td>${esc(HP_DOC[k] || 'A tuning setting of this algorithm')}</td></tr>`).join('')}</table></div></div>
+    <div class="block"><h2>Features used (${mo.n_features})</h2><div class="tablewrap"><table class="ed"><tr><th>Input</th><th>Kind</th><th>Description</th><th class="num">Importance on the first model</th></tr>
+      ${mo.features.map(f => `<tr><td><b>${esc(feat(f.name))}</b></td><td>${esc(f.kind)}</td><td>${esc(f.doc)}</td><td class="num">${impMap[f.name] != null ? impMap[f.name].toFixed(1) + ' pts' : ''}</td></tr>`).join('')}</table></div></div>
     <div class="block"><h2>Training details</h2><ul>
       <li>Target encodings (typical price of a flight, of an airline on a route) are computed out-of-fold with 5 folds on the training rows, so a row never sees its own price.</li>
       <li>Categorical features are handled natively by the model, not one-hot encoded.</li>
       <li>The shipped model is trained on all real rows (2022 and 2023). The scores above come from separate runs with rows held out.</li>
-      <li>Training takes about 5 minutes per model on a laptop CPU. No GPU is needed.</li>
-      <li>Reproduce with <code>python src/build_dataset.py</code>, <code>python src/train.py</code>, <code>python src/importance.py</code>.</li></ul></div>`;
+      <li>Training takes about 6 to 7 minutes on a laptop CPU (6.6 minutes in the benchmark run). No GPU is needed.</li></ul></div></details>`;
 }
 
 /* ---------- data ---------- */
@@ -210,10 +321,14 @@ function anyTable(x) {
 // horizon accuracy: compact columns, the verdict text shown once when it is the same on every row
 function horizonTable(rows) {
   if (!Array.isArray(rows) || !rows.length || rows[0].horizon_days == null) return anyTable(rows);
-  const p = v => v == null ? '–' : Number(v).toFixed(1) + '%', verdicts = [...new Set(rows.map(r => r.verdict).filter(Boolean))];
-  return `<div class="tablewrap"><table class="ed"><tr><th>Days ahead</th><th class="num">Model</th><th class="num">Naive: last price</th><th class="num">Naive: route median</th><th class="num">Model minus last price (points)</th><th class="num">Within ±10%: model</th><th class="num">Within ±10%: last price</th></tr>
-    ${rows.map(r => `<tr><td><b>${r.horizon_days} ${r.horizon_days === 1 ? 'day' : 'days'} ahead</b></td><td class="num">${p(r.model_accuracy_pct)}</td><td class="num">${p(r.last_price_accuracy_pct)}</td><td class="num">${p(r.route_days_out_median_accuracy_pct)}</td><td class="num">${r.delta_points == null ? '–' : (r.delta_points > 0 ? '+' : '') + Number(r.delta_points).toFixed(2)}</td><td class="num">${p(r.within_10pct_model)}</td><td class="num">${p(r.within_10pct_last_price)}</td></tr>`).join('')}</table></div>
-    ${verdicts.length === 1 ? `<p class="muted small">Verdict at every horizon: ${esc(verdicts[0])}.</p>` : verdicts.length ? `<ul class="small">${rows.filter(r => r.verdict).map(r => `<li>${r.horizon_days} days: ${esc(r.verdict)}</li>`).join('')}</ul>` : ''}`;
+  const p = v => v == null ? '–' : r1(v) + '%';
+  // one verdict from both scores, so the table cannot contradict itself
+  const verdict = r => { const a = r.delta_points, w = r.within_10pct_model - r.within_10pct_last_price;
+    if (a == null) return ''; if (Math.abs(a) < 0.3 && Math.abs(w) < 0.3) return 'about the same as repeating the last price';
+    if (a > 0 && w >= 0) return 'better on both scores'; if (a > 0) return 'lower average error, but fewer fares within ±10%'; if (w > 0) return 'more fares within ±10%, but higher average error'; return 'worse than repeating the last price'; };
+  return `<div class="tablewrap"><table class="ed"><tr><th>Days ahead</th><th class="num">Model</th><th class="num">Naive: last price</th><th class="num">Naive: route median</th><th class="num">Model minus last price (points)</th><th class="num">Within ±10%: model</th><th class="num">Within ±10%: last price</th><th>Verdict</th></tr>
+    ${rows.map(r => `<tr><td><b>${r.horizon_days} ${r.horizon_days === 1 ? 'day' : 'days'} ahead</b></td><td class="num">${p(r.model_accuracy_pct)}</td><td class="num">${p(r.last_price_accuracy_pct)}</td><td class="num">${p(r.route_days_out_median_accuracy_pct)}</td><td class="num">${r.delta_points == null ? '–' : (r.delta_points > 0 ? '+' : '') + Number(r.delta_points).toFixed(2)}</td><td class="num">${p(r.within_10pct_model)}</td><td class="num">${p(r.within_10pct_last_price)}</td><td>${verdict(r)}</td></tr>`).join('')}</table></div>
+    <p class="muted small">The verdict compares the model with simply repeating the last price, using both the average error and the share of fares within ±10%. The model is tested up to 14 days after the listing date, and May drop tags stay inside that range.</p>`;
 }
 async function usTab() {
   const el = $('p-us');
@@ -256,15 +371,18 @@ async function usTab() {
       <div class="note"><b>Licence note.</b> Weather data comes from the Open-Meteo free API, which is licensed for non-commercial use only. Before any commercial use of this demo, that source needs a commercial licence or must be replaced.</div>
       <h3>Limits of the data</h3><ul>${(u.data_limits || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
     <div class="block"><h2>How the search page uses this</h2>
-      <ul><li>The &ldquo;May drop&rdquo; and &ldquo;Big save&rdquo; thresholds in Settings are shared: the percentage settings apply to both markets. The rupee amount applies to India only; the US default is ${u.defaults ? '$' + u.defaults.big_save_min_usd : 'set by the service'}.</li>
-      <li>The curve on a US flight runs from the listing date forward, up to ${u.horizon ? u.horizon.max : 14} days, and stops where the departure would be under a week away, since the data never shows quotes that close.</li>
+      <ul><li>The &ldquo;May drop&rdquo; rule is the same in both markets (see Settings): only future dates, a low that lasts for two dates in a row, and a fall below both the listed price and the model's own estimate for the first day. The &ldquo;May drop&rdquo; and &ldquo;Big save&rdquo; thresholds in Settings are shared: the percentage settings apply to both markets. The rupee amount applies to India only; the US default is ${u.defaults ? '$' + u.defaults.big_save_min_usd : 'set by the service'}.</li>
+      <li>The curve on a US flight runs from the listing date forward, at most ${u.horizon ? u.horizon.max : 14} days, and stops where the departure would be under a week away, since the data never shows quotes that close.</li>
       <li>Cabin is not recorded for US fares. Each listed price is the cheapest quote found for that flight.</li></ul></div>`;
 }
 
 /* ---------- algorithm comparison ---------- */
 const ST = { set: null, scen: 'A' };
 const norm = v => v == null ? null : (v <= 1.5 ? v * 100 : v);
-const isCur = r => /current|hist|hgb/i.test(r.algorithm);
+const dispName = n => { const t = String(n).replace(/\s*\((current model|current)\)/i, ''); return normN(t).startsWith('histgradientboosting') ? 'First model (HistGradientBoosting)' : t; };
+const matchEng = n => ENG && ENG.engines.find(e => normN(e.label) === normN(n) || normN(n).startsWith(normN(e.label)));
+const normN = t => String(t).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
+const isCur = r => { const a = activeEng(), e = matchEng(r.algorithm); return !!(a && e && e.key === a.key); };
 const more = (t, label) => !t ? '' : t.length <= 70 ? esc(t) : `<details class="more"><summary>${esc(label)}</summary><div>${esc(t)}</div></details>`;
 const fmtT = s => s == null ? '–' : s < 60 ? s.toFixed(s < 10 ? 1 : 0) + ' s' : (s / 60).toFixed(1) + ' min';
 const fmtN = (v, d = 1) => v == null ? '–' : Number(v).toLocaleString('en-IN', { maximumFractionDigits: d });
@@ -272,7 +390,7 @@ const SET_NAME = { baseline18: '18 baseline features', enriched: 'Enriched featu
 
 function algosPending(msg) {
   $('p-algos').innerHTML = `<div class="block"><h2>Algorithm comparison</h2>
-    <p class="lede">The same data split three ways, scored for several algorithms, so the current model can be judged against alternatives.</p>
+    <p class="lede">The same data split three ways, scored for several algorithms, so the active engine can be judged against the others.</p>
     <div class="state" style="margin-top:8px"><svg viewBox="0 0 120 80" aria-hidden="true" style="fill:var(--sheet);stroke:var(--ink-3);stroke-width:1.4"><path d="M8 56 H112" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/><svg x="38" y="14" width="44" height="44" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink)"><use href="#plane"/></svg></svg>
       <div><h3>Comparison still pending</h3><p>${esc(msg || 'The results file has not been written yet.')} Once <code>models/algorithms.json</code> exists, this tab fills in with a ranking, an accuracy-versus-speed chart and a size and time table. Nothing here is estimated in the meantime.</p></div></div></div>`;
 }
@@ -280,23 +398,26 @@ function algosPending(msg) {
 function algos() {
   if (!A || A.status !== 'ready') return algosPending(A && A.message);
   const keys = Object.keys(A.sets); if (!ST.set || !A.sets[ST.set]) ST.set = keys[0];
-  const D = A.sets[ST.set], scen = D.scenarios || {}, S = ST.scen, sc = scen[S] || {};
+  const D0 = A.sets[ST.set];
+  // names and speed/size come from one place, the engine manifest, so every tab shows the same figures; the first model is never called "current"
+  const D = { ...D0, results: D0.results.map(r => { const e = matchEng(r.algorithm); return { ...r, algorithm: dispName(r.algorithm), predict_ms_per_1k: e && e.predict_ms_per_1k != null ? e.predict_ms_per_1k : r.predict_ms_per_1k, model_mb: e && e.size_mb != null ? e.size_mb : r.model_mb }; }),
+    winner: Object.fromEntries(Object.entries(D0.winner || {}).map(([k, v]) => [k, dispName(v)])) }, scen = D.scenarios || {}, S = ST.scen, sc = scen[S] || {};
   const rows = D.results.filter(r => r.scores && r.scores[S] && norm(r.scores[S].accuracy) != null)
     .sort((a, b) => norm(b.scores[S].accuracy) - norm(a.scores[S].accuracy));
   const skipped = D.results.length - rows.length, winner = D.winner && D.winner[S];
-  const curM = M.metrics && SCEN[['A', 'E', 'C'].indexOf(S)] ? M.metrics[SCEN[['A', 'E', 'C'].indexOf(S)][0]].accuracy_pct : null;
+  const curM = M.metrics ? scores()[SCEN_KEYS[S]].accuracy_pct : null;
   const accs = rows.map(r => norm(r.scores[S].accuracy)).concat(curM != null ? [curM] : []);
   const lo = Math.floor((Math.min(...accs) - 2) / 10) * 10, hi = 100, pos = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
-  const tag = r => (r.algorithm === winner ? '<span class="tag win">Best</span> ' : '') + (isCur(r) ? '<span class="tag cur">Current</span>' : '');
+  const tag = r => (r.algorithm === winner ? '<span class="tag win">Best</span> ' : '') + (isCur(r) ? '<span class="tag cur">Active</span>' : '');
 
   const table = `<div class="tablewrap"><table class="ed"><tr><th></th><th>Algorithm</th><th style="min-width:180px">Accuracy</th><th class="num">Within ±10%</th><th class="num">Average miss</th><th class="num">R²</th><th>Tuning</th></tr>
     ${rows.map((r, i) => { const s = r.scores[S], a = norm(s.accuracy);
       return `<tr class="${isCur(r) ? 'cur' : ''} ${r.algorithm === winner ? 'winner' : ''}"><td class="rank">${i + 1}</td>
         <td><b>${brk(r.algorithm)}</b> ${tag(r)}<div class="muted">${esc(r.family || '')}</div>${r.notes ? `<div class="muted">${more(r.notes, 'Notes')}</div>` : ''}</td>
-        <td><div class="accbar ${isCur(r) ? 'cur' : ''}"><i style="width:${pos(a)}%"></i>${curM != null && !isCur(r) ? `<u style="left:${pos(curM)}%" title="Current model ${acc(curM)}"></u>` : ''}</div><b>${acc(a)}</b></td>
+        <td><div class="accbar ${isCur(r) ? 'cur' : ''}"><i style="width:${pos(a)}%"></i>${curM != null && !isCur(r) ? `<u style="left:${pos(curM)}%" title="Active engine ${acc(curM)}"></u>` : ''}</div><b>${acc(a)}</b></td>
         <td class="num">${s.within10 == null ? '–' : acc(norm(s.within10))}</td><td class="num">${s.mae == null ? '–' : inr(s.mae)}</td><td class="num">${s.r2 == null ? '–' : s.r2.toFixed(2)}</td>
         <td class="muted tun">${more(r.tuning || '', 'How it was tuned')}</td></tr>`; }).join('')}</table></div>
-    <p class="muted small">Bars run from ${lo}% to 100%. The red tick on each bar marks the current model's score for this scenario (${curM != null ? acc(curM) : 'n/a'}).${skipped ? ` ${skipped} algorithm${skipped > 1 ? 's were' : ' was'} not scored for this scenario.` : ''}</p>`;
+    <p class="muted small">Bars run from ${lo}% to 100%. The red tick on each bar marks the active engine's score for this scenario (${curM != null ? acc(curM) : 'n/a'}).${skipped ? ` ${skipped} algorithm${skipped > 1 ? 's were' : ' was'} not scored for this scenario.` : ''}</p>`;
 
   // speed against accuracy
   const pts = rows.filter(r => r.predict_ms_per_1k > 0);
@@ -317,7 +438,7 @@ function algos() {
   const scatter = pts.length ? `<svg class="scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="Accuracy against prediction time for each algorithm">${g}${dots}
     <text class="ax" x="${L + pw / 2}" y="${H - 6}" text-anchor="middle">${narrow ? 'Predict time, ms per 1,000 fares (log)' : 'Prediction time, milliseconds per 1,000 fares (log scale, further left is faster)'} </text>
     <text class="ax" x="${L}" y="${T - 4}">Accuracy</text></svg>
-    <p class="muted small">Top left is best: accurate and fast. The current model is filled red; the best algorithm for this scenario has a ring.</p>${narrow ? `<p class="small">${rows.map((r, i) => `<b>${i + 1}</b> ${esc(r.algorithm)}`).join(' · ')}</p>` : ''}` : '<p class="muted">No prediction-time figures in this file.</p>';
+    <p class="muted small">Top left is best: accurate and fast. The active engine is filled red; the best algorithm for this scenario has a ring.</p>${narrow ? `<p class="small">${rows.map((r, i) => `<b>${i + 1}</b> ${esc(r.algorithm)}`).join(' · ')}</p>` : ''}` : '<p class="muted">No prediction-time figures in this file.</p>';
 
   const sizeRows = D.results.slice().sort((a, b) => (norm(b.scores && b.scores[S] && b.scores[S].accuracy) ?? -1) - (norm(a.scores && a.scores[S] && a.scores[S].accuracy) ?? -1));
   const maxT = Math.max(...sizeRows.map(r => r.train_seconds || 0), 1);
@@ -348,8 +469,10 @@ let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() 
 (async () => {
   M = await (await fetch('/api/meta')).json();
   try { A = await (await fetch('/api/algorithms')).json(); } catch (e) { A = null; }
-  $('c_sort').innerHTML = M.sorts.map(s => `<option>${s}</option>`).join('');
-  fillSettings(M.config); metrics(); how(); model(); data(); algos(); usTab();
+  const SORT_LABEL = { listed: 'Listed price, low to high', predicted: 'FareSight price, low to high', change_asc: 'Biggest fall vs listed', change_desc: 'Biggest rise vs listed', airline: 'Airline, A to Z' };
+  $('c_sort').innerHTML = M.sorts.map(s => `<option value="${s}">${SORT_LABEL[s] || s}</option>`).join('');
+  try { ENG = await (await fetch('/api/engines')).json(); } catch (e) { ENG = null; }
+  fillSettings(M.config); engines(); metrics(); how(); model(); data(); algos(); usTab();
   show((location.hash || '#settings').slice(1));
 })();
 </script>

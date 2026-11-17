@@ -138,3 +138,18 @@ The three best algorithms by mean accuracy (XGBoost, HGB, CatBoost) were re-run 
 - The enriched features do **not** change the algorithm ranking: XGBoost still leads A and C; on E, HGB (86.59) edges XGBoost (86.49).
 - The effect of the extra features is about the same size as the differences between algorithms (a few tenths of a point), slightly positive on A, slightly negative on E, and mixed on C (CatBoost's C result is seed-unstable, see above). Only one seed per cell here, so none of these gaps is established.
 - Training seconds on the enriched set are not comparable with the baseline table (different machine load).
+
+## Deployable engines
+
+Final versions of eight algorithms trained on all rows and loadable through one interface (`src/engines.py`, details in `docs/ENGINES.md`, per-engine data in `models/engines/manifest.json`). Default engine: XGBoost (135.6 MB, 30 ms per 1,000 rows, benchmark 93.42 / 86.88 / 67.74).
+
+**Forests were size-capped for deployment.** The benchmark versions were 920 MB (Random Forest) and 2,057 MB (Extra Trees). For each, five smaller configurations (fewer trees, larger `min_samples_leaf`, `max_samples`) were fitted on all rows; those under 150 MB were retrained on the scenario-A train split and scored on the A test split, and the most accurate was kept. Accuracy cost, scenario A (100 - MAPE):
+
+| Forest | Full size | Capped (deployed) | Cost |
+|---|---|---|---|
+| Random Forest | 920 MB, 92.01% (within-10% 72.7%) | 113 MB, 91.47% (70.7%): 12 trees, `min_samples_leaf=5` | -0.54 pts |
+| Extra Trees | 2,057 MB, 92.64% (75.2%) | 112 MB, 90.86% (68.2%): 16 trees, `min_samples_leaf=10` | -1.78 pts |
+
+Only scenario A was re-measured for the capped versions (E and C scores in the manifest are the full-size benchmark). Capping hurts Extra Trees more because its trees are not bootstrapped, so shrinking leaves needs a much larger `min_samples_leaf`. The manifest records all candidate configurations with their sizes and scores.
+
+Dates outside the training months (the data only covers January to April): Ridge and MLP originally extrapolated badly on a December search (MLP about ₹40k vs about ₹7.7k for the trees on Delhi to Mumbai). Their engine wrappers now clip inputs to the training range, which leaves the benchmark and agreement-check numbers unchanged and brings the December mean fares within 25% of the median engine (Ridge -9.7% / +6.2%, MLP -17.0% / -2.6% on Delhi to Mumbai / Ahmedabad to Mumbai; tree engines within ±16%). All engines are marked `demo_safe: true` in the manifest; the linear ones are still not recommended as the demo engine. Sanity checks (20,000 held-in rows agree with the benchmark predictions; sample search finite) are in the manifest.

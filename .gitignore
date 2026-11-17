@@ -29,3 +29,6 @@ models/algo_runs/
 models/ts_work/
 models/*.joblib
 *.log
+
+# deployable engine models (large; copy via the file share)
+models/engines/*.joblib

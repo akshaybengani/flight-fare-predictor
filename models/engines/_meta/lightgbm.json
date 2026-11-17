@@ -1,0 +1,49 @@
+{
+  "key": "lightgbm",
+  "versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "built": "2026-11-17",
+  "n_train_rows": 745375,
+  "params": {
+    "num_leaves": 511,
+    "min_child_samples": 20,
+    "reg_lambda": 10.0,
+    "colsample_bytree": 0.8
+  },
+  "train_seconds": 170.2,
+  "fit_info": {
+    "n_rounds": 3500
+  },
+  "file": "models/engines/lightgbm.joblib",
+  "load_seconds": 0.32,
+  "predict_ms_per_1k": 105.27,
+  "memory_mb_peak": 640.0,
+  "sanity": {
+    "rows": 20000,
+    "finite": true,
+    "accuracy_on_heldin_rows": 95.0,
+    "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+    "benchmark_mean_abs_log_diff": 0.0345,
+    "benchmark_p95_abs_log_diff": 0.1126,
+    "benchmark_corr": 0.9979,
+    "benchmark_accuracy_same_rows": 93.17,
+    "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+    "agrees_with_benchmark": true,
+    "sample_search": {
+      "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+      "flights": 207,
+      "finite": true,
+      "min_inr": 4757,
+      "mean_inr": 7830,
+      "max_inr": 16349
+    }
+  }
+}

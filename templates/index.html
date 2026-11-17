@@ -16,7 +16,7 @@
   </div>
   <div class="wrap">
     <div class="eyebrow">Fare intelligence for flight booking</div>
-    <h1>Listed today, <em>predicted</em> for departure.</h1>
+    <h1>Listed fare, <em>predicted</em> for departure.</h1>
     <p class="lede">Search a route to see the fare on offer next to the fare our model expects, and open any flight to see the numbers behind it.</p>
 
     <div class="switchbar mkt"><span class="lbl">Market</span>
@@ -35,13 +35,14 @@
             <select id="dst" name="destination">{% for c in cities %}<option {% if loop.index==2 %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
         </div>
         <div class="pass-bottom">
-          <div><label for="date" id="dateLbl">Travel date</label><input id="date" type="date" name="date" required></div>
+          <div><label for="date" id="dateLbl">Travel date</label><input id="date" type="date" name="date" required aria-describedby="dateHelp"></div>
           <div id="clsWrap"><label for="cls">Class</label><select id="cls" name="class">{% for c in classes %}<option>{{ c }}</option>{% endfor %}</select></div>
           <div id="asofWrap" hidden><span class="lbl">Listed as of</span><div class="asof" id="asof"></div></div>
           <button class="btn" type="submit" id="go">Search flights</button>
         </div>
       </div>
     </form>
+    <p class="pass-help dhelp" id="dateHelp"></p>
     <p class="pass-help" id="helpUs" hidden>Fifty US routes between major airports. Prices are a snapshot taken on the &ldquo;listed as of&rdquo; date, not live fares, and the cabin is not recorded: each listed price is the cheapest fare found for that flight. The model uses <span id="nCols">many</span> inputs per flight; see <a href="/config#us">Model &amp; Insights</a>.</p>
     <p class="pass-help" id="helpIn">Routes are limited to the {{ cities|length }} cities in the training data: {{ cities|join(', ') }}. How a prediction is made, and the settings behind it, are on <a href="/config">Model &amp; Insights</a>.</p>
   </div>
@@ -67,26 +68,40 @@
       <svg x="32" y="30" width="50" height="50" viewBox="0 0 64 64" style="stroke-width:2.2;stroke:var(--ink);transform:rotate(0deg)"><use href="#plane"/></svg>
       <path d="M92 18 l10 10 M102 18 l-10 10" stroke="var(--up)" stroke-width="2" fill="none"/>
     </svg>
-    <div><h3 id="errTitle">No flights for that search</h3><p id="errMsg"></p></div>
+    <div><h3 id="errTitle">No flights for that search</h3><p id="errMsg"></p><button class="btn line sm" id="retry" type="button" hidden>Try again</button></div>
   </div>
 
   <div id="out" hidden>
     <div class="results-head">
       <h2 id="title"></h2>
-      <div id="clamp" class="note" style="margin:0" hidden></div>
+      <div id="engChip" class="engchip" hidden></div>
     </div>
-    <ul class="facts" id="params"></ul>
+    <p id="story" class="story"></p>
+    <p id="basis" class="basis"></p>
+    <div id="clamp" class="note" hidden></div>
+    <div id="engNote" class="note" hidden><span id="engNoteT"></span> <button class="btn text" id="engAgain" type="button">Search again</button></div>
+    <p id="legend" class="legend"></p>
+    <details class="defs" id="defs"><summary>What do these labels mean?</summary>
+      <dl id="defsBody"></dl>
+    </details>
+    <p id="acc" class="acc"></p>
 
     <div class="filters">
       <div><label for="fAirline">Airline</label><select id="fAirline"></select></div>
-      <div><label for="fStops">Stops</label><select id="fStops"><option value="">Any</option><option value="0">Non-stop</option><option value="1">1 stop</option><option value="2">2+ stops</option></select></div>
-      <div><label for="fSort">Sort by</label><select id="fSort">
-        <option value="listed">Listed price, low to high</option><option value="predicted">Predicted price, low to high</option>
-        <option value="change_asc">Biggest predicted drop first</option><option value="change_desc">Biggest predicted rise first</option>
-        <option value="drop">Biggest expected drop</option><option value="airline">Airline</option></select></div>
+      <div><label for="fStops">Stops</label><select id="fStops"><option value="">Any</option><option value="0">Non-stop</option><option value="1">1 stop</option><option value="2">2 or more stops</option></select></div>
+      <div class="sortf"><label for="fSort">Sort by</label><select id="fSort">
+        <option value="listed">Listed price, low to high</option><option value="predicted">FareSight price, low to high</option>
+        <option value="change_asc">Biggest fall vs listed</option><option value="change_desc">Biggest rise vs listed</option>
+        <option value="drop">Biggest expected later drop</option><option value="airline">Airline, A to Z</option></select></div>
       <div class="dropf"><label class="check" for="fDrop" id="dropLbl"><input type="checkbox" id="fDrop"><span>Price may drop (<b id="dropN">0</b>)</span></label></div>
       <div class="dropf"><label class="check" for="fBig" id="bigLbl"><input type="checkbox" id="fBig"><span>Big saves (<b id="bigN">0</b>)</span></label></div>
-      <div class="end"><button id="approvePage" class="btn line sm" type="button">Approve all on this page</button></div>
+    </div>
+    <div class="shortlist" id="shortlist">
+      <button id="approvePage" class="btn line sm" type="button">Approve all on this page</button>
+      <span id="apprCount" class="appr-count" aria-live="polite"></span>
+      <button id="apprShow" class="btn text" type="button" aria-pressed="false" hidden>Show shortlist</button>
+      <button id="apprClear" class="btn text" type="button" hidden>Clear approvals</button>
+      <span class="muted small">Shortlist only. Nothing is booked.</span>
     </div>
 
     <div id="rows"></div>
@@ -101,133 +116,183 @@
 {% block scripts %}
 <script>
 const f = document.getElementById('f'), $ = id => document.getElementById(id);
-const d0 = new Date(); d0.setDate(d0.getDate() + 30);
-f.date.value = d0.toISOString().slice(0, 10); f.date.min = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
-let all = [], cfg = {}, page = 1, PAGE = 10, open = new Set(), trip = {};
-const FRIENDLY = {stops:'Stops', duration_h:'Duration (h)', dep_hour:'Departure hour', arr_hour:'Arrival hour', distance_km:'Distance (km)',
-  days_left:'Days before departure', weekday:'Weekday of travel', month:'Month of travel', period:'Price level (scrape year)',
-  route_supply:'Flights on this route and class', flight_price_level_inr:'Typical price of this flight', route_airline_price_level_inr:'Typical price of this airline on the route',
-  airline:'Airline', route:'Route', class:'Class', dep_bucket:'Departure window', arr_bucket:'Arrival window'};
+let all = [], cfg = {}, page = 1, PAGE = 10, open = new Set(), shownEngine = null, meta = {}, lastBody = null, shortOnly = false;
+let market = 'in', US = null;
 
-// Some codes arrive from the merged dataset as scientific notation ("6.00E-152" for "6E-152"). Repair for display only.
-function code(c) {
-  const m = /^(\d)\.0*E-(\d+)$/i.exec(c);
-  return m ? `${m[1]}E ${m[2]}` : String(c).replace(/-/g, ' ');
-}
+/* ---------- helpers ---------- */
+const FRIENDLY = {stops:'Stops', duration_h:'Duration (hours)', dep_hour:'Departure time', arr_hour:'Arrival time', distance_km:'Distance (km)',
+  days_left:'Prediction made for (days before departure)', weekday:'Weekday of travel', month:'Month of travel', period:'Fare level used (year of the scraped fares)',
+  route_supply:'Flights on this route and class', flight_price_level_inr:'Typical fare of this flight number in the data', route_airline_price_level_inr:'Typical fare of this airline on the route',
+  airline:'Airline', route:'Route', class:'Class', dep_bucket:'Departure time window', arr_bucket:'Arrival time window'};
+const HELP = {flight_price_level_inr:'The average fare the training data shows for this flight number.', route_airline_price_level_inr:'The average fare the data shows for this airline on this route.',
+  days_left:'How far ahead of departure the FareSight price is estimated for (1 means the day before).'};
+function code(c) { const m = /^(\d)\.0*E-(\d+)$/i.exec(c); return m ? `${m[1]}E ${m[2]}` : String(c).replace(/-/g, ' '); }
 const hhmm = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
-const pct = x => Math.round((x.predicted - x.listed) / x.listed * 100);
+const rnd = v => Math.sign(v) * Math.round(Math.abs(v));   // round half away from zero: one rounding rule everywhere
+const pct = x => rnd(x.card_change_pct != null ? x.card_change_pct : (x.predicted - x.listed) / x.listed * 100);
 const arrow = up => `<svg aria-hidden="true"><use href="#arrow-${up ? 'up' : 'down'}"/></svg>`;
 const plane = 'fill:var(--sheet);stroke:var(--accent);stroke-width:4';
-// market: 'in' (INR, the default) or 'us' (USD). Everything below formats money through money().
-let market = 'in', US = null;
 const usd = n => n == null ? 'n/a' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: Math.abs(n) < 100 ? 2 : 0 });
 const money = n => market === 'us' ? usd(n) : inr(n);
+const days = n => `${n} ${n === 1 ? 'day' : 'days'}`;
 const USD_KEYS = new Set(['last_price','p_1d','p_3d','p_7d','min3','mean3','std3','min7','mean7','std7','run_min','run_max','route_med7']);
+const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const fmtDate = (iso, long) => new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', long ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' });
+const iso = d => d.toISOString().slice(0, 10);
+const addDays = (isoStr, n) => { const d = new Date(isoStr + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 
+/* ---------- shortlist (Approve): kept per market until cleared or the tab is closed ---------- */
+const APPR = { in: new Set(), us: new Set() };
+try { const s = JSON.parse(sessionStorage.getItem('fs-approved') || '{}'); (s.in || []).forEach(k => APPR.in.add(k)); (s.us || []).forEach(k => APPR.us.add(k)); } catch (e) {}
+const saveAppr = () => { try { sessionStorage.setItem('fs-approved', JSON.stringify({ in: [...APPR.in], us: [...APPR.us] })); } catch (e) {} };
+const approved = x => APPR[market].has(x.key);
+
+/* ---------- chart ---------- */
 function chart(x) {
   const c = x.curve; if (!c.length) return '<p class="muted">The departure is too close for the model to draw a curve for this flight.</p>';
-  const W = innerWidth < 640 ? Math.max(300, innerWidth - 96) : 500, H = innerWidth < 640 ? 230 : 250, L = 8, R = 92, T = 24, B = 40, pw = W - L - R, ph = H - T - B;
-  const dmax = Math.max(...c.map(p => p.d)), dmin = Math.min(...c.map(p => p.d)), hotD = Math.min(Math.max(x.hotD ?? cfg.predict_at_days_left, dmin), dmax);
-  const ps = c.map(p => p.p).concat([x.listed, x.predicted]);
-  let lo = Math.min(...ps), hi = Math.max(...ps); const pad = Math.max((hi - lo) * .14, market === 'us' ? 4 : 100); lo = Math.max(0, lo - pad); hi += pad;
+  const us = market === 'us', ref = x.listD;                       // US: axis counts days after the listing date
+  const av = d => us ? ref - d : d;                                  // axis value of a point
+  const W = innerWidth < 640 ? Math.max(300, innerWidth - 96) : 500, H = innerWidth < 640 ? 250 : 270, L = 8, R = 92, T = 30, B = 52, pw = W - L - R, ph = H - T - B;
+  const today = x.todayD, hasToday = today != null && x.p0 != null;
+  const dmax = Math.max(...c.map(p => p.d), hasToday ? today : 0), dmin = Math.min(...c.map(p => p.d));
+  const ps = c.map(p => p.p).concat([x.listed, x.predicted], hasToday ? [x.p0] : [], x.may_drop ? [x.drop_price] : []);
+  let lo = Math.min(...ps), hi = Math.max(...ps); const pad = Math.max((hi - lo) * .14, us ? 4 : 100); lo = Math.max(0, lo - pad); hi += pad;
   const sx = d => L + (dmax - d) / Math.max(dmax - dmin, 1) * pw, sy = p => T + (hi - p) / (hi - lo) * ph;
-  const path = c.map((p, i) => `${i ? 'L' : 'M'}${sx(p.d).toFixed(1)},${sy(p.p).toFixed(1)}`).join(' ');
+  const line = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${sx(p.d).toFixed(1)},${sy(p.p).toFixed(1)}`).join(' ');
+  const past = hasToday && !us ? c.filter(p => p.d >= today) : [], fut = hasToday && !us ? c.filter(p => p.d < today) : c;
+  const live = hasToday && !us ? [{ d: today, p: x.p0 }].concat(fut) : fut;
+  // the rule looks at the points after today; the smoothed 'held level' line is the running two-point maximum of them
+  const futL = us ? c.slice(1) : fut, held = futL.map((p, i) => i ? { d: p.d, p: Math.max(futL[i - 1].p, p.p) } : null).filter(Boolean);
   const step = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000].find(s => (hi - lo) / s <= 4) || 20000;
   let grid = ''; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
     grid += `<line class="grid" x1="${L}" x2="${L + pw}" y1="${sy(v)}" y2="${sy(v)}"/><text x="${L}" y="${sy(v) - 4}">${money(v)}</text>`;
-  const ticks = c.map(p => `<text x="${sx(p.d)}" y="${H - 18}" text-anchor="middle">${p.d}</text>`).join('');
-  const dots = c.map(p => `<circle class="pt" cx="${sx(p.d)}" cy="${sy(p.p)}" r="3"/>`).join('');
+  // evenly spaced x ticks, in the axis' own units
+  const a0 = Math.min(...c.map(p => av(p.d))), a1 = Math.max(...c.map(p => av(p.d))), span = a1 - a0, tstep = span <= 12 ? 2 : span <= 30 ? 5 : 10;
+  let ticks = ''; for (let a = Math.ceil(a0 / tstep) * tstep; a <= a1 + 1e-9; a += tstep) { const d = us ? ref - a : a; ticks += `<line class="tick" x1="${sx(d)}" x2="${sx(d)}" y1="${T + ph}" y2="${T + ph + 4}"/><text x="${sx(d)}" y="${T + ph + 17}" text-anchor="middle">${us ? '+' + a : a}</text>`; }
+  const dots = c.map(p => `<circle class="pt${past.includes(p) ? ' past' : ''}" cx="${sx(p.d)}" cy="${sy(p.p)}" r="3"/>`).join('');
+  const tdot = hasToday && !us ? `<circle class="pt today" cx="${sx(today)}" cy="${sy(x.p0)}" r="4"/>` : '';
   // direct labels in the right margin, pushed apart so they never touch
-  const labs = [{ y: sy(x.listed), name: 'Listed', val: money(x.listed), cls: '' }, { y: sy(x.predicted), name: 'FareSight', val: money(x.predicted), cls: 'acc' }].sort((a, b) => a.y - b.y);
-  if (labs[1].y - labs[0].y < 34) { const m = (labs[0].y + labs[1].y) / 2; labs[0].y = m - 17; labs[1].y = m + 17; }
+  const labs = [{ y: sy(x.listed), name: 'Listed', val: money(x.listed), cls: '' }, { y: sy(x.predicted), name: 'FareSight', val: money(x.predicted), cls: 'acc' }];
+  if (x.may_drop) labs.push({ y: sy(x.drop_price), name: 'Expected low', val: money(x.drop_price), cls: 'low' });
+  labs.sort((a, b) => a.y - b.y); for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 32) labs[i].y = labs[i - 1].y + 32;
   const lt = labs.map(l => `<text x="${L + pw + 14}" y="${l.y - 2}">${l.name}</text><text class="lab ${l.cls}" x="${L + pw + 14}" y="${l.y + 14}">${l.val}</text>`).join('');
   let lowMark = '';
-  if (x.may_drop) { const lx = sx(Math.min(Math.max(x.drop_best_days_left, dmin), dmax)), ly = sy(x.drop_price), anchor = lx > L + pw - 70 ? 'end' : lx < L + 50 ? 'start' : 'middle';
-    lowMark = `<circle class="low" cx="${lx}" cy="${ly}" r="7"/><text class="lab low" x="${lx}" y="${ly + 22}" text-anchor="${anchor}">Lowest ${money(x.drop_price)} · ${x.drop_best_days_left}d out</text>`; }
-  return `<svg class="plot" viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted price by days before departure, from ${money(c[0].p)} at ${c[0].d} days to ${money(c[c.length-1].p)} at ${c[c.length-1].d} days">
-    ${grid}
+  if (x.may_drop) {
+    const seg = '';
+    const lx = sx(Math.min(Math.max(x.drop_best_days_left, dmin), dmax)), ly = sy(x.drop_price), anchor = lx > L + pw - 70 ? 'end' : lx < L + 50 ? 'start' : 'middle';
+    lowMark = `${seg}<circle class="low" cx="${lx}" cy="${ly}" r="7"/><text class="lab low" x="${lx}" y="${ly + 22}" text-anchor="${anchor}">Expected low</text>`;
+  }
+  const hot = `<circle class="pt hot" cx="${sx(Math.min(Math.max(x.hotD, dmin), dmax))}" cy="${sy(x.predicted)}" r="5"/>`;
+  const cap = us ? 'Days after the listing date, later on the right' : 'Days before departure, earlier on the left';
+  return `<svg class="plot" viewBox="0 0 ${W} ${H}" role="img" aria-label="Model price over time for this flight: ${money(c[0].p)} at the start to ${money(c[c.length-1].p)} at the end">
+    <text class="ytitle" x="${L}" y="12">Price (${us ? '$' : '₹'})</text>${grid}
     <line class="listed" x1="${L}" x2="${L + pw + 8}" y1="${sy(x.listed)}" y2="${sy(x.listed)}"/>
-    <path class="curve" d="${path}"/>${dots}
-    <circle class="pt hot" cx="${sx(hotD)}" cy="${sy(x.predicted)}" r="5"/>${lowMark}
+    ${past.length > 1 ? `<path class="curve past" d="${line(past)}"/>` : ''}<path class="curve raw" d="${line(live)}"/>${held.length > 1 ? `<path class="curve held" d="${line(held)}"/>` : ''}${dots}${tdot}
+    ${hot}${lowMark}
     ${lt}${ticks}
-    <text x="${L}" y="${H - 2}">Days before departure, earlier on the left</text>
-  </svg>`;
+    <text x="${L + pw / 2}" y="${H - 4}" text-anchor="middle">${cap}</text>
+  </svg><p class="muted small" style="margin:6px 0 0">Thin line: the model's prices. ${held.length > 1 ? 'Bold line: the smoothed price, the level held at two dates in a row; the expected low is its lowest point. ' : ''}${past.length ? 'Faint points are before today and are not used. ' : ''}${hasToday && !us ? "The open ring is FareSight's own estimate for today." : ''}</p>`;
 }
 
+/* ---------- details: parameters ---------- */
 const ORDER = ['airline','route','class','stops','duration_h','dep_bucket','dep_hour','arr_bucket','arr_hour','distance_km','weekday','month','days_left','period','route_supply','flight_price_level_inr','route_airline_price_level_inr'];
 const PLAIN = new Set(['month', 'days_left', 'period', 'stops']);
 function specGroups(x) {
-  const fmt = it => it.value == null ? 'not available' : USD_KEYS.has(it.key) ? usd(it.value) : typeof it.value === 'number' ? it.value.toLocaleString('en-US') : it.value;
+  const fmt = it => {
+    if (it.value == null) return 'not available';
+    if (it.key === 'airline_id') return x.airlineName; if (it.key === 'route_id') return x.routeLabel;
+    if (it.key === 'search_dow' || it.key === 'dep_dow') return WEEKDAYS[Math.round(it.value)] || it.value;
+    if (it.key === 'dep_month') return MONTHS[Math.round(it.value) - 1] || it.value;
+    if (it.key === 'dep_hour') return hhmm(it.value);
+    return USD_KEYS.has(it.key) ? usd(it.value) : typeof it.value === 'number' ? it.value.toLocaleString('en-US') : it.value; };
+  const clean = l => l.replace(/\s*\(0=Mon\)/, '').replace(/\s*\(internal\)/, '').replace('Airline code', 'Airline').replace('Route code', 'Route');
   const groups = Object.values(x.groups), total = groups.reduce((n, g) => n + g.items.length, 0);
-  return `<p class="sub">${total} columns in ${groups.length} families. Open a family to see the values for this flight.</p>` + groups.map((g, i) =>
-    `<details class="fam" ${i < 2 ? 'open' : ''}><summary><span>${esc(g.title)}</span><em>${g.items.length} columns</em></summary><dl class="spec">` +
-    g.items.map(it => `<div><dt>${esc(it.label)}</dt><span class="lead"></span><dd>${esc(fmt(it))}</dd></div>`).join('') + `</dl></details>`).join('');
+  return `<p class="sub">${total} inputs in ${groups.length} groups. Open a group to see the values for this flight.</p>` + groups.map((g, i) =>
+    `<details class="fam" ${i < 2 ? 'open' : ''}><summary><span>${esc(g.title)}</span><em>${g.items.length} inputs</em></summary><dl class="spec">` +
+    g.items.map(it => `<div><dt>${esc(clean(it.label))}</dt><span class="lead"></span><dd>${esc(fmt(it))}</dd></div>`).join('') + `</dl></details>`).join('');
 }
 function spec(x) {
   if (x.groups) return specGroups(x);
   const ents = Object.entries(x.inputs).sort((a, b) => (ORDER.indexOf(a[0]) + 99) % 99 - (ORDER.indexOf(b[0]) + 99) % 99);
   return `<dl class="spec">` + ents.map(([k, val]) => {
     const shown = k.endsWith('_inr') ? money(val) : (val == null ? 'not available' : (k === 'dep_hour' || k === 'arr_hour') ? hhmm(val) : (typeof val === 'number' && !PLAIN.has(k) ? val.toLocaleString('en-IN') : val));
-    return `<div><dt>${esc(FRIENDLY[k] || k)}</dt><span class="lead"></span><dd>${esc(shown)}</dd></div>`; }).join('') + `</dl>`;
+    return `<div><dt>${esc(FRIENDLY[k] || k)}</dt><span class="lead"></span><dd>${esc(shown)}</dd></div>${HELP[k] ? `<div class="hint">${esc(HELP[k])}</div>` : ''}`; }).join('') + `</dl>`;
 }
 
+/* ---------- card ---------- */
 function routeLine(x) {
   const n = x.stops, stopDots = Array.from({ length: n }, (_, i) => `<i class="d" style="left:${(i + 1) / (n + 1) * 100}%"></i>`).join('');
   const pl = n ? 100 / (2 * (n + 1)) : 50;
   return `<div class="t-route"><span class="dur">${x.duration_h} h</span><span class="rl"></span><i class="d end" style="left:0"></i>${stopDots}<i class="d end" style="right:0;left:auto"></i>
     <svg class="pl" style="left:${pl}%;${plane}" viewBox="0 0 64 64" aria-hidden="true"><use href="#plane"/></svg>
-    <span class="stp">${n === 0 ? 'Non-stop' : n === 1 ? '1 stop' : market === 'us' ? n + ' stops' : '2+ stops'}</span></div>`;
+    <span class="stp">${n === 0 ? 'Non-stop' : n === 1 ? '1 stop' : market === 'us' ? n + ' stops' : '2 or more stops'}</span></div>`;
 }
-
 const tagIcon = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12.5V4.5a1.5 1.5 0 0 1 1.5-1.5h8L21 11l-8.500 8.500a1.500 1.500 0 0 1-2.100 0L3 12.500Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7.500" cy="7.500" r="1.400" fill="currentColor"/><path d="M13 9.500v5M10.800 12.600 13 14.800l2.200-2.200" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const horizonText = x => market === 'us' ? `${days(x.hDays)} after the listing date` : `${days(cfg.predict_at_days_left)} before departure`;
+const lowWhen = x => market === 'us' ? `${days(x.drop_best_days_ahead)} after the listing date` : `${days(x.drop_best_days_left)} before departure`;
 function dropSentence(x) {
-  if (!x.may_drop) return `The model does not expect this fare to fall ${cfg.flag_threshold_pct}% or more below the listed ${money(x.listed)} between now and departure.`;
-  const d = x.drop_best_days_left;
-  return `<b>${x.big_save ? 'Big save.' : 'May drop.'}</b> The model expects this fare to be lowest at about ${money(x.drop_price)}, around ${d} ${d === 1 ? 'day' : 'days'} before departure. That is about ${Math.round(x.drop_pct)}% below the listed ${money(x.listed)}${x.big_save ? `, a saving of about ${money(x.save_inr)}` : ''}. It is an estimate, not a promise.`;
+  const p0 = x.p0 != null ? ` FareSight's own estimate for today is ${money(x.p0)}.` : '';
+  const dir = pct(x) < 0 ? 'below' : pct(x) > 0 ? 'above' : 'level with', amt = Math.abs(pct(x));
+  const head = `On this card FareSight's price is ${money(x.predicted)}, ${amt === 0 ? 'about level with' : amt + '% ' + dir} the listed ${money(x.listed)}.`;
+  if (!x.may_drop) return `${head} The model does not expect the price to settle ${cfg.flag_threshold_pct}% or more below both the listed fare and its own estimate for today, so there is no May drop tag.${p0} These are estimates, not promises.`;
+  const last = x.predicted < x.drop_price ? ` FareSight's price for the last date is lower still, but only that one date dips, so it is not counted as lasting.` : '';
+  return `<b>${x.big_save ? 'Big save.' : 'May drop.'}</b> ${head} The model also expects the price to settle around ${money(x.drop_price)} by ${lowWhen(x)}, and to stay near that level at the next price point. That is about ${rnd(x.drop_pct)}% below the listed fare, a saving of about ${money(x.save_inr)}.${last}${p0} These are estimates, not promises.`;
 }
-
+function timeBlock(x, k, win) {
+  const lab = k === 'dep' ? 'Departs' : 'Arrives';
+  if (x.depTime) return `<div class="t-time">${k === 'dep' ? esc(x.depTime) : esc(x.arrTime || 'n/a') + (x.arrOff ? `<sup class="off">+${x.arrOff}</sup>` : '')}<small>${lab}</small></div>`;
+  const h = x.inputs && x.inputs[k + '_hour'];
+  return h != null ? `<div class="t-time">${hhmm(h)}<small>${lab}</small></div>` : `<div class="t-time win">${esc(win)}<small>${lab} (time window)</small></div>`;
+}
+const sameN = {};
+function countSame() { Object.keys(sameN).forEach(k => delete sameN[k]); all.forEach(x => { const k = x.airline + '|' + x.listed; sameN[k] = (sameN[k] || 0) + 1; }); }
+const sameFare = x => { const n = sameN[x.airline + '|' + x.listed] || 1; return n >= 3 ? `<div class="samefare">same fare as ${n - 1} other ${esc(x.airline)} flights</div>` : ''; };
 function ticket(x) {
-  const p = pct(x), cls = p < 0 ? 'down' : p > 0 ? 'up' : 'flat', big = Math.abs(p) >= cfg.flag_threshold_pct, isOpen = open.has(x.key);
-  const diff = x.predicted - x.listed;
-  const t = (k, win) => x.depTime ? `<div class="t-time${k === 'arr' ? '' : ''}">${k === 'dep' ? esc(x.depTime) : esc(x.arrTime || 'n/a') + (x.arrOff ? `<sup class="off">+${x.arrOff}</sup>` : '')}<small>${k === 'dep' ? 'Departs' : 'Arrives'}</small></div>`
-    : x.inputs[k + '_hour'] != null ? `<div class="t-time">${hhmm(x.inputs[k + '_hour'])}<small>${k === 'dep' ? 'Departs' : 'Arrives'}</small></div>`
-    : `<div class="t-time win">${esc(win)}<small>${k === 'dep' ? 'Departs' : 'Arrives'}</small></div>`;
-  const fc = big ? (p < 0 ? 'var(--down)' : 'var(--up)') : '';
-  const dd = x.drop_best_days_left, detail = x.may_drop ? `about ${Math.round(x.drop_pct)}% by ${dd} ${dd === 1 ? 'day' : 'days'} out` : '',
-    bigTag = x.big_save ? `<div class="t-drop big"><span class="bigsave" role="img" aria-label="Big save: about ${Math.round(x.drop_pct)} percent, ${Math.round(x.save_inr).toLocaleString(market === 'us' ? 'en-US' : 'en-IN')} ${market === 'us' ? 'dollars' : 'rupees'} cheaper">${tagIcon}<b>Big save</b><em>Save about ${money(x.save_inr)}</em></span><span class="det">${detail}</span></div>` : '',
-    dropTag = x.big_save ? bigTag : x.may_drop ? `<div class="t-drop"><svg aria-hidden="true"><use href="#arrow-down"/></svg><b>May drop</b> <span>about ${Math.round(x.drop_pct)}% by ${dd} ${dd === 1 ? 'day' : 'days'} out</span></div>` : '';
+  const p = pct(x), cls = p < 0 ? 'down' : p > 0 ? 'up' : 'flat', isOpen = open.has(x.key), diff = x.predicted - x.listed, appr = approved(x);
+  const tag = x.big_save ? `<div class="t-drop big"><span class="bigsave" role="img" aria-label="Big save: about ${rnd(x.drop_pct)} percent, ${Math.round(x.save_inr).toLocaleString(market === 'us' ? 'en-US' : 'en-IN')} ${market === 'us' ? 'dollars' : 'rupees'} cheaper">${tagIcon}<b>Big save</b><em>Save about ${money(x.save_inr)}</em></span><span class="det">expected low, about ${rnd(x.drop_pct)}% below listed</span></div>`
+    : x.may_drop ? `<div class="t-drop"><svg aria-hidden="true"><use href="#arrow-down"/></svg><b>May drop</b> <span>expected low about ${rnd(x.drop_pct)}% below listed</span></div>` : '';
+  const lowLine = x.may_drop ? `<div class="f-low"><span class="lbl">Expected low</span><div><b>${money(x.drop_price)}</b> <small>down ${rnd(x.drop_pct)}%</small></div><div class="muted small">about ${lowWhen(x)}</div></div>` : '';
+  const defunct = x.defunct ? `<span class="tag" title="${esc(x.defunct_note || '')}">Historical data, airline no longer operates</span>` : '';
   return `<article class="flight">
-    <div class="ticket-wrap"><div class="ticket ${big ? 'flag' : ''} ${x.may_drop ? 'drops' : ''}" style="${fc ? '--flagc:' + fc : ''}">
+    <div class="ticket-wrap"><div class="ticket ${x.may_drop ? 'drops' : ''} ${x.defunct ? 'defunct' : ''}">
       <div class="t-main">
-        <div class="t-top"><span class="t-air">${esc(x.airline)}</span>${x.depTime ? '' : `<span class="t-code">${esc(code(x.code))}</span>`}${big ? `<span class="t-flag">${p < 0 ? 'Large drop' : 'Large rise'}</span>` : ''}</div>
-        <div class="t-times">${t('dep', x.dep)}${routeLine(x)}<div class="r">${t('arr', x.arr)}</div></div>
-        ${dropTag}
+        <div class="t-top"><span class="t-air">${esc(x.airline)}</span>${x.depTime ? '' : `<span class="t-code">${esc(code(x.code))}</span>`}${defunct}</div>
+        <div class="t-times">${timeBlock(x, 'dep', x.dep)}${routeLine(x)}<div class="r">${timeBlock(x, 'arr', x.arr)}</div></div>
+        ${tag}
       </div>
       <div class="t-fare">
-        <div class="f-line"><span class="lbl">Listed</span><span class="f-listed ${x.approved ? 'struck' : ''}">${money(x.listed)}</span></div>
-        <div class="f-line"><span class="lbl">FareSight</span><span class="f-pred ${x.approved ? 'final' : ''}">${money(x.predicted)}</span></div>
+        <div class="f-line"><span class="lbl">Listed<br><span class="lblsub">${market === 'us' ? 'as of ' + fmtDate(US.listed_as_of) : 'historical fare'}</span></span><span class="f-listed ${appr ? 'struck' : ''}">${money(x.listed)}</span></div>
+        ${sameFare(x)}
+        <div class="f-line"><span class="lbl">FareSight<br><span class="lblsub">${horizonText(x)}</span></span><span class="f-pred ${appr ? 'final' : ''}">${money(x.predicted)}</span></div>
         <div class="f-line"><span class="delta ${cls}">${p === 0 ? '' : arrow(p > 0)}<span>${diff === 0 ? '' : money(Math.abs(diff))}${p === 0 ? '' : `<span class="sr"> ${p > 0 ? 'higher' : 'lower'} than listed</span>`}</span> <small>${p === 0 ? (diff === 0 ? 'no change' : 'about the same') : (p > 0 ? 'up ' : 'down ') + Math.abs(p) + '%'}</small></span></div>
-        <div class="f-actions"><button class="btn sm ${x.approved ? 'on' : 'line'}" data-a="${esc(x.key)}" aria-pressed="${x.approved}" type="button">${x.approved ? 'Approved' : 'Approve'}</button>
+        ${lowLine}
+        <div class="f-actions"><button class="btn sm ${appr ? 'on' : 'line'}" data-a="${esc(x.key)}" aria-pressed="${appr}" type="button">${appr ? 'On shortlist' : 'Approve'}</button>
           <button class="btn sm text" data-o="${esc(x.key)}" aria-expanded="${isOpen}" type="button">${isOpen ? 'Hide details' : 'Details'}</button></div>
       </div>
     </div></div>
-    ${isOpen ? `<div class="sheet"><div><h3>Predicted fare by days before departure${x.big_save ? ' <span class="tag bigtag">Big save</span>' : ''}</h3>${cfg.show_curve ? chart(x) : '<p class="muted">The price curve is switched off in Model &amp; Insights.</p>'}</div>
-      <div><h3>${x.groups ? 'Parameters the model used' : 'What the model was given'}</h3>${spec(x)}</div>
+    ${isOpen ? `<div class="sheet"><div><h3>Price over time for this flight${x.big_save ? ' <span class="tag bigtag">Big save</span>' : ''}</h3>${cfg.show_curve ? chart(x) : '<p class="muted">The price curve is switched off in Model &amp; Insights.</p>'}</div>
+      <div><h3>${x.groups ? 'Parameters the model used' : 'What the model was given'}</h3>${x.groups ? '<p class="sub">Predicted by the US price-history model.</p>' : (x.engineLabel ? `<p class="sub">Engine: ${esc(x.engineLabel)}.</p>` : '')}${spec(x)}</div>
       <p class="dropnote ${x.may_drop ? 'yes' : ''}">${dropSentence(x)}</p></div>` : ''}
   </article>`;
 }
 
-// flights passing the airline and stops filters (the "may drop" count is taken from these)
+/* ---------- list, filters, sort, pager ---------- */
 function base() {
   const fa = $('fAirline').value, fs = $('fStops').value;
   return all.filter(x => (!fa || x.airline === fa) && (fs === '' || (fs === '2' ? x.stops >= 2 : x.stops === +fs)));
 }
 function view() {
-  const so = $('fSort').value, v = base().filter(x => (!$('fDrop').checked || x.may_drop) && (!$('fBig').checked || x.big_save));
+  const so = $('fSort').value, v = base().filter(x => (!$('fDrop').checked || x.may_drop) && (!$('fBig').checked || x.big_save) && (!shortOnly || approved(x)));
   const key = { listed: x => x.listed, predicted: x => x.predicted, change_asc: pct, change_desc: x => -pct(x), drop: x => -x.drop_pct - (x.big_save ? 1000 : 0), airline: x => x.airline + x.listed }[so];
-  return v.sort((a, b) => { const A = key(a), B = key(b); return A < B ? -1 : A > B ? 1 : 0; });
+  return v.sort((a, b) => { const A = key(a), B = key(b); return (A < B ? -1 : A > B ? 1 : 0) || depKey(a) - depKey(b) || String(a.code).localeCompare(String(b.code)); });
 }
-
+// stable order for flights with equal keys: departure time (exact when known, else the middle of the window), then flight code
+const WINDOWS = { 'Before 6 AM': 180, '6 AM - 12 PM': 540, '12 PM - 6 PM': 900, 'After 6 PM': 1260 };
+function depKey(x) {
+  if (x.depTime) { const [h, m] = x.depTime.split(':'); return +h * 60 + +m; }
+  const h = x.inputs && x.inputs.dep_hour; return h != null ? h * 60 : (WINDOWS[x.dep] ?? 720);
+}
 function pager(n) {
   const last = Math.max(1, Math.ceil(n / PAGE)); let h = '';
   const btn = (p, label, extra = '', dis = false) => `<button ${extra} data-p="${p}" ${dis ? 'disabled' : ''} ${p === page && !extra ? 'aria-current="page"' : ''} aria-label="${typeof label === 'number' ? 'Page ' + label : label}">${label}</button>`;
@@ -237,30 +302,57 @@ function pager(n) {
   h += btn(page + 1, 'Next', 'class="step"', page === last);
   $('pages').innerHTML = h;
 }
-
 function render() {
   const v = view(), last = Math.max(1, Math.ceil(v.length / PAGE)); page = Math.min(page, last);
-  const slice = v.slice((page - 1) * PAGE, page * PAGE);
-  const nDrop = base().filter(x => x.may_drop).length; $('dropN').textContent = nDrop; $('bigN').textContent = base().filter(x => x.big_save).length;
-  $('bigLbl').title = `A may-drop flight whose expected fall is at least ${cfg.big_save_threshold_pct}%${cfg.big_save_min_inr > 0 ? ' or ' + money(cfg.big_save_min_inr) : ''}.`;
-  $('dropLbl').title = `Predicted fare falls at least ${cfg.flag_threshold_pct}% below the listed fare at some point between today and departure.`;
+  const slice = v.slice((page - 1) * PAGE, page * PAGE), b = base();
+  $('dropN').textContent = b.filter(x => x.may_drop).length; $('bigN').textContent = b.filter(x => x.big_save).length;
+  $('bigLbl').title = `A May drop flight whose expected low is at least ${cfg.big_save_threshold_pct}% below the listed fare${cfg.big_save_min_inr > 0 ? ', or ' + money(cfg.big_save_min_inr) + ' cheaper if that is also at least a 10% fall' : ''}.`;
+  $('dropLbl').title = `The model expects the price to settle at least ${cfg.flag_threshold_pct}% below both the listed fare and its own estimate for today.`;
   $('empty').hidden = v.length > 0;
   if (!v.length) {
-    if ($('fBig').checked && !all.some(x => x.big_save)) { $('emptyT').textContent = 'No big saves here'; $('emptyP').innerHTML = `No flights on this route are expected to get much cheaper in your window. Try another date, or lower the big-save thresholds in Model &amp; Insights. <button class="btn text" id="clearF" type="button">Show all flights</button>`; }
-    else if ($('fDrop').checked && !all.some(x => x.may_drop)) { $('emptyT').textContent = 'Nothing here is expected to get cheaper'; $('emptyP').innerHTML = 'No flights on this route are expected to get cheaper in your window. Try another date. <button class="btn text" id="clearF" type="button">Show all flights</button>'; }
-    else { $('emptyT').textContent = 'No flights match those filters'; $('emptyP').innerHTML = 'Loosen the filters and they will come back. <button class="btn text" id="clearF" type="button">Clear filters</button>'; }
+    if ($('fBig').checked && !all.some(x => x.big_save)) { $('emptyT').textContent = 'No big saves here'; $('emptyP').innerHTML = `The model does not expect a large lasting fall on this route and date. Try another date, or lower the big-save limits in Model &amp; Insights. <button class="btn text" id="clearF" type="button">Show all flights</button>`; }
+    else if ($('fDrop').checked && !all.some(x => x.may_drop)) { $('emptyT').textContent = 'Nothing here is expected to get cheaper'; $('emptyP').innerHTML = 'The model does not expect a lasting fall on this route and date; most fares are expected to rise toward departure. Try another date. <button class="btn text" id="clearF" type="button">Show all flights</button>'; }
+    else { $('emptyT').textContent = 'No flights match those filters'; $('emptyP').innerHTML = `Loosen the filters and they will come back (${all.length} flights in this search). <button class="btn text" id="clearF" type="button">Clear filters</button>`; }
   }
-  $('count').textContent = v.length ? `Showing ${(page-1)*PAGE+1} to ${(page-1)*PAGE+slice.length} of ${v.length} flights` : '';
+  const filtered = $('fDrop').checked || $('fBig').checked || $('fAirline').value || $('fStops').value !== '';
+  $('count').textContent = v.length ? `Showing ${(page-1)*PAGE+1} to ${(page-1)*PAGE+slice.length} of ${v.length} flights${filtered ? ` (filters on: ${all.length} flights in this search)` : ''}` : '';
   $('rows').innerHTML = slice.map(ticket).join('');
   pager(v.length); $('pages').parentElement.hidden = !v.length;
+  $('shortlist').hidden = !all.length; $('approvePage').hidden = !v.length;
+  const n = APPR[market].size, m = all.filter(approved).length; if (!n) shortOnly = false;
+  $('apprCount').textContent = n ? `${n} on your shortlist${m !== n ? ` (${m} in this search)` : ''}` : ''; $('apprClear').hidden = !n; $('apprShow').hidden = !n;
+  $('apprShow').textContent = shortOnly ? 'Show all flights' : 'Show shortlist'; $('apprShow').setAttribute('aria-pressed', shortOnly);
+  syncUrl(pendingPush); pendingPush = false;
 }
+function show(which) { ['idle', 'loading', 'error', 'out'].forEach(k => $(k).hidden = k !== which); if (which !== 'error') $('retry').hidden = true; }
 
-function show(which) { ['idle', 'loading', 'error', 'out'].forEach(k => $(k).hidden = k !== which); }
+/* ---------- URL state: market, search, filters, sort and page live in the query string ---------- */
+function queryNow() {
+  const q = new URLSearchParams(); q.set('m', market);
+  if (all.length || lastBody) { q.set('from', f.source.value); q.set('to', f.destination.value); q.set('date', f.date.value); if (market === 'in') q.set('cls', f['class'].value); }
+  if (all.length) {
+    if ($('fAirline').value) q.set('air', $('fAirline').value); if ($('fStops').value !== '') q.set('stops', $('fStops').value);
+    if ($('fDrop').checked) q.set('drop', '1'); if ($('fBig').checked) q.set('big', '1'); if (shortOnly) q.set('short', '1'); if ($('fSort').value !== (cfg.default_sort || 'listed')) q.set('sort', $('fSort').value); if (page > 1) q.set('page', page);
+  }
+  return q.toString();
+}
+let urlBusy = false, pendingPush = false;
+function syncUrl(push) { if (urlBusy) return; const qs = '?' + queryNow(); if (qs === location.search) return; try { history[push ? 'pushState' : 'replaceState'](null, '', qs); } catch (e) {} }
 
+/* ---------- network: one automatic retry, friendly errors ---------- */
+async function postJson(url, body) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.status >= 500 && r.status !== 503 && attempt === 0) { await new Promise(res => setTimeout(res, 900)); continue; }
+      return [r, await r.json().catch(() => ({}))];
+    } catch (e) { if (attempt === 1) throw e; await new Promise(res => setTimeout(res, 900)); }
+  }
+}
+function showError(title, msg, retry) { $('errTitle').textContent = title; $('errMsg').textContent = msg; $('retry').hidden = !retry; show('error'); $('retry').hidden = !retry; }
+
+/* ---------- market ---------- */
 const IN_CITIES = [...$('src').options].map(o => o.value), IN_DEFAULT_DST = $('dst').value;
 const apLabel = c => { const a = US && US.airports && US.airports[c], n = a && (typeof a === 'string' ? a : (a.city || a.name)); return n ? `${c} · ${n}` : c; };
-const fmtDate = (iso, long) => new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', long ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' });
-
 function fillDst() {
   const o = $('src').value, ds = US.pairs.filter(p => p.startsWith(o + '-')).map(p => p.split('-')[1]), keep = $('dst').value;
   $('dst').innerHTML = ds.map(c => `<option value="${esc(c)}">${esc(apLabel(c))}</option>`).join(''); if (ds.includes(keep)) $('dst').value = keep;
@@ -271,91 +363,164 @@ async function loadUS() {
   catch (e) { US = { available: false, error: 'US data is not installed on this server.' }; }
   return US;
 }
-function usMissing() {
-  $('errTitle').textContent = 'US data is not installed on this server';
-  $('errMsg').textContent = 'The United States model files are missing here, so only the India market can be searched. Switch back to India to carry on.'; show('error'); $('go').disabled = true; f.hidden = true; $('helpUs').hidden = true;
-}
-async function setMarket(m) {
-  market = m; try { localStorage.setItem('fs-market', m); } catch (e) {}
+function usMissing() { showError('US data is not installed on this server', 'The United States model files are missing here, so only the India market can be searched. Switch back to India to carry on.', false); $('go').disabled = true; f.hidden = true; $('helpUs').hidden = true; }
+async function setMarket(m, fromUser) {
+  market = m; if (fromUser) store.set('fs-market', m);
   document.querySelectorAll('[data-mk]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mk === m));
-  all = []; show('idle'); $('go').disabled = false; f.hidden = false;
+  all = []; lastBody = null; show('idle'); $('go').disabled = false; f.hidden = false;
   const us = m === 'us';
   $('helpIn').hidden = us; $('helpUs').hidden = !us; $('clsWrap').hidden = us; $('asofWrap').hidden = !us; $('dateLbl').textContent = us ? 'Departure date' : 'Travel date';
   $('idleP').textContent = us ? 'Pick an origin, a destination and a departure date above. US flights are listed as of a snapshot date.' : 'Pick two cities and a travel date above. Your flights will be laid out here as tickets, ten to a page.';
   if (!us) {
     $('src').innerHTML = IN_CITIES.map(c => `<option>${esc(c)}</option>`).join(''); $('dst').innerHTML = IN_CITIES.map(c => `<option>${esc(c)}</option>`).join(''); $('dst').value = IN_DEFAULT_DST;
-    const d = new Date(); d.setDate(d.getDate() + 30); f.date.min = new Date(Date.now() + 864e5).toISOString().slice(0, 10); f.date.removeAttribute('max'); f.date.value = d.toISOString().slice(0, 10);
+    f.date.min = addDays(iso(new Date()), 1); f.date.removeAttribute('max'); f.date.value = addDays(iso(new Date()), 30);
+    $('dateHelp').textContent = 'Earliest is tomorrow. Beyond 50 days ahead, prices are shown as if the trip were 50 days out.';
     return;
   }
   const u = await loadUS(); if (market !== 'us') return;
   if (!u.available) return usMissing();
   $('src').innerHTML = u.origins.map(c => `<option value="${esc(c)}">${esc(apLabel(c))}</option>`).join(''); fillDst();
   const r = u.departure_date_range; f.date.min = r.min; f.date.max = r.max;
-  const mid = new Date(r.min + 'T00:00:00'); mid.setDate(mid.getDate() + 14); const dv = mid.toISOString().slice(0, 10); f.date.value = dv > r.max ? r.min : dv;
+  let dv = addDays(u.listed_as_of, 30); if (dv < r.min) dv = r.min; if (dv > r.max) dv = r.max; f.date.value = dv;
+  $('dateHelp').textContent = `Departures from ${fmtDate(r.min)} to ${fmtDate(r.max)}.`;
   $('nCols').textContent = u.feature_columns_total;
   $('asof').textContent = fmtDate(u.listed_as_of, true) + (u.mock ? ' (sample data)' : '');
 }
 $('src').addEventListener('change', () => { if (market === 'us' && US && US.available) fillDst(); });
-document.querySelector('.mkt').addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if (b && b.dataset.mk !== market) setMarket(b.dataset.mk); });
+document.querySelector('.mkt').addEventListener('click', async e => { const b = e.target.closest('[data-mk]'); if (b && b.dataset.mk !== market) { await setMarket(b.dataset.mk, true); syncUrl(true); } });
 
+/* ---------- the results ---------- */
 function adaptUS(j) {
-  const c = j.config;
-  cfg = { flag_threshold_pct: c.flag_threshold_pct, big_save_threshold_pct: c.big_save_threshold_pct, big_save_min_inr: c.big_save_min_usd, predict_at_days_left: c.predict_ahead_days, show_curve: true, default_sort: 'listed' };
-  all = j.flights.map(x => ({ key: x.id, airline: x.airline, code: x.flight_code, stops: x.stops, depTime: x.dep_time, arrTime: x.arr_time, arrOff: x.arr_day_offset, duration_h: x.duration_h,
-    listed: x.listed_price, predicted: x.predicted_price, curve: x.curve.map(p => ({ d: p.days_left, p: p.price })), hotD: x.days_left_at_listing - (x.predicted_horizon_days || 0),
-    groups: x.inputs, may_drop: x.may_drop, drop_pct: x.drop_pct, drop_best_days_left: x.drop_best_days_left, drop_price: x.drop_price, big_save: x.big_save, save_inr: x.save_usd, approved: false }));
+  const c = j.config, ah = c.predict_ahead_days;
+  cfg = { flag_threshold_pct: c.flag_threshold_pct, big_save_threshold_pct: c.big_save_threshold_pct, big_save_min_inr: c.big_save_min_usd, predict_at_days_left: ah, show_curve: true, default_sort: 'listed' };
+  all = j.flights.map(x => ({ key: x.id, airline: x.airline, airlineName: x.airline, routeLabel: `${x.source} to ${x.destination}`, code: x.flight_code, stops: x.stops, depTime: x.dep_time, arrTime: x.arr_time, arrOff: x.arr_day_offset, duration_h: x.duration_h,
+    listed: x.listed_price, predicted: x.predicted_price, hDays: x.predicted_horizon_days || ah, listD: x.days_left_at_listing, curve: x.curve.map(p => ({ d: p.days_left, p: p.price })), hotD: x.days_left_at_listing - (x.predicted_horizon_days || 0),
+    groups: x.inputs, card_change_pct: x.card_change_pct, p0: x.p0, todayD: x.curve.length ? x.curve[0].days_left : null, drop_pair_days_left: x.drop_pair_days_left, may_drop: x.may_drop,
+    drop_pct: x.drop_pct, drop_best_days_left: x.drop_best_days_left, drop_best_days_ahead: x.drop_best_days_ahead, drop_price: x.drop_price, big_save: x.big_save, save_inr: x.save_usd }));
 }
-
-f.addEventListener('submit', async e => {
-  e.preventDefault(); show('loading'); $('go').disabled = true;
-  const us = market === 'us';
+function describe(j, us, dtLong) {
+  const h = cfg.predict_at_days_left;
+  if (us) {
+    $('story').textContent = `${all.length} flights. Prices are listed as of ${fmtDate(j.listed_as_of)}. FareSight is the model's estimate ${days(h)} later.${j.elapsed_ms != null ? ` (Search took ${j.elapsed_ms < 1000 ? j.elapsed_ms + ' ms' : (j.elapsed_ms / 1000).toFixed(1) + ' s'}.)` : ''}`;
+    $('basis').textContent = `Snapshot as of ${fmtDate(j.listed_as_of)}, not live fares. Cabin is not recorded: each listed price is the cheapest fare found for that flight.`;
+    $('legend').innerHTML = `<b>Listed</b> (as of ${fmtDate(j.listed_as_of)}) is the cheapest fare found on that date. <b>FareSight</b> is the model's estimate ${days(h)} after that date.`;
+    const m = US && US.headline_metrics;
+    $('acc').textContent = m ? `How reliable is this? On the next search day the model is ${Number(m.model_accuracy_pct).toFixed(1)}% accurate, against ${Number(m.naive_last_price_accuracy_pct).toFixed(1)}% for simply repeating the last price, so it improves only slightly. It is tested up to ${US.horizon ? US.horizon.max : 14} days after the listing date; each tag stays inside that range.` : '';
+  } else {
+    const hz = cfg.predict_at_days_left, md = j.model_days;
+    $('story').innerHTML = `${all.length} flights for ${esc(dtLong)}, leaving in ${days(j.days_out)}.` + (j.hidden_defunct ? ` ${j.hidden_defunct} flights from airlines that no longer operate are hidden (change this under Settings in Model &amp; Insights).` : '') + (j.engine ? ` Engine: ${esc(j.engine.label)}${j.engine.fallback ? ' (' + esc(j.engine.requested_label || j.engine.requested) + ' was not available)' : ''}.` : '');
+    $('basis').textContent = 'Based on fares scraped in 2022 and 2023, not live prices or current schedules. Prices are shown at 2023 fare levels.';
+    $('legend').innerHTML = `<b>Listed</b>: a historical fare for this flight near this booking window, about ${days(md)} before departure${j.clamped ? ' (searches further out are treated as 50 days out)' : ''}. <b>FareSight</b>: the model's estimate for this flight ${days(hz)} before departure. A big gap between them is mostly last-minute pricing in the data, not a forecast. For some airlines the data holds one typical fare for all of their flights on a route, so several cards can show the same Listed fare.`;
+    const a = j.accuracy; $('acc').textContent = a ? `How reliable is this? On fares from a period it had seen, the model is about ${Math.round(a.A.accuracy)}% accurate; with a small recent sample ${Math.round(a.E.accuracy)}%; on a period it had never seen ${Math.round(a.C.accuracy)}%. Each flight's price was observed only once, so the model cannot see how a single fare moves over time.` : '';
+  }
+  const unit = us ? 'dollars' : 'rupees';
+  $('defsBody').innerHTML = `
+    <dt>Listed</dt><dd>${us ? 'The cheapest fare found for the flight on the snapshot date.' : 'A historical scraped fare for this flight near this booking window. It comes from the data and can be a last-minute fare. Some airlines have one typical fare for all their flights on a route.'}</dd>
+    <dt>FareSight</dt><dd>The model's estimate for the same flight ${us ? days(h) + ' after the listing date' : days(h) + ' before departure'}. The arrow and amount under it compare it with Listed.</dd>
+    <dt>May drop</dt><dd>The model expects the price to settle at least ${cfg.flag_threshold_pct}% below both the Listed fare and its own estimate for today, and to stay near that level at the next price point. A May drop card always shows FareSight below Listed too. Its "Expected low" is that settled price.</dd>
+    <dt>Big save</dt><dd>A May drop whose expected low is at least ${cfg.big_save_threshold_pct}% below Listed${cfg.big_save_min_inr > 0 ? `, or ${money(cfg.big_save_min_inr)} cheaper provided that is also a fall of at least 10%` : ''}.</dd>
+    <dt>FareSight's estimate for today</dt><dd>The model's own price for today. It is the fair comparison for a future fall, because Listed is a scraped fare and can differ from what the model thinks today.</dd>
+    <dt>Approve</dt><dd>Adds the flight to a shortlist on this page (the price turns green). Nothing is booked, locked or sent anywhere.</dd>
+    ${us ? '' : `<dt>Airlines that no longer operate</dt><dd>GO FIRST, Vistara and AirAsia India are in the historical data. They are hidden unless you switch them on in Settings, and marked when shown.</dd>`}
+    <dt>All of these are estimates</dt><dd>They are model estimates, not promises or booking advice.</dd>`;
+}
+function engineChip(j, us) {
+  const el = $('engChip'); if (us || !j.engine) { el.hidden = true; return; }
+  const rec = j.engine.key !== 'xgboost';
+  el.innerHTML = `Engine: <b>${esc(j.engine.label)}</b>${rec ? ' <button class="btn text" id="engBack" type="button">Back to recommended (XGBoost)</button>' : ''}`; el.hidden = false;
+  const b = $('engBack'); if (b) b.onclick = async () => { b.disabled = true; b.textContent = 'Switching…'; try { await postJson('/api/config', { algorithm: 'xgboost' }); } catch (e) {} runSearch({ push: false, scroll: true }); };
+}
+async function runSearch(opts = {}) {
+  const us = market === 'us'; show('loading'); $('go').disabled = true;
+  if (opts.push || opts.scroll) $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  const body = us ? { source: f.source.value, destination: f.destination.value, date: f.date.value } : { source: f.source.value, destination: f.destination.value, date: f.date.value, class: f['class'].value };
+  if (!us && body.source === body.destination) { showError('Pick two different cities', 'The origin and the destination are the same.', false); $('go').disabled = false; return; }
+  lastBody = body;
   try {
-    const body = us ? { source: f.source.value, destination: f.destination.value, date: f.date.value } : Object.fromEntries(new FormData(f));
-    const t0 = performance.now();
-    const r = await fetch(us ? '/api/us/search' : '/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
+    const [r, j] = await postJson(us ? '/api/us/search' : '/api/search', body);
     if (r.status === 503 && us) return usMissing();
     if (!r.ok) {
-      $('errTitle').textContent = r.status === 404 ? 'No flights for that search' : 'That search did not go through';
-      $('errMsg').textContent = j.error || 'Something went wrong. Try another route or date.'; show('error'); return;
+      showError(r.status === 404 ? 'No flights for that search' : 'That search did not go through', j.error || 'Something went wrong. Try another route or date.', r.status >= 500); return;
     }
-    if (us && !j.flights.length) { $('errTitle').textContent = 'No flights on that date'; $('errMsg').textContent = j.note || 'Try another departure date.'; show('error'); return; }
+    if (us && !j.flights.length) { const rg = US && US.departure_date_range; showError('No flights on that date', rg ? `There are no flights on ${fmtDate(body.date)}. The snapshot covers departures from ${fmtDate(rg.min)} to ${fmtDate(rg.max)}. Pick a date in that range.` : 'Try another departure date.', false); return; }
     PAGE = j.page_size || 10; page = 1; open = new Set();
-    const cl = $('clamp');
+    const cl = $('clamp'); let dtLong;
     if (us) {
-      adaptUS(j);
-      $('title').innerHTML = `${esc(j.flights[0].source)} <span>to</span> ${esc(j.flights[0].destination)}<br><span style="font-size:.62em">${esc(fmtDate(j.flights[0].dep_date, true))} · cheapest fare per flight</span>${j.mock ? '<span class="sample">Sample data</span>' : ''}`;
-      $('params').innerHTML = [`${all.length} flights`, `Listed as of ${fmtDate(j.listed_as_of)} (a snapshot, not live)`, `Predicted ${cfg.predict_at_days_left} day${cfg.predict_at_days_left > 1 ? 's' : ''} ahead`,
-        `Large changes start at ${cfg.flag_threshold_pct}%`, `Search took ${j.elapsed_ms < 1000 ? j.elapsed_ms + ' ms' : (j.elapsed_ms / 1000).toFixed(1) + ' s'}`].map(t => `<li>${esc(t)}</li>`).join('');
-      cl.hidden = false; cl.textContent = `These US prices are a snapshot from ${fmtDate(j.listed_as_of)}, not live fares. The model improves only slightly on "the price stays the same", so predicted prices are often close to the listed ones and drops are rare.`;
+      adaptUS(j); dtLong = fmtDate(j.flights[0].dep_date, true);
+      $('title').innerHTML = `${esc(j.flights[0].source)} <span>to</span> ${esc(j.flights[0].destination)}<br><span style="font-size:.62em">${esc(dtLong)} · cheapest fare per flight</span>${j.mock ? '<span class="sample">Sample data</span>' : ''}`;
+      cl.hidden = true; shownEngine = null;
     } else {
-      all = j.flights.map(x => ({ ...x, key: x.code, approved: false })); cfg = j.config; PAGE = j.page_size;
-      const dt = fmtDate(j.date, true);
-      $('title').innerHTML = `${esc(j.source)} <span>to</span> ${esc(j.destination)}<br><span style="font-size:.62em">${esc(dt)} · ${esc(f['class'].value)}</span>`;
-      $('params').innerHTML = [`${all.length} flights`, `${j.days_out} days from today`, `Predicted ${cfg.predict_at_days_left} day${cfg.predict_at_days_left > 1 ? 's' : ''} before departure`,
-        `${cfg.price_period} price level`, `Listed price: median within ±${cfg.listed_window_days} days`, `Large changes start at ${cfg.flag_threshold_pct}%`].map(t => `<li>${esc(t)}</li>`).join('');
-      cl.hidden = !j.clamped;
-      cl.textContent = `The model has only seen bookings up to ${j.model_days} days ahead, so this search is treated as ${j.model_days} days out.`;
+      all = j.flights.map(x => ({ ...x, key: `${j.source}|${j.destination}|${j.date}|${body['class']}|${x.code}`, todayD: j.model_days, hotD: j.config.predict_at_days_left, engineLabel: j.engine && j.engine.label })); cfg = j.config; PAGE = j.page_size; shownEngine = j.engine || null;
+      dtLong = fmtDate(j.date, true);
+      $('title').innerHTML = `${esc(j.source)} <span>to</span> ${esc(j.destination)}<br><span style="font-size:.62em">${esc(dtLong)} · ${esc(body['class'])}</span>`;
+      const fb = j.engine && j.engine.fallback ? `${j.engine.requested_label || j.engine.requested} is the chosen engine but is not available on this server, so ${j.engine.label} made these prices. ` : '';
+      cl.hidden = !(j.clamped || fb); cl.textContent = fb + (j.clamped ? `This date is ${days(j.days_out)} away. The model has only seen bookings up to ${days(j.model_days)} ahead, so it is priced as if the trip were ${j.model_days} days out.` : '');
     }
+    describe(j, us, dtLong); engineChip(j, us);
     const airlines = [...new Set(all.map(x => x.airline))].sort();
     $('fAirline').innerHTML = '<option value="">All airlines</option>' + airlines.map(a => `<option>${esc(a)}</option>`).join('');
-    $('fStops').value = ''; $('fSort').value = cfg.default_sort;
-    show('out'); render();
+    // a new search starts with no filters, so a ticked filter never makes a route look smaller than it is
+    $('fStops').value = ''; $('fDrop').checked = false; $('fBig').checked = false; shortOnly = false; $('fSort').value = cfg.default_sort || 'listed'; countSame();
+    if (opts.filters) { const q = opts.filters;
+      if (q.air && airlines.includes(q.air)) $('fAirline').value = q.air; if (q.stops != null) $('fStops').value = q.stops; $('fDrop').checked = q.drop === '1'; $('fBig').checked = q.big === '1'; shortOnly = q.short === '1' && APPR[market].size > 0;
+      if (q.sort && [...$('fSort').options].some(o => o.value === q.sort)) $('fSort').value = q.sort; }
+    show('out'); pendingPush = !!opts.push; render();
+    if (opts.filters && opts.filters.page) { page = Math.max(1, +opts.filters.page); render(); }
   } catch (err) {
-    $('errTitle').textContent = 'We could not reach the server'; $('errMsg').textContent = 'Check that the app is still running, then search again.'; show('error');
+    showError("We couldn't reach the service", 'Please try again in a moment.', true);
   } finally { if (!(us && US && !US.available)) $('go').disabled = false; }
-});
+}
+f.addEventListener('submit', e => { e.preventDefault(); runSearch({ push: true }); });
+$('retry').onclick = () => runSearch({ push: false, scroll: true });
+
 ['fAirline', 'fStops', 'fSort', 'fDrop', 'fBig'].forEach(id => $(id).addEventListener('change', () => { page = 1; render(); }));
-$('empty').addEventListener('click', e => { if (e.target.id === 'clearF') { $('fAirline').value = ''; $('fStops').value = ''; $('fDrop').checked = false; $('fBig').checked = false; page = 1; render(); } });
-$('pages').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b && !b.disabled) { page = +b.dataset.p; render(); window.scrollTo({ top: $('rows').getBoundingClientRect().top + scrollY - 140 }); } });
+$('empty').addEventListener('click', e => { if (e.target.id === 'clearF') { $('fAirline').value = ''; $('fStops').value = ''; $('fDrop').checked = false; $('fBig').checked = false; shortOnly = false; page = 1; render(); } });
+$('pages').addEventListener('click', e => {
+  const b = e.target.closest('button[data-p]'); if (!b || b.disabled) return; const want = +b.dataset.p; page = want; render();
+  window.scrollTo({ top: $('rows').getBoundingClientRect().top + scrollY - 140 });
+  const nb = $('pages').querySelector(`button[data-p="${page}"]:not(.step)`) || $('pages').querySelector('button:not([disabled])'); if (nb) nb.focus({ preventScroll: true });
+});
 $('rows').addEventListener('click', e => {
   const a = e.target.closest('button[data-a]'), o = e.target.closest('button[data-o]');
-  if (a) { const x = all.find(y => y.key === a.dataset.a); x.approved = !x.approved; render(); }
-  if (o) { open.has(o.dataset.o) ? open.delete(o.dataset.o) : open.add(o.dataset.o); render(); }
+  if (a) { const k = a.dataset.a, S = APPR[market]; S.has(k) ? S.delete(k) : S.add(k); saveAppr(); render(); const nb = document.querySelector(`button[data-a="${CSS.escape(k)}"]`); if (nb) nb.focus({ preventScroll: true }); }
+  if (o) { const k = o.dataset.o; open.has(k) ? open.delete(k) : open.add(k); render(); const nb = document.querySelector(`button[data-o="${CSS.escape(k)}"]`); if (nb) nb.focus({ preventScroll: true }); }
 });
 $('approvePage').addEventListener('click', () => {
-  const v = view().slice((page - 1) * PAGE, page * PAGE), allOn = v.every(x => x.approved); v.forEach(x => x.approved = !allOn); render();
+  const v = view().slice((page - 1) * PAGE, page * PAGE), S = APPR[market], allOn = v.every(x => S.has(x.key)); v.forEach(x => allOn ? S.delete(x.key) : S.add(x.key)); saveAppr(); render();
 });
-try { if (localStorage.getItem('fs-market') === 'us') setMarket('us'); } catch (e) {}
+$('apprClear').addEventListener('click', () => { APPR[market].clear(); saveAppr(); shortOnly = false; render(); });
+$('apprShow').addEventListener('click', () => { shortOnly = !shortOnly; page = 1; render(); });
+
+/* ---------- the prediction engine may be changed on another tab ---------- */
+async function checkEngine() {
+  if (market !== 'in' || !shownEngine || $('out').hidden) { $('engNote').hidden = true; return; }
+  try { const j = await (await fetch('/api/engines')).json(); const now = j.engines.find(e => e.key === j.active);
+    if (j.active !== shownEngine.key) { $('engNoteT').textContent = `The prediction engine is now ${now ? now.label : j.active}; these prices were made with ${shownEngine.label}.`; $('engNote').hidden = false; } else $('engNote').hidden = true;
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkEngine(); }); addEventListener('focus', checkEngine);
+$('engAgain').onclick = () => { $('engNote').hidden = true; runSearch({ push: false }); };
+
+/* ---------- start: the URL decides first, then the saved market, then India ---------- */
+async function applyQuery(first) {
+  const q = new URLSearchParams(location.search); urlBusy = true;
+  try {
+    const m = q.get('m') === 'us' || q.get('m') === 'in' ? q.get('m') : (first ? store.get('fs-market') : market) === 'us' ? 'us' : 'in';
+    if (m !== market || first) await setMarket(m, false);
+    if (market === 'us' && US && !US.available) return;
+    if (q.get('from') && q.get('to') && q.get('date')) {
+      const s = f.source; if ([...s.options].some(o => o.value === q.get('from'))) s.value = q.get('from');
+      if (market === 'us') { fillDst(); if (!US.pairs.includes(`${q.get('from')}-${q.get('to')}`)) { showError('No data for that route', `We have no fares for ${q.get('from')} to ${q.get('to')}. Pick another origin and destination.`, false); return; } }
+      if ([...f.destination.options].some(o => o.value === q.get('to'))) f.destination.value = q.get('to');
+      f.date.value = q.get('date'); if (market === 'in' && q.get('cls') && [...f['class'].options].some(o => o.value === q.get('cls'))) f['class'].value = q.get('cls');
+      await runSearch({ filters: { air: q.get('air'), stops: q.get('stops'), drop: q.get('drop'), big: q.get('big'), short: q.get('short'), sort: q.get('sort'), page: q.get('page') }, push: false });
+    }
+  } finally { urlBusy = false; }
+}
+addEventListener('popstate', () => applyQuery(false));
+(async () => {
+  f.date.value = addDays(iso(new Date()), 30); f.date.min = addDays(iso(new Date()), 1); $('dateHelp').textContent = 'Earliest is tomorrow. Beyond 50 days ahead, prices are shown as if the trip were 50 days out.';
+  await applyQuery(true);
+})();
 </script>
 {% endblock %}

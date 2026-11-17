@@ -1,0 +1,95 @@
+{
+  "hgb": {
+    "means": {
+      "Delhi -> Mumbai": 7753,
+      "Ahmedabad -> Mumbai": 5941
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": -0.2,
+      "Ahmedabad -> Mumbai": 0.7
+    },
+    "demo_safe": true
+  },
+  "xgboost": {
+    "means": {
+      "Delhi -> Mumbai": 7648,
+      "Ahmedabad -> Mumbai": 5614
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": -1.6,
+      "Ahmedabad -> Mumbai": -4.8
+    },
+    "demo_safe": true
+  },
+  "lightgbm": {
+    "means": {
+      "Delhi -> Mumbai": 7830,
+      "Ahmedabad -> Mumbai": 5859
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": 0.8,
+      "Ahmedabad -> Mumbai": -0.7
+    },
+    "demo_safe": true
+  },
+  "catboost": {
+    "means": {
+      "Delhi -> Mumbai": 8059,
+      "Ahmedabad -> Mumbai": 6869
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": 3.7,
+      "Ahmedabad -> Mumbai": 16.4
+    },
+    "demo_safe": true
+  },
+  "random_forest": {
+    "means": {
+      "Delhi -> Mumbai": 7789,
+      "Ahmedabad -> Mumbai": 5521
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": 0.2,
+      "Ahmedabad -> Mumbai": -6.4
+    },
+    "demo_safe": true
+  },
+  "extra_trees": {
+    "means": {
+      "Delhi -> Mumbai": 8044,
+      "Ahmedabad -> Mumbai": 6435
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": 3.5,
+      "Ahmedabad -> Mumbai": 9.1
+    },
+    "demo_safe": true
+  },
+  "ridge": {
+    "means": {
+      "Delhi -> Mumbai": 7021,
+      "Ahmedabad -> Mumbai": 6263
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": -9.7,
+      "Ahmedabad -> Mumbai": 6.2
+    },
+    "demo_safe": true
+  },
+  "mlp": {
+    "means": {
+      "Delhi -> Mumbai": 6451,
+      "Ahmedabad -> Mumbai": 5744
+    },
+    "vs_median_pct": {
+      "Delhi -> Mumbai": -17.0,
+      "Ahmedabad -> Mumbai": -2.6
+    },
+    "demo_safe": true
+  },
+  "_median_engine_mean_inr": {
+    "Delhi -> Mumbai": 7771.0,
+    "Ahmedabad -> Mumbai": 5900.0
+  },
+  "_query": "Economy, 2026-12-10 (Thu), 21 days ahead; flights per route: Delhi -> Mumbai=207, Ahmedabad -> Mumbai=31"
+}

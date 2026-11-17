@@ -1,0 +1,177 @@
+{
+  "key": "random_forest",
+  "versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "built": "2026-11-17",
+  "n_train_rows": 745375,
+  "params": {
+    "max_features": 0.8,
+    "min_samples_leaf": 5,
+    "n_estimators": 12,
+    "bootstrap": true
+  },
+  "train_seconds": 8.4,
+  "capped": {
+    "cap_mb": 150.0,
+    "chosen": {
+      "params": {
+        "max_features": 0.8,
+        "min_samples_leaf": 5,
+        "n_estimators": 12,
+        "bootstrap": true
+      },
+      "full_data_model_mb": 113.2,
+      "train_seconds": 8.4,
+      "scenario_A_scores": {
+        "accuracy": 91.467,
+        "within10": 70.67,
+        "mae": 1925.4,
+        "rmse": 3985.5,
+        "r2": 0.9618
+      },
+      "scenario_A_model_mb": 56.3
+    },
+    "candidates": [
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 10,
+          "n_estimators": 25,
+          "bootstrap": true
+        },
+        "full_data_model_mb": 122.5,
+        "train_seconds": 19.4,
+        "scenario_A_scores": {
+          "accuracy": 90.986,
+          "within10": 68.82,
+          "mae": 2019.9,
+          "rmse": 4109.4,
+          "r2": 0.9594
+        },
+        "scenario_A_model_mb": 59.7
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 5,
+          "n_estimators": 25,
+          "bootstrap": true,
+          "max_samples": 0.5
+        },
+        "full_data_model_mb": 151.3,
+        "train_seconds": 13.4
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 10,
+          "n_estimators": 50,
+          "bootstrap": true,
+          "max_samples": 0.5
+        },
+        "full_data_model_mb": 155.8,
+        "train_seconds": 24.4
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 20,
+          "n_estimators": 50,
+          "bootstrap": true
+        },
+        "full_data_model_mb": 125.3,
+        "train_seconds": 34.1,
+        "scenario_A_scores": {
+          "accuracy": 90.237,
+          "within10": 66.02,
+          "mae": 2163.6,
+          "rmse": 4327.2,
+          "r2": 0.9549
+        },
+        "scenario_A_model_mb": 60.5
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 5,
+          "n_estimators": 12,
+          "bootstrap": true
+        },
+        "full_data_model_mb": 113.2,
+        "train_seconds": 8.4,
+        "scenario_A_scores": {
+          "accuracy": 91.467,
+          "within10": 70.67,
+          "mae": 1925.4,
+          "rmse": 3985.5,
+          "r2": 0.9618
+        },
+        "scenario_A_model_mb": 56.3
+      }
+    ],
+    "accuracy_measured_on": "scenario A: capped config retrained on the A train split (356,178 rows), scored on the A test split (89,044 rows)"
+  },
+  "full_size": {
+    "params": {
+      "max_features": 0.8,
+      "min_samples_leaf": 3
+    },
+    "model_mb": 919.96,
+    "scores": {
+      "A": {
+        "accuracy": 92.008,
+        "within10": 72.72,
+        "mae": 1819.8,
+        "rmse": 3819.1,
+        "r2": 0.9649
+      },
+      "E": {
+        "accuracy": 86.523,
+        "within10": 54.8,
+        "mae": 2830.5,
+        "rmse": 5535.4,
+        "r2": 0.9263
+      },
+      "C": {
+        "accuracy": 43.931,
+        "within10": 19.03,
+        "mae": 8553.0,
+        "rmse": 12598.1,
+        "r2": 0.618
+      }
+    }
+  },
+  "notes": "size-capped for deployment (<= 150 MB); full-size benchmark model was 920 MB",
+  "file": "models/engines/random_forest.joblib",
+  "load_seconds": 0.09,
+  "predict_ms_per_1k": 1.37,
+  "memory_mb_peak": 407.0,
+  "sanity": {
+    "rows": 20000,
+    "finite": true,
+    "accuracy_on_heldin_rows": 93.2,
+    "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+    "benchmark_mean_abs_log_diff": 0.0344,
+    "benchmark_p95_abs_log_diff": 0.119,
+    "benchmark_corr": 0.9977,
+    "benchmark_accuracy_same_rows": 92.02,
+    "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+    "agrees_with_benchmark": true,
+    "sample_search": {
+      "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+      "flights": 207,
+      "finite": true,
+      "min_inr": 4532,
+      "mean_inr": 7789,
+      "max_inr": 18359
+    }
+  }
+}

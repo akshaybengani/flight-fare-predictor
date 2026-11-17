@@ -8,7 +8,7 @@ A proof of concept that predicts Indian domestic airfares and compares them with
 
 **The idea.** A booking platform lists a fare today. If a model can estimate what that flight will cost closer to departure, the platform can show both prices side by side and decide when to offer a better one. This repository is the end-to-end prototype: data merge, model, evaluation and a small web app.
 
-> **Status: working prototype, honest numbers.** Held-out accuracy is **93.0%** when the period is known, **87.0%** with a small recent sample, and **66.2%** for a period the model has never seen. The 95% target is **not** reached on this data, and the reasons are documented below. No synthetic data is used anywhere.
+> **Status: working prototype, honest numbers.** The default engine for India is **XGBoost** (change it under Model & Insights, Settings). Its held-out accuracy is **93.4%** when the period is known, **86.9%** with a small recent sample, and **67.7%** for a period the model has never seen (the first model, HistGradientBoosting, scored 93.0%, 87.0% and 66.2%). The 95% target is **not** reached on this data, and the reasons are documented below. No synthetic data is used anywhere.
 
 ---
 
@@ -33,7 +33,7 @@ Two pages, served by Flask on `http://localhost:5055`.
 **`/` Demo**
 - Search by origin, destination, travel date and cabin class.
 - Each flight shows the **listed price** (the real scraped fare for that flight near the booking window), the **predicted price** and the percentage change. Changes above a threshold are highlighted.
-- **10 flights per page** with page numbers, plus filters (airline, stops, "price may drop") and sorting (listed, predicted, biggest predicted drop, biggest predicted rise, biggest expected drop, airline).
+- **10 flights per page** with page numbers, plus filters (airline, stops, "price may drop", "big saves"). A May drop means the model expects the price to settle at least 10% below both the listed fare and its own estimate for today, and the card's FareSight price also falls; the expected low appears as a second line. Airlines that no longer operate are hidden by default (a setting). The URL carries the search, so Back and shared links work and sorting (listed, predicted, biggest predicted drop, biggest predicted rise, biggest expected drop, airline).
 - An **Approve** button per flight (and "approve all on this page") strikes through the listed price and keeps the predicted one.
 - **Details** on any flight shows the predicted-price curve by days before departure and a table of **the exact parameters the model received**: airline, route, departure hour, distance, days before departure, weekday, route supply, the typical price level of that flight, and so on.
 
@@ -48,11 +48,13 @@ Two pages, served by Flask on `http://localhost:5055`.
 
 Accuracy is `100 − MAPE`: the average of `|predicted − actual| / actual` over rows the model never trained on.
 
-| Test | Setup | Accuracy | Within ±10% | Avg. miss |
-|---|---|---|---|---|
-| **Same period** | Random 20% of the 2023 rows held out | **93.0%** | 77.6% | ₹1,500 |
-| **Recalibrated** | Train on 2022 plus 10% of 2023 flight-days, test on the other 90% | **87.0%** | 55.1% | ₹2,717 |
-| **Unseen period** | Train on 2022 only, test on all of 2023 | **66.2%** | 19.9% | ₹5,889 |
+Scores of the default engine (XGBoost) and of the first model (HistGradientBoosting), both from `models/algorithms.json` and `models/metrics.json`:
+
+| Test | Setup | XGBoost accuracy | Within ±10% | Avg. miss | First model (HistGradientBoosting) |
+|---|---|---|---|---|---|
+| **Same period** | Random 20% of the 2023 rows held out | **93.4%** | 79.4% | ₹1,395 | 93.0% (77.6%, ₹1,500) |
+| **Recalibrated** | Train on 2022 plus 10% of 2023 flight-days, test on the other 90% | **86.9%** | 54.5% | ₹2,759 | 87.0% (55.1%, ₹2,717) |
+| **Unseen period** | Train on 2022 only, test on all of 2023 | **67.7%** | 21.3% | ₹5,798 | 66.2% (19.9%, ₹5,889) |
 
 Read these in order of how realistic they are for forecasting. The first is an interpolation score (other days of the same flights are in training). The last is the honest test of predicting a period the model has never seen.
 
@@ -156,7 +158,7 @@ flowchart LR
 ```
 
 - **Target:** `log(price)`, so errors are relative. A ₹500 miss on a ₹3,000 fare costs more than on a ₹50,000 business fare.
-- **Model:** scikit-learn `HistGradientBoostingRegressor`, categorical features handled natively.
+- **Model:** the default engine is XGBoost (`models/engines/xgboost.joblib`); the first model, scikit-learn `HistGradientBoostingRegressor` (categorical features handled natively), stays available as an engine and is the automatic fallback if XGBoost cannot load on a server.
 - **Leak-safe encodings:** the typical price of a flight and of an airline-route are target-encoded **out-of-fold** (5 folds), so a training row never sees its own price.
 - **Listed price vs predicted price:** the *listed* price is the median real scraped fare of that flight within a window of the booking horizon. The *predicted* price is the model's estimate for a chosen number of days before departure (default: 1).
 - **Features (18):** airline, origin, destination, class, departure and arrival time bucket, stops, duration, days left, weekday, month, period, exact departure/arrival hour, route distance, route supply, and the two target encodings.
@@ -182,8 +184,9 @@ scripts/download_data.sh
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/search` | `{source, destination, date, class}` returns flights with listed price, predicted price, curve and the model inputs, plus the "may drop" fields `may_drop` (bool), `drop_pct` (largest predicted fall below the listed price, or 0), `drop_best_days_left` and `drop_price` (the lowest predicted point from today onward; null when `may_drop` is false). A flight may drop when that fall is at least `flag_threshold_pct` (default 10%). A model estimate, not a promise |
-| `GET /api/us/meta`, `POST /api/us/search` | United States market (needs the US model files; otherwise `503` with `{available: false}`). Search takes `{source, destination, date}` (airport codes, `YYYY-MM-DD`) and returns flights with USD prices, the same `may_drop`/`big_save` fields (`save_usd`), a `curve` and `inputs` grouped by feature family |
+| `POST /api/search` | `{source, destination, date, class}` returns flights with listed price, predicted price, curve and the model inputs, plus: `p0` (the model's own price for today); the "may drop" fields `may_drop` (bool), `drop_pct` (fall of the expected low below the listed price, or 0), `drop_best_days_left`, `drop_price` (the expected low), `drop_pair_days_left` (the two checkpoints that hold it), `big_save` (bool) and `save_inr`; and the figure the card shows: `card_price`, `card_kind` (`low` for a tagged flight, else `horizon`), `card_days_left`, `card_change_pct`. **Rule (same for both markets, `src/drop_logic.py`):** only checkpoints after today count; the expected low is the lowest level held at two adjacent checkpoints (a one-point dip cannot trigger it); a flight may drop only when that low is at least `flag_threshold_pct` below both the listed price and `p0`. A tagged card always shows a fall. A model estimate, not a promise |
+| `GET /api/engines`, `POST /api/config {algorithm}` | India prediction engines: the manifest, which one is active and which can load on this server (a missing file or package is listed as unavailable with the reason). Switching saves `algorithm` in `config.json` and warm-loads the engine; the search response reports `engine`. The US market is not affected |
+| `GET /api/us/meta`, `POST /api/us/search` | United States market (needs the US model files; otherwise `503` with `{available: false}`). Search takes `{source, destination, date}` (airport codes, `YYYY-MM-DD`) and returns flights with USD prices, the same may-drop, big-save and card fields (`save_usd`, recomputed in `src/app.py` with the shared rule), a `curve` and `inputs` grouped by feature family |
 | `GET/POST /api/config` | read or save demo settings (`{"reset": true}` restores defaults) |
 | `GET /api/meta` | model, data, metrics, experiments and importance (powers the config page) |
 

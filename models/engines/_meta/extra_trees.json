@@ -1,0 +1,193 @@
+{
+  "key": "extra_trees",
+  "versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "built": "2026-11-17",
+  "n_train_rows": 745375,
+  "params": {
+    "max_features": 0.8,
+    "min_samples_leaf": 10,
+    "n_estimators": 16,
+    "bootstrap": false
+  },
+  "train_seconds": 6.7,
+  "capped": {
+    "cap_mb": 150.0,
+    "chosen": {
+      "params": {
+        "max_features": 0.8,
+        "min_samples_leaf": 10,
+        "n_estimators": 16,
+        "bootstrap": false
+      },
+      "full_data_model_mb": 111.9,
+      "train_seconds": 6.7,
+      "scenario_A_scores": {
+        "accuracy": 90.863,
+        "within10": 68.19,
+        "mae": 2039.9,
+        "rmse": 4125.9,
+        "r2": 0.959
+      },
+      "scenario_A_model_mb": 55.1
+    },
+    "candidates": [
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 10,
+          "n_estimators": 16,
+          "bootstrap": false
+        },
+        "full_data_model_mb": 111.9,
+        "train_seconds": 6.7,
+        "scenario_A_scores": {
+          "accuracy": 90.863,
+          "within10": 68.19,
+          "mae": 2039.9,
+          "rmse": 4125.9,
+          "r2": 0.959
+        },
+        "scenario_A_model_mb": 55.1
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 20,
+          "n_estimators": 30,
+          "bootstrap": false
+        },
+        "full_data_model_mb": 107.0,
+        "train_seconds": 11.4,
+        "scenario_A_scores": {
+          "accuracy": 90.005,
+          "within10": 64.86,
+          "mae": 2206.5,
+          "rmse": 4384.3,
+          "r2": 0.9537
+        },
+        "scenario_A_model_mb": 52.1
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 40,
+          "n_estimators": 60,
+          "bootstrap": false
+        },
+        "full_data_model_mb": 107.4,
+        "train_seconds": 20.6,
+        "scenario_A_scores": {
+          "accuracy": 89.041,
+          "within10": 61.4,
+          "mae": 2387.8,
+          "rmse": 4648.1,
+          "r2": 0.948
+        },
+        "scenario_A_model_mb": 52.2
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 10,
+          "n_estimators": 30,
+          "bootstrap": true,
+          "max_samples": 0.5
+        },
+        "full_data_model_mb": 85.7,
+        "train_seconds": 4.7,
+        "scenario_A_scores": {
+          "accuracy": 89.602,
+          "within10": 63.41,
+          "mae": 2283.8,
+          "rmse": 4497.5,
+          "r2": 0.9513
+        },
+        "scenario_A_model_mb": 41.9
+      },
+      {
+        "params": {
+          "max_features": 0.8,
+          "min_samples_leaf": 20,
+          "n_estimators": 50,
+          "bootstrap": true,
+          "max_samples": 0.5
+        },
+        "full_data_model_mb": 71.3,
+        "train_seconds": 7.6,
+        "scenario_A_scores": {
+          "accuracy": 88.768,
+          "within10": 60.53,
+          "mae": 2441.9,
+          "rmse": 4728.0,
+          "r2": 0.9462
+        },
+        "scenario_A_model_mb": 34.8
+      }
+    ],
+    "accuracy_measured_on": "scenario A: capped config retrained on the A train split (356,178 rows), scored on the A test split (89,044 rows)"
+  },
+  "full_size": {
+    "params": {
+      "max_features": 0.8,
+      "min_samples_leaf": 2
+    },
+    "model_mb": 2057.08,
+    "scores": {
+      "A": {
+        "accuracy": 92.638,
+        "within10": 75.18,
+        "mae": 1671.8,
+        "rmse": 3574.7,
+        "r2": 0.9693
+      },
+      "E": {
+        "accuracy": 87.12,
+        "within10": 56.51,
+        "mae": 2708.4,
+        "rmse": 5243.9,
+        "r2": 0.9339
+      },
+      "C": {
+        "accuracy": 57.334,
+        "within10": 18.98,
+        "mae": 7178.8,
+        "rmse": 10352.5,
+        "r2": 0.742
+      }
+    }
+  },
+  "notes": "size-capped for deployment (<= 150 MB); full-size benchmark model was 2057 MB",
+  "file": "models/engines/extra_trees.joblib",
+  "load_seconds": 0.11,
+  "predict_ms_per_1k": 1.37,
+  "memory_mb_peak": 427.0,
+  "sanity": {
+    "rows": 20000,
+    "finite": true,
+    "accuracy_on_heldin_rows": 92.07,
+    "note": "these rows were in the final model's training data (held-in), so accuracy here is optimistic by design",
+    "benchmark_mean_abs_log_diff": 0.0332,
+    "benchmark_p95_abs_log_diff": 0.1128,
+    "benchmark_corr": 0.998,
+    "benchmark_accuracy_same_rows": 92.64,
+    "tolerance": "mean |log diff| <= 0.08 and corr >= 0.99 (benchmark model saw only the scenario-A train rows, the engine all rows)",
+    "agrees_with_benchmark": true,
+    "sample_search": {
+      "query": "Delhi -> Mumbai, 2026-12-10 (Thu), Economy, 21 days ahead",
+      "flights": 207,
+      "finite": true,
+      "min_inr": 5373,
+      "mean_inr": 8044,
+      "max_inr": 16027
+    }
+  }
+}
