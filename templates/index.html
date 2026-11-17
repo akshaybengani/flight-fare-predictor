@@ -126,7 +126,7 @@ const FRIENDLY = {stops:'Stops', duration_h:'Duration (hours)', dep_hour:'Depart
   airline:'Airline', route:'Route', class:'Class', dep_bucket:'Departure time window', arr_bucket:'Arrival time window'};
 const HELP = {flight_price_level_inr:'The average fare the training data shows for this flight number.', route_airline_price_level_inr:'The average fare the data shows for this airline on this route.',
   days_left:'How far ahead of departure the FareSight price is estimated for (1 means the day before).'};
-function code(c) { const m = /^(\d)\.0*E-(\d+)$/i.exec(c); return m ? `${m[1]}E ${m[2]}` : String(c).replace(/-/g, ' '); }
+function code(x) { return x.display_code ? String(x.display_code).replace(/-/g, ' ') + (x.period_hint ? ` (${x.period_hint})` : '') : 'number not available'; }
 const hhmm = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
 const rnd = v => Math.sign(v) * Math.round(Math.abs(v));   // round half away from zero: one rounding rule everywhere
 const pct = x => rnd(x.card_change_pct != null ? x.card_change_pct : (x.predicted - x.listed) / x.listed * 100);
@@ -257,7 +257,7 @@ function ticket(x) {
   return `<article class="flight">
     <div class="ticket-wrap"><div class="ticket ${x.may_drop ? 'drops' : ''} ${x.defunct ? 'defunct' : ''}">
       <div class="t-main">
-        <div class="t-top"><span class="t-air">${esc(x.airline)}</span>${x.depTime ? '' : `<span class="t-code">${esc(code(x.code))}</span>`}${defunct}</div>
+        <div class="t-top"><span class="t-air">${esc(x.airline)}</span>${x.depTime ? '' : `<span class="t-code">${esc(code(x))}</span>`}${defunct}</div>
         <div class="t-times">${timeBlock(x, 'dep', x.dep)}${routeLine(x)}<div class="r">${timeBlock(x, 'arr', x.arr)}</div></div>
         ${tag}
       </div>
@@ -273,7 +273,7 @@ function ticket(x) {
     </div></div>
     ${isOpen ? `<div class="sheet"><div><h3>Price over time for this flight${x.big_save ? ' <span class="tag bigtag">Big save</span>' : ''}</h3>${cfg.show_curve ? chart(x) : '<p class="muted">The price curve is switched off in Model &amp; Insights.</p>'}</div>
       <div><h3>${x.groups ? 'Parameters the model used' : 'What the model was given'}</h3>${x.groups ? '<p class="sub">Predicted by the US price-history model.</p>' : (x.engineLabel ? `<p class="sub">Engine: ${esc(x.engineLabel)}.</p>` : '')}${spec(x)}</div>
-      <p class="dropnote ${x.may_drop ? 'yes' : ''}">${dropSentence(x)}</p></div>` : ''}
+      <p class="dropnote ${x.may_drop ? 'yes' : ''}">${dropSentence(x)}</p>${x.groups ? '' : `<p class="dropnote"><a class="btn line sm" href="/lab?from=${encodeURIComponent(f.source.value)}&to=${encodeURIComponent(f.destination.value)}&date=${encodeURIComponent(f.date.value)}&cls=${encodeURIComponent(f['class'].value)}&flight=${encodeURIComponent(x.code)}">Open in Price Lab</a> Change this flight's inputs and watch the price move.</p>`}</div>` : ''}
   </article>`;
 }
 

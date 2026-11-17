@@ -28,6 +28,60 @@ def route_frame(df, src, dst, klass, days_left=21, dow=3, month=12, period=None)
     return rows
 
 
+def explain_checks(df, ENC):
+    """explain(): steps add up to the price (<= 1 rupee), finite, ordered, fast, plausible directions; reference_values()."""
+    import time as _t
+    fails = 0
+    rv = engines.reference_values()
+    names = [f["name"] for f in rv["features"]]
+    try:
+        assert names == list(ENC.features), "reference_values() order differs from ENC.features"
+        assert all(f["type"] in ("number", "category") and f["label"] for f in rv["features"])
+        assert all(f.get("categories") for f in rv["features"] if f["type"] == "category")
+        assert [f["name"] for f in rv["features"] if f["derived"]] == ["te_flight", "te_route_airline", "route_supply"]
+        print(f"\nreference_values OK: {len(names)} features in model order; derived = te_flight, te_route_airline, route_supply")
+    except AssertionError as ex:
+        fails += 1
+        print(f"reference_values FAILED: {ex}")
+    rows = ENC.transform(add_basic(df.sample(20, random_state=7)))
+    big = ENC.transform(add_basic(df.sample(400, random_state=5)))
+    print(f"\n{'explain':14} {'status':8} {'ms/row':>7} {'max |sum-price|':>16}  detail")
+    for e in engines.list_engines():
+        key = e["key"]
+        if not e["available"]:
+            continue
+        try:
+            eng = engines.load_engine(key)
+            engines.explain(key, rows.iloc[[0]])  # warm-up (builds caches)
+            ts, errs = [], []
+            for i in range(len(rows)):
+                one = rows.iloc[[i]]
+                t = _t.perf_counter()
+                out = engines.explain(key, one)
+                ts.append(_t.perf_counter() - t)
+                steps = out["steps"]
+                assert out["method"] == ("shap" if key == "xgboost" else "sensitivity"), out["method"]
+                assert 1 <= len(steps) <= 13, len(steps)
+                vals = [out["base_price"], out["price"]] + [s["effect_inr"] for s in steps]
+                assert np.isfinite(vals).all(), "NaN/inf in explanation"
+                errs.append(abs(out["base_price"] + sum(s["effect_inr"] for s in steps) - out["price"]))
+                assert abs(out["price"] - float(np.exp(eng.predict(one)[0]))) < 0.02, "price differs from the engine's prediction"
+                known = [s["effect_inr"] for s in steps if s["feature"] != "other"]
+                assert known == sorted(known, key=abs, reverse=True) or key == "xgboost", "steps not ordered by |effect|"
+            assert max(errs) <= 1.0, f"steps do not add up (max error {max(errs):.2f} rupees)"
+            limit = 0.1 if key == "xgboost" else 0.5
+            assert float(np.median(ts)) <= limit, f"too slow: median {np.median(ts) * 1000:.0f} ms (limit {limit * 1000:.0f})"
+            a, b = big.copy(), big.copy()
+            a["days_left"], b["days_left"] = 30, 3
+            ratio = np.exp(eng.predict(a)).mean() / np.exp(eng.predict(b)).mean()
+            assert ratio < 1.05, f"booking 30 days ahead is {ratio:.2f}x the price of 3 days ahead (earlier should not cost more)"
+            print(f"{key:14} {'OK':8} {np.median(ts) * 1000:7.0f} {max(errs):16.2e}  method={out['method']}, 30d/3d price ratio {ratio:.2f}")
+        except Exception as ex:
+            fails += 1
+            print(f"{key:14} {'FAILED':8} {'':>7} {'':>16}  {type(ex).__name__}: {ex}")
+    return fails
+
+
 def main():
     bundle = joblib.load(ROOT / "models/fare_model.joblib")
     ENC = bundle["enc"]
@@ -83,6 +137,8 @@ def main():
         except Exception as ex:
             fails += 1
             print(f"{key:14} {'FAILED':8} {'':>7} {'':>8} {'':>10} {'':>8}  {type(ex).__name__}: {ex}")
+    # ---- explain() and reference_values()
+    fails += explain_checks(df, ENC)
     # cache bound check
     engines.clear_cache()
     for e in engines.list_engines():

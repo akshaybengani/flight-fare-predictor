@@ -1,6 +1,7 @@
 """Web app: demo UI (/) and configuration UI (/config) over the fare model."""
 import datetime as dt
 import json
+import re
 import math
 import os
 import joblib
@@ -31,6 +32,25 @@ CATALOG = (DF.groupby(["source", "destination", "class", "flight_code", "airline
                   dep_hour=("dep_hour", "median"), arr_hour=("arr_hour", "median"),
                   n=("price", "size"))
              .reset_index())
+_MANGLED = re.compile(r"^(\d)\.0+E-(\d+)$")
+
+
+def display_code(code):
+    """The one place that turns a stored flight code into the code a traveller reads.
+
+    The 2022 scrape has IndiGo codes damaged by a spreadsheet ('6.00E-152' for '6E-152'; 80 codes, 4,705 rows) and
+    one code with no recoverable number ('0.00E+00', 51 rows). Display repairs the first shape and returns None for
+    the second (the UI then says the number is not available). The stored `code` stays the unique key everywhere;
+    this is for display only."""
+    c = str(code or "").strip()
+    m = _MANGLED.match(c)
+    if m:
+        return f"{m.group(1)}E-{m.group(2)}"
+    if re.match(r"^\d+\.\d+E[+-]\d+$", c):
+        return None
+    return c or None
+
+
 def _accuracy():
     try:
         m = json.loads((ROOT / "models/metrics.json").read_text())
@@ -375,7 +395,14 @@ def search():
         f["defunct"] = defunct
         f["defunct_note"] = DEFUNCT.get(b["airline"]) if defunct else None
         add_drop_fields(f, days_left, b["_p0"], cfg)
+        f["display_code"] = display_code(b["code"])
         flights.append(f)
+    seen = {}
+    for f in flights:                                    # same displayed number, different stored flights: say which records each is from
+        seen.setdefault(f["display_code"], []).append(f)
+    for dc, group in seen.items():
+        for f in group:
+            f["period_hint"] = "from older 2022 records" if (dc and len(group) > 1 and f["code"] != dc) else None
     if not flights:
         return jsonify(error=f"No {cls} flights for {src} to {dst} from airlines that operate today. Switch on "
                              "\"Include airlines that no longer operate\" in Model & Insights to see historical data."), 404
@@ -631,6 +658,174 @@ def us_search_api():
     apply_us_drop_rule(res)
     res["mock"] = _US["mock"]
     return jsonify(finite_json(res))
+
+
+# ---------------------------------------------------------------- Price Lab (what-if) ----------------------------------
+import lab as _lab
+
+_LAB = {}
+
+
+def lab_spec():
+    """Description of the 18 inputs for the Price Lab: label, meaning, widget, limits and options (built once)."""
+    if "spec" in _LAB:
+        return _LAB["spec"]
+    cats = ENC.cats
+    opts = lambda vals: [{"value": v, "label": str(v)} for v in vals]
+    dists = [float(distance_km_pair(a, b)) for a in COORDS for b in COORDS if a != b]
+    top_supply = int(ENC.supply_map.max())
+    out = []
+    for key, label, hlp, widget, derived in _lab.SPECS:
+        sp = {"key": key, "label": label, "help": hlp, "derived": derived, "widget": widget}
+        if key in ("airline", "source", "destination", "class", "dep_bucket", "arr_bucket"):
+            sp.update(type="select", options=opts(cats[key]))
+        elif key == "dow":
+            sp.update(type="select", options=[{"value": i, "label": n} for i, n in enumerate(_lab.WEEKDAYS)])
+        elif key == "month":
+            sp.update(type="select", options=[{"value": i + 1, "label": n} for i, n in enumerate(_lab.MONTHS)])
+        elif key == "period":
+            sp.update(type="select", options=[{"value": 2022, "label": "2022 fare level"}, {"value": 2023, "label": "2023 fare level (latest)"}])
+        else:
+            rng = {"days_left": (1, MAX_DAYS, 1, True), "duration_h": (0.5, 50, 0.25, False), "stops": (0, 2, 1, True), "dep_hour": (0, 24, 0.25, False),
+                   "arr_hour": (0, 24, 0.25, False), "distance_km": (round(min(dists) * 0.9), round(max(dists) * 1.1), 10, False),
+                   "route_supply": (1, top_supply, 1, True), "flight_price_level_inr": (float(DF.price.min()), float(DF.price.max()), 50, False),
+                   "route_airline_price_level_inr": (float(DF.price.min()), float(DF.price.max()), 50, False)}[key]
+            sp.update(type="number", min=rng[0], max=rng[1], step=rng[2], integer=rng[3], nullable=key in ("dep_hour", "arr_hour"))
+        out.append(sp)
+    _LAB["spec"] = out
+    return out
+
+
+def distance_km_pair(a, b):
+    import features as _f
+    return float(_f.distance_km(pd.Series([a]), pd.Series([b])).iloc[0])
+
+
+def lab_reference():
+    """A typical flight in the data: most common route/airline/class/windows, median numbers, average typical prices."""
+    if "ref" in _LAB:
+        return _LAB["ref"]
+    mode = lambda c: DF[c].mode().iat[0]
+    route = DF.groupby(["source", "destination"]).size().idxmax()
+    g = DF[(DF.source == route[0]) & (DF.destination == route[1])]
+    ref = {"airline": g[~g.airline.isin(DEFUNCT)].airline.mode().iat[0], "source": route[0], "destination": route[1], "class": "Economy",
+           "dep_bucket": mode("dep_bucket"), "arr_bucket": mode("arr_bucket"), "stops": int(DF.stops.median()),
+           "duration_h": float(round(DF.duration_h.median(), 2)), "days_left": int(DF.days_left.median()), "dow": int(DF.dow.mode().iat[0]) if "dow" in DF else 3,
+           "month": int(DF.month.mode().iat[0]) if "month" in DF else 2, "period": 2023,
+           "dep_hour": float(round(DF.dep_hour.median(), 2)), "arr_hour": float(round(DF.arr_hour.median(), 2)),
+           "distance_km": round(distance_km_pair(*route), 1), "route_supply": int(ENC.supply_map.median()),
+           "flight_price_level_inr": float(round(math.exp(np.log(DF.price).mean()), 0)), "route_airline_price_level_inr": float(round(math.exp(np.log(DF.price).mean()), 0))}
+    _LAB["ref"] = ref
+    return ref
+
+
+def lab_frame(vals):
+    """One encoded row, built with the same encoder the search uses; typical-price, supply and distance are taken as given."""
+    row = {"source": vals["source"], "destination": vals["destination"], "class": vals["class"], "flight_code": "_lab", "airline": vals["airline"],
+           "stops": vals["stops"], "dep_bucket": vals["dep_bucket"], "arr_bucket": vals["arr_bucket"], "duration_h": vals["duration_h"],
+           "dep_hour": np.nan if vals["dep_hour"] is None else vals["dep_hour"], "arr_hour": np.nan if vals["arr_hour"] is None else vals["arr_hour"],
+           "days_left": vals["days_left"], "dow": vals["dow"], "month": vals["month"], "period": vals["period"]}
+    feats = ENC.transform(add_basic(pd.DataFrame([row])))
+    feats["distance_km"] = vals["distance_km"]
+    feats["te_flight"] = math.log(max(vals["flight_price_level_inr"], 1.0))
+    feats["te_route_airline"] = math.log(max(vals["route_airline_price_level_inr"], 1.0))
+    feats["route_supply"] = vals["route_supply"]
+    return feats[ENC.features].astype(float)
+
+
+@app.get("/lab")
+def lab_page():
+    return render_template("lab.html", page="lab", cities=CITIES, classes=CLASSES)
+
+
+@app.get("/how")
+def how_page():
+    return render_template("how.html", page="how")
+
+
+@app.get("/api/facts")
+def facts_api():
+    """Numbers the plain-English pages quote, read from the models/ files so they never drift from the rest of the app."""
+    alg = _load_json("algorithms.json") or {}
+    median = next((r for r in alg.get("results", []) if "median lookup" in r.get("algorithm", "").lower()), None)
+    per = {int(p): int(n) for p, n in DF.groupby("period").size().items()}
+    out = {"metrics": _load_json("metrics.json"), "importance": _load_json("importance.json"), "engines": engine_list(),
+           "median_lookup": median, "rows": {"total": int(len(DF)), "by_scrape": per, "routes": int((DF.source + DF.destination).nunique()), "cities": CITIES,
+                                            "airlines": int(DF.airline.nunique())},
+           "us": None}
+    mod = us_module()
+    if mod is not None:
+        try:
+            m = mod.us_meta(); out["us"] = {"routes": len(m["pairs"]), "columns": m["feature_columns_total"], "headline": m.get("headline_metrics"), "listed_as_of": m["listed_as_of"],
+                                            "counts": m.get("counts"), "families": [{"title": f["title"], "columns": f["columns"]} for f in m["feature_families"]]}
+        except Exception:
+            out["us"] = None
+    return jsonify(finite_json(out))
+
+
+@app.get("/api/lab/spec")
+def lab_spec_api():
+    return jsonify(finite_json({"inputs": lab_spec(), "reference": lab_reference(), "note": "Effects are the model's estimates for this one flight, not rules of the airline."}))
+
+
+@app.post("/api/whatif")
+def whatif_api():
+    """Predicted price for a full set of edited inputs, with a breakdown whose steps add up to price - base."""
+    q = request.get_json(force=True, silent=True)
+    if not isinstance(q, dict):
+        return jsonify(error="Send a JSON body with the input values."), 400
+    spec, ref = lab_spec(), lab_reference()
+    try:
+        vals, warns = _lab.sanitize(q.get("values"), spec, ref)
+        orig = _lab.sanitize(q["original"], spec, ref)[0] if q.get("original") else None
+    except _lab.BadValue as e:
+        return jsonify(error=str(e)), 400
+    key = q.get("engine") or load_config()["algorithm"]
+    engine, info = resolve_engine(key)
+    model = engine or MODEL
+    price_of = lambda df: np.exp(np.asarray(model.predict(df[ENC.features] if len(df.columns) != len(ENC.features) else df), dtype=float))
+    try:
+        frame = lab_frame(vals)
+        price = float(price_of(frame)[0])
+        method, base, eff = "sampled", None, None
+        if info["key"] == "xgboost":
+            try:
+                import xgboost as xgb, engines as _eng
+                X = frame[engine.features]
+                booster = engine.model.get_booster()
+                c = booster.predict(xgb.DMatrix(_eng._xgb_frame(X, engine.cat_sizes), enable_categorical=True), pred_contribs=True)[0]
+                base, per = _lab.shap_to_rupees(c[:-1], float(c[-1]))
+                base = price - float(np.sum(per))          # absorb float32 rounding so the steps add up exactly
+                eff = dict(zip(engine.features, [float(v) for v in per])); method = "shap"
+            except Exception:
+                method = "sampled"
+        if method == "sampled":
+            refrow = lab_frame(ref).iloc[0].to_dict(); xrow = frame.iloc[0].to_dict()
+            rows, plan, cols = _lab.sampled_shapley(None, refrow, xrow)
+            prices = price_of(pd.DataFrame(rows)[ENC.features])
+            base, price_s, eff = _lab.finish_shapley(prices, plan, cols)
+            price = float(price_s)
+        steps = []
+        inv = {v: k for k, v in _lab.TE.items()}
+        for sp in spec:
+            col = _lab.TE.get(sp["key"], sp["key"])
+            steps.append({"key": sp["key"], "label": sp["label"], "effect": round(float(eff[col]), 2)})
+        out = {"engine": {"key": info["key"], "label": info["label"], "fallback": info["fallback"]}, "method": method, "price": round(price, 2),
+               "base_price": round(float(base), 2), "steps": steps, "values": vals, "warnings": warns}
+        if orig is not None:
+            o_price = float(price_of(lab_frame(orig))[0]); out["original_price"] = round(o_price, 2); out["difference"] = round(price - o_price, 2)
+            changed = [sp["key"] for sp in spec if vals[sp["key"]] != orig[sp["key"]]]
+            moves = []
+            if changed:
+                fr = pd.concat([lab_frame({**orig, k: vals[k]}) for k in changed], ignore_index=True)
+                for k, p in zip(changed, price_of(fr)):
+                    moves.append({"key": k, "label": next(sp["label"] for sp in spec if sp["key"] == k), "from": orig[k], "to": vals[k], "delta": round(float(p) - o_price, 2)})
+            out["moves"] = moves
+            out["biggest"] = max(moves, key=lambda m: abs(m["delta"])) if moves else None
+        return jsonify(finite_json(out))
+    except Exception:
+        app.logger.exception("whatif failed")
+        return jsonify(error="The what-if calculation failed on the server. Try different values."), 500
 
 
 def _warm_default_engine():

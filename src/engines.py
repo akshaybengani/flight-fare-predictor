@@ -196,3 +196,175 @@ def load_engine(key=DEFAULT_ENGINE):
 def clear_cache():
     with _lock:
         _cache.clear()
+
+
+# ------------------------------------------------------------------------------------------------ explanations
+REF_PARQUET = ENGINE_DIR / "reference.parquet"
+REF_JSON = ENGINE_DIR / "reference_values.json"
+TOP_STEPS = 12
+_ref_cache = {}
+_base_cache = {}
+
+
+def reference_values():
+    """Per-feature facts for building editable input fields, in the order the model receives them (ENC.features).
+
+    Returns {"order_note", "target", "reference_sample", "features": [...]}. Each feature has name, order, label (plain English),
+    description (one sentence; reuses FEATURE_DOCS from src/app.py, read-only, at build time), type ("number" or "category"),
+    derived (True for te_flight, te_route_airline, route_supply: typical price levels and route supply computed from the
+    training data, not something a traveller types), and
+      category: categories (names; the model frame holds the position in this list as the code) and typical (most common)
+      number:   min, max (observed in training), typical (median), integer (True if whole numbers); te_* also carry
+                typical_price_inr / min_price_inr / max_price_inr because their raw unit is the natural log of a price.
+    Built by `python src/build_engines.py --build-reference`."""
+    if not REF_JSON.exists():
+        raise EngineUnavailable(f"{REF_JSON} not found. Build it with: python src/build_engines.py --build-reference")
+    with _lock:
+        if "values" not in _ref_cache:
+            _ref_cache["values"] = json.loads(REF_JSON.read_text())
+    return json.loads(json.dumps(_ref_cache["values"]))
+
+
+def _reference():
+    """(reference frame, {feature: median or mode code}, {feature: info}) from the fixed 2,000-row training sample."""
+    with _lock:
+        if "ref" not in _ref_cache:
+            if not REF_PARQUET.exists():
+                raise EngineUnavailable(f"{REF_PARQUET} not found. Build it with: python src/build_engines.py --build-reference")
+            ref = pd.read_parquet(REF_PARQUET)
+            info = {f["name"]: f for f in reference_values()["features"]}
+            fill = {}
+            for c in ref.columns:
+                fill[c] = float(ref[c].mode().iloc[0]) if info[c]["type"] == "category" else float(ref[c].median())
+            _ref_cache["ref"] = (ref, fill, info)
+        return _ref_cache["ref"]
+
+
+def _display(info, value):
+    if value is None or (isinstance(value, float) and not np.isfinite(value)):
+        return None
+    if info["type"] == "category":
+        i = int(value)
+        return info["categories"][i] if 0 <= i < len(info["categories"]) else None
+    return int(value) if info.get("integer") and float(value).is_integer() else round(float(value), 4)
+
+
+def _step(f, info, value, effect):
+    s = {"feature": f, "label": info["label"], "value": _display(info, value), "effect_inr": effect}
+    if f.startswith("te_") and s["value"] is not None:
+        s["value_display"] = f"about Rs {np.exp(float(value)):,.0f} usual fare"
+    return s
+
+
+def _finish(method, base, price, parts, info, X, extra=None):
+    """parts: [(feature or None, effect)] -> steps sorted by |effect|, top TOP_STEPS + 'all other features', rounded to
+    paise so that base_price + sum(effect_inr) == price to within 0.01 rupee."""
+    parts = sorted(parts, key=lambda p: -abs(p[1]))
+    top, rest = parts[:TOP_STEPS], parts[TOP_STEPS:]
+    steps = [_step(f, info[f], X[f].iloc[0], e) for f, e in top]
+    if rest:
+        steps.append({"feature": "other", "label": f"All {len(rest)} other features", "value": None, "effect_inr": sum(e for _, e in rest)})
+    base, price = round(float(base), 2), round(float(price), 2)
+    for s in steps:
+        s["effect_inr"] = round(float(s["effect_inr"]), 2)
+    resid = round(price - base - sum(s["effect_inr"] for s in steps), 2)
+    if steps and resid:  # rounding crumbs go to the smallest step
+        steps[-1]["effect_inr"] = round(steps[-1]["effect_inr"] + resid, 2)
+    out = {"method": method, "base_price": base, "price": price, "steps": steps}
+    out.update(extra or {})
+    return out
+
+
+def _reference_mean_price(eng):
+    with _lock:
+        if eng.key not in _base_cache:
+            ref = _reference()[0]
+            _base_cache[eng.key] = float(np.exp(eng.predict(ref)).mean())
+        return _base_cache[eng.key]
+
+
+_pool = None
+
+
+def _shap_chunked(eng, booster, dm, n_it):
+    """Exact TreeSHAP for one row, ~4x faster: contributions are additive over trees, so the trees are split into chunks
+    scored in parallel threads on sliced copies of the booster (xgboost releases the GIL); the bias column carries a constant per call, measured once
+    against a single full call and subtracted."""
+    global _pool
+    from concurrent.futures import ThreadPoolExecutor
+    k = max(1, min(4, (__import__("os").cpu_count() or 2) // 2))
+    if k == 1:
+        return booster.predict(dm, pred_contribs=True, iteration_range=(0, n_it))[0]
+    if _pool is None:
+        _pool = ThreadPoolExecutor(k)
+    if not hasattr(eng, "_shap_slices"):  # sliced copies of the booster (contributions only support a range starting at tree 0)
+        edges = np.linspace(0, n_it, k + 1).astype(int)
+        eng._shap_slices = [booster[int(x):int(y)] for x, y in zip(edges[:-1], edges[1:])]
+    parts = list(_pool.map(lambda bs: bs.predict(dm, pred_contribs=True)[0], eng._shap_slices))
+    out = np.sum(parts, axis=0)
+    if not hasattr(eng, "_bias_fix"):  # one-time calibration of the per-call constant
+        full = booster.predict(dm, pred_contribs=True, iteration_range=(0, n_it))[0]
+        eng._bias_fix = float(full[-1] - out[-1])
+        assert np.allclose(full[:-1], out[:-1], atol=1e-4), "chunked SHAP disagrees with the full call"
+    out = out.copy()
+    out[-1] += eng._bias_fix
+    return out
+
+
+def explain(engine_key, feats):
+    """Explain one prediction in rupees. `feats` = one-row DataFrame in the format the app feeds to engines (ENC.features columns).
+
+    Returns {"method": "shap" | "sensitivity", "base_price", "price", "steps": [{feature, label, value, effect_inr[, value_display]}], ...};
+    steps are ordered by absolute effect, truncated to the top 12 plus an "all other features" step, and
+    base_price + sum(effect_inr) == price (to within 0.01 rupee).
+
+    XGBoost -> method "shap": exact tree contributions (Booster.predict(pred_contribs=True)) in log-price space. They are
+      converted to rupees by a multiplicative walk starting at exp(bias), features taken in order of |log contribution|:
+      effect_k = exp(bias + c_1..c_k) - exp(bias + c_1..c_(k-1)). base_price is exp(bias), the model's baseline price (about the
+      typical training fare; geometric rather than arithmetic mean); the engine's arithmetic mean over the reference sample is
+      returned separately as "reference_mean_price". Exact for this model: sum of contributions + bias = the model's log price.
+    Every other engine -> method "sensitivity" (a what-if, not exact attribution, and it ignores interactions): for each feature,
+      replace its value by the median (numbers) or mode (categories) of the fixed 2,000-row reference sample of training rows,
+      re-predict, and take price - price_without_that_feature as its effect. The raw effects rarely add up to price - base_price
+      (base_price = the engine's mean predicted price over the reference sample), so the gap is spread over the features in
+      proportion to |effect| (identical to rescaling when all effects agree in sign). Cheap: one batched predict of 19 rows.
+    Categories are handled in each engine's own frame conversion because we always go through Engine.predict()."""
+    eng = load_engine(engine_key)
+    ref, fill, info = _reference()
+    if not isinstance(feats, pd.DataFrame) or len(feats) < 1:
+        raise ValueError("feats must be a one-row DataFrame with the model's feature columns")
+    X = feats[eng.features].iloc[[0]].reset_index(drop=True)
+    if eng.kind == "xgboost":
+        import xgboost as xgb
+        booster = eng.model.get_booster()
+        bi = getattr(eng.model, "best_iteration", None)
+        kw = {"iteration_range": (0, int(bi) + 1)} if bi is not None else {}
+        dm = xgb.DMatrix(_xgb_frame(X, eng.cat_sizes), enable_categorical=True)
+        n_it = int(bi) + 1 if bi is not None else int(booster.num_boosted_rounds())
+        contrib = _shap_chunked(eng, booster, dm, n_it)
+        bias, c = float(contrib[-1]), contrib[:-1]
+        order = np.argsort(-np.abs(c))
+        parts, cum, prev = [], bias, float(np.exp(bias))
+        for i in order:
+            cum += float(c[i])
+            cur = float(np.exp(cum))
+            parts.append((eng.features[i], cur - prev))
+            prev = cur
+        price = float(np.exp(eng.predict(X)[0]))  # the engine's own price; any float32 crumb (about 1 rupee) is absorbed by the smallest step
+        return _finish("shap", np.exp(bias), price, parts, info, X, {"reference_mean_price": round(_reference_mean_price(eng), 2),
+                                                                   "unit_note": "effects are in rupees, applied one after another (multiplicative walk), not independent"})
+    rows = [X.iloc[0].copy()]
+    for f in eng.features:
+        r = X.iloc[0].copy()
+        r[f] = fill[f]
+        rows.append(r)
+    batch = pd.DataFrame(rows, columns=eng.features).reset_index(drop=True)
+    for c in batch.columns:
+        batch[c] = batch[c].astype(X[c].dtype) if X[c].dtype.kind in "iuf" and not batch[c].isna().any() else batch[c]
+    prices = np.exp(eng.predict(batch))
+    price, raw = float(prices[0]), prices[0] - prices[1:]
+    base = _reference_mean_price(eng)
+    gap = (price - base) - float(raw.sum())
+    w = np.abs(raw)
+    adj = raw + gap * (w / w.sum() if w.sum() > 0 else np.full(len(raw), 1.0 / len(raw)))
+    return _finish("sensitivity", base, price, list(zip(eng.features, map(float, adj))), info, X)

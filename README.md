@@ -28,7 +28,7 @@ A proof of concept that predicts Indian domestic airfares and compares them with
 
 ## Demo
 
-Two pages, served by Flask on `http://localhost:5055`.
+Pages served by Flask on `http://localhost:5055`: **Search** (`/`), **Price Lab** (`/lab`: change an input and watch the price move), **How it works** (`/how`: a plain-English tour) and **Model & Insights** (`/config`: start with the "Start here" tab).
 
 **`/` Demo**
 - Search by origin, destination, travel date and cabin class.
@@ -185,6 +185,7 @@ scripts/download_data.sh
 | Endpoint | Purpose |
 |---|---|
 | `POST /api/search` | `{source, destination, date, class}` returns flights with listed price, predicted price, curve and the model inputs, plus: `p0` (the model's own price for today); the "may drop" fields `may_drop` (bool), `drop_pct` (fall of the expected low below the listed price, or 0), `drop_best_days_left`, `drop_price` (the expected low), `drop_pair_days_left` (the two checkpoints that hold it), `big_save` (bool) and `save_inr`; and the figure the card shows: `card_price`, `card_kind` (`low` for a tagged flight, else `horizon`), `card_days_left`, `card_change_pct`. **Rule (same for both markets, `src/drop_logic.py`):** only checkpoints after today count; the expected low is the lowest level held at two adjacent checkpoints (a one-point dip cannot trigger it); a flight may drop only when that low is at least `flag_threshold_pct` below both the listed price and `p0`. A tagged card always shows a fall. A model estimate, not a promise |
+| `POST /api/whatif`, `GET /api/lab/spec`, `GET /api/facts` | Price Lab: what-if prediction with a per-input breakdown that adds up to the price (XGBoost: exact SHAP; other engines: sampled Shapley); the 18 input descriptions; and the numbers the plain-English pages quote |
 | `GET /api/engines`, `POST /api/config {algorithm}` | India prediction engines: the manifest, which one is active and which can load on this server (a missing file or package is listed as unavailable with the reason). Switching saves `algorithm` in `config.json` and warm-loads the engine; the search response reports `engine`. The US market is not affected |
 | `GET /api/us/meta`, `POST /api/us/search` | United States market (needs the US model files; otherwise `503` with `{available: false}`). Search takes `{source, destination, date}` (airport codes, `YYYY-MM-DD`) and returns flights with USD prices, the same may-drop, big-save and card fields (`save_usd`, recomputed in `src/app.py` with the shared rule), a `curve` and `inputs` grouped by feature family |
 | `GET/POST /api/config` | read or save demo settings (`{"reset": true}` restores defaults) |

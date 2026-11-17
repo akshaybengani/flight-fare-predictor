@@ -292,6 +292,60 @@ def assemble():
         "engines": engines_out}, indent=2))
 
 
+LABELS = {"airline": "Airline", "source": "From", "destination": "To", "class": "Cabin class",
+          "dep_bucket": "Departure time of day", "arr_bucket": "Arrival time of day", "stops": "Stops",
+          "duration_h": "Journey time (hours)", "days_left": "Days before departure", "dow": "Weekday of travel",
+          "month": "Month of travel", "period": "Data period (which scrape)", "dep_hour": "Departure hour", "arr_hour": "Arrival hour",
+          "distance_km": "Distance (km)", "te_flight": "Usual price level of this flight",
+          "te_route_airline": "Usual price level of this airline on this route", "route_supply": "Flights on this route (competition)"}
+DERIVED = {"te_flight": "computed from the training data: the usual (log) price of this flight code and class, so changing it moves the price level directly",
+           "te_route_airline": "computed from the training data: the usual (log) price of this airline on this route and class",
+           "route_supply": "computed from the training data: number of distinct flights on this route and class (a competition proxy)"}
+
+
+def build_reference():
+    """Fixed 2,000-row reference sample + per-feature facts for explain() / reference_values(); written next to the engines."""
+    import ast
+    df = cm.load_df("baseline18", False)
+    ENC = joblib.load(ROOT / "models/fare_model.joblib")["enc"]
+    X = ENC.transform(add_basic(df))
+    ref = ENC.transform(add_basic(df.sample(2000, random_state=0)))
+    ref.to_parquet(OUT / "reference.parquet")
+    docs = {}
+    try:  # read-only: reuse the one-line descriptions the app already shows
+        tree = ast.parse((ROOT / "src/app.py").read_text())
+        for n in tree.body:
+            if isinstance(n, ast.Assign) and any(getattr(t, "id", "") == "FEATURE_DOCS" for t in n.targets):
+                docs = ast.literal_eval(n.value)
+    except Exception:
+        pass
+    feats = []
+    for i, f in enumerate(ENC.features):
+        kind, doc = docs.get(f, ("", ""))
+        e = {"name": f, "order": i, "label": LABELS.get(f, f), "description": doc, "derived": f in DERIVED}
+        if f in DERIVED:
+            e["derived_note"] = DERIVED[f]
+        if f in CATS:
+            vc = df[f].value_counts()
+            e.update(type="category", categories=[str(c) for c in ENC.cats[f]], typical=str(vc.index[0]))
+        else:
+            col = X[f].astype(float)
+            e.update(type="number", min=float(col.min()), max=float(col.max()), typical=float(col.median()),
+                     integer=bool(np.all(np.nan_to_num(col.values) == np.round(np.nan_to_num(col.values)))))
+            if f.startswith("te_"):
+                e.update(unit="natural log of the price in rupees", typical_price_inr=round(float(np.exp(col.median()))),
+                         min_price_inr=round(float(np.exp(col.min()))), max_price_inr=round(float(np.exp(col.max()))))
+            if f in ("dep_hour", "arr_hour"):
+                e["note"] = "exact time is only known for the 2023 scrape; may be empty"
+        feats.append(e)
+    (OUT / "reference_values.json").write_text(json.dumps({
+        "order_note": "features are listed in the order the model receives them (ENC.features). Categories are given as names; the engines' frame holds the position in this list as the code.",
+        "target": "natural log of the price in rupees (predictions are exp(...) of the model output)",
+        "reference_sample": {"file": "models/engines/reference.parquet", "rows": len(ref), "seed": 0},
+        "features": feats}, indent=2))
+    log(f"reference written: {len(ref)} rows, {len(feats)} features")
+
+
 def december_check():
     """Mean fare of every engine for two December searches (outside the Jan-Apr training months); flags engines >25% from the median engine."""
     df = cm.load_df("baseline18", False)
@@ -347,12 +401,15 @@ def patch_clip():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--patch-clip", action="store_true")
+    ap.add_argument("--build-reference", action="store_true")
     ap.add_argument("--december-check", action="store_true")
     ap.add_argument("--only", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--assemble-only", action="store_true")
     a = ap.parse_args()
     keys = [k for k in a.only.split(",") if k] or KEYS
+    if a.build_reference:
+        build_reference(); log("DONE"); return
     if a.patch_clip:
         patch_clip(); assemble(); log("DONE"); return
     if a.december_check:

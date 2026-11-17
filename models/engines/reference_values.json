@@ -1,0 +1,268 @@
+{
+  "order_note": "features are listed in the order the model receives them (ENC.features). Categories are given as names; the engines' frame holds the position in this list as the code.",
+  "target": "natural log of the price in rupees (predictions are exp(...) of the model output)",
+  "reference_sample": {
+    "file": "models/engines/reference.parquet",
+    "rows": 2000,
+    "seed": 0
+  },
+  "features": [
+    {
+      "name": "airline",
+      "order": 0,
+      "label": "Airline",
+      "description": "Operating airline",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "Air India",
+        "AirAsia",
+        "Akasa Air",
+        "Alliance Air",
+        "GO FIRST",
+        "IndiGo",
+        "SpiceJet",
+        "Star Air",
+        "Vistara"
+      ],
+      "typical": "Vistara"
+    },
+    {
+      "name": "source",
+      "order": 1,
+      "label": "From",
+      "description": "Origin city",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "Ahmedabad",
+        "Bangalore",
+        "Chennai",
+        "Delhi",
+        "Hyderabad",
+        "Kolkata",
+        "Mumbai"
+      ],
+      "typical": "Delhi"
+    },
+    {
+      "name": "destination",
+      "order": 2,
+      "label": "To",
+      "description": "Destination city",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "Ahmedabad",
+        "Bangalore",
+        "Chennai",
+        "Delhi",
+        "Hyderabad",
+        "Kolkata",
+        "Mumbai"
+      ],
+      "typical": "Mumbai"
+    },
+    {
+      "name": "class",
+      "order": 3,
+      "label": "Cabin class",
+      "description": "Cabin: Economy, Premium Economy or Business",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "Business",
+        "Economy",
+        "Premium Economy"
+      ],
+      "typical": "Economy"
+    },
+    {
+      "name": "dep_bucket",
+      "order": 4,
+      "label": "Departure time of day",
+      "description": "Departure time of day (4 buckets)",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "12 PM - 6 PM",
+        "6 AM - 12 PM",
+        "After 6 PM",
+        "Before 6 AM"
+      ],
+      "typical": "6 AM - 12 PM"
+    },
+    {
+      "name": "arr_bucket",
+      "order": 5,
+      "label": "Arrival time of day",
+      "description": "Arrival time of day (4 buckets)",
+      "derived": false,
+      "type": "category",
+      "categories": [
+        "12 PM - 6 PM",
+        "6 AM - 12 PM",
+        "After 6 PM",
+        "Before 6 AM"
+      ],
+      "typical": "After 6 PM"
+    },
+    {
+      "name": "stops",
+      "order": 6,
+      "label": "Stops",
+      "description": "0, 1 or 2+ stops",
+      "derived": false,
+      "type": "number",
+      "min": 0.0,
+      "max": 2.0,
+      "typical": 1.0,
+      "integer": true
+    },
+    {
+      "name": "duration_h",
+      "order": 7,
+      "label": "Journey time (hours)",
+      "description": "Total journey time in hours",
+      "derived": false,
+      "type": "number",
+      "min": 0.75,
+      "max": 49.83,
+      "typical": 11.25,
+      "integer": false
+    },
+    {
+      "name": "days_left",
+      "order": 8,
+      "label": "Days before departure",
+      "description": "Days between booking and departure (1 to 50 in the data)",
+      "derived": false,
+      "type": "number",
+      "min": 1.0,
+      "max": 50.0,
+      "typical": 26.0,
+      "integer": true
+    },
+    {
+      "name": "dow",
+      "order": 9,
+      "label": "Weekday of travel",
+      "description": "Weekday of travel (0 = Monday)",
+      "derived": false,
+      "type": "number",
+      "min": 0.0,
+      "max": 6.0,
+      "typical": 3.0,
+      "integer": true
+    },
+    {
+      "name": "month",
+      "order": 10,
+      "label": "Month of travel",
+      "description": "Month of travel",
+      "derived": false,
+      "type": "number",
+      "min": 1.0,
+      "max": 4.0,
+      "typical": 2.0,
+      "integer": true
+    },
+    {
+      "name": "period",
+      "order": 11,
+      "label": "Data period (which scrape)",
+      "description": "Which scrape the price level comes from (2022 or 2023)",
+      "derived": false,
+      "type": "number",
+      "min": 2022.0,
+      "max": 2023.0,
+      "typical": 2023.0,
+      "integer": true
+    },
+    {
+      "name": "dep_hour",
+      "order": 12,
+      "label": "Departure hour",
+      "description": "Exact departure hour (2023 scrape only; empty for 2022)",
+      "derived": false,
+      "type": "number",
+      "min": 0.08333333333333333,
+      "max": 23.916666666666668,
+      "typical": 13.0,
+      "integer": false,
+      "note": "exact time is only known for the 2023 scrape; may be empty"
+    },
+    {
+      "name": "arr_hour",
+      "order": 13,
+      "label": "Arrival hour",
+      "description": "Exact arrival hour (2023 scrape only; empty for 2022)",
+      "derived": false,
+      "type": "number",
+      "min": 0.0,
+      "max": 23.983333333333334,
+      "typical": 16.833333333333332,
+      "integer": false,
+      "note": "exact time is only known for the 2023 scrape; may be empty"
+    },
+    {
+      "name": "distance_km",
+      "order": 14,
+      "label": "Distance (km)",
+      "description": "Great-circle distance between the two cities",
+      "derived": false,
+      "type": "number",
+      "min": 290.59148130312565,
+      "max": 1755.6357168750685,
+      "typical": 1180.8079612002537,
+      "integer": false
+    },
+    {
+      "name": "te_flight",
+      "order": 15,
+      "label": "Usual price level of this flight",
+      "description": "Typical log price of this flight code and class, computed out-of-fold",
+      "derived": true,
+      "derived_note": "computed from the training data: the usual (log) price of this flight code and class, so changing it moves the price level directly",
+      "type": "number",
+      "min": 7.007600613951853,
+      "max": 11.085092906766757,
+      "typical": 9.188116136875987,
+      "integer": false,
+      "unit": "natural log of the price in rupees",
+      "typical_price_inr": 9780,
+      "min_price_inr": 1105,
+      "max_price_inr": 65192
+    },
+    {
+      "name": "te_route_airline",
+      "order": 16,
+      "label": "Usual price level of this airline on this route",
+      "description": "Typical log price of this airline on this route and class, computed out-of-fold",
+      "derived": true,
+      "derived_note": "computed from the training data: the usual (log) price of this airline on this route and class",
+      "type": "number",
+      "min": 7.222692410619472,
+      "max": 11.036753134236701,
+      "typical": 9.165452090744953,
+      "integer": false,
+      "unit": "natural log of the price in rupees",
+      "typical_price_inr": 9561,
+      "min_price_inr": 1370,
+      "max_price_inr": 62116
+    },
+    {
+      "name": "route_supply",
+      "order": 17,
+      "label": "Flights on this route (competition)",
+      "description": "Number of distinct flights on the route and class (competition proxy)",
+      "derived": true,
+      "derived_note": "computed from the training data: number of distinct flights on this route and class (a competition proxy)",
+      "type": "number",
+      "min": 6.0,
+      "max": 343.0,
+      "typical": 114.0,
+      "integer": true
+    }
+  ]
+}

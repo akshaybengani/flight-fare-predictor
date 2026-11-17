@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}FareSight · How it works{% endblock %}
+{% block content %}
+<div class="wrap how">
+  <div class="page-head">
+    <div class="eyebrow">How it works</div>
+    <h1>FareSight, explained from the start.</h1>
+    <p class="lede">No maths needed. Each part is short, and the numbers on this page come from the same files the app uses.</p>
+    <nav class="toc" aria-label="On this page">
+      <a href="#what">What it does</a><a href="#where">Where everything is</a><a href="#data">The data</a><a href="#inputs">What the model looks at</a><a href="#fuel">Fuel</a><a href="#learn">How it learns</a>
+      <a href="#score">The accuracy score</a><a href="#algos">The algorithms</a><a href="#approve">What is Approve?</a><a href="#faq">Client questions</a>
+    </nav>
+  </div>
+
+  <section class="block" id="what"><h2>What FareSight does</h2>
+    <p class="lede2">FareSight shows the fare listed for a flight next to the fare a computer model expects. It also flags flights where the model expects the price to settle lower later.</p>
+    <svg class="diagram" viewBox="0 0 560 110" role="img" aria-label="Facts about a flight go into the model, which gives a price">
+      <rect class="bx" x="6" y="22" width="150" height="66" rx="3"/><text x="81" y="50" text-anchor="middle">18 facts about</text><text x="81" y="68" text-anchor="middle">one flight</text>
+      <path class="ln" d="M156 55 H214 m-8 -6 l8 6 l-8 6"/>
+      <rect class="bx" x="214" y="22" width="130" height="66" rx="3"/><text x="279" y="50" text-anchor="middle">The model</text><text x="279" y="68" text-anchor="middle" class="mut">(a trained formula)</text>
+      <path class="ln" d="M344 55 H402 m-8 -6 l8 6 l-8 6"/>
+      <rect class="bx" x="402" y="22" width="150" height="66" rx="3"/><text x="477" y="50" text-anchor="middle">A price in rupees</text><text x="477" y="68" text-anchor="middle" class="mut">FareSight</text>
+    </svg>
+    <p class="muted">The prices are estimates from past data. They are not live prices and not advice to book.</p>
+  </section>
+
+  <section class="block" id="where"><h2>Where everything is</h2>
+    <p class="subtitle">This table shows the folders and files on this computer, and the online copy of the code.</p>
+    <div class="tablewrap"><table class="ed"><tr><th>What</th><th>Where</th><th>What it is</th></tr>
+      <tr><td><b>The whole project</b></td><td><code class="path">/Users/akshay.bengani/Work/flight-poc</code></td><td>The folder that holds everything below.</td></tr>
+      <tr><td><b>Online copy of the code</b></td><td><a href="https://github.com/akshaybengani/flight-fare-predictor" rel="noopener noreferrer" target="_blank">github.com/akshaybengani/flight-fare-predictor</a></td><td>A private GitHub repository. Only people given access can open it.</td></tr>
+      <tr><td><b>The web app</b></td><td><code class="path">src/app.py</code>, <code class="path">templates/</code>, <code class="path">static/</code></td><td>The server (app.py) and the pages you see (templates) with their styles and fonts (static).</td></tr>
+      <tr><td><b>How the model is built</b></td><td><code class="path">src/features.py</code>, <code class="path">src/train.py</code></td><td>features.py turns a flight into numbers. train.py teaches the first model.</td></tr>
+      <tr><td><b>The switchable engines</b></td><td><code class="path">src/engines.py</code></td><td>Loads whichever algorithm is chosen on Model &amp; Insights.</td></tr>
+      <tr><td><b>The tag rules</b></td><td><code class="path">src/drop_logic.py</code></td><td>Decides which flights get May drop and Big save.</td></tr>
+      <tr><td><b>The data</b></td><td><code class="path">data/</code></td><td>The downloaded fare files. <code class="path">data/merged.parquet</code> is the cleaned India data the model learns from. This folder is not in GitHub because it is large.</td></tr>
+      <tr><td><b>The trained models</b></td><td><code class="path">models/</code></td><td><code class="path">models/fare_model.joblib</code> is the first model. <code class="path">models/engines/</code> holds the other engines and a list (<code class="path">manifest.json</code>). The scores are in <code class="path">metrics.json</code> and <code class="path">algorithms.json</code>.</td></tr>
+      <tr><td><b>Reports</b></td><td><code class="path">docs/</code></td><td>Written reports on the data, the experiments and the engines.</td></tr>
+      <tr><td><b>Your settings</b></td><td><code class="path">config.json</code></td><td>Saved when you change Settings. Created on first save.</td></tr>
+    </table></div>
+    <p class="muted small">To run it: open a terminal in the project folder, then <code>cd src</code> and <code>../.venv/bin/python app.py</code>. The app opens at http://localhost:5055.</p>
+  </section>
+
+  <section class="block" id="data"><h2>Where the data came from</h2>
+    <p class="subtitle">This table shows each data source, who made it, the years it covers and how it is used.</p>
+    <div class="tablewrap"><table class="ed"><tr><th>Source</th><th>What it is</th><th>Years</th><th>Used for</th></tr>
+      <tr><td><b>Airfare ML</b> (EaseMyTrip scrape on Kaggle, by yashdharme36)</td><td>Fares for Indian domestic flights, copied from the EaseMyTrip booking site.</td><td>Jan to Mar 2023</td><td>India model (<span id="r2023">about 445,000</span> rows)</td></tr>
+      <tr><td><b>Airlines Flights Data</b> (EaseMyTrip scrape on Kaggle, by rohitgrewal)</td><td>The same kind of fares, collected a year earlier.</td><td>Feb to Apr 2022</td><td>India model (<span id="r2022">about 300,000</span> rows)</td></tr>
+      <tr><td><b>US Airfare Time Machine</b> (Kaggle)</td><td>Daily fare quotes for US routes, 38.6 million in all.</td><td>Mar to Sep 2026 searches</td><td>US model</td></tr>
+      <tr><td><b>Open-Meteo</b></td><td>Weather history for airports. The free service is for non-commercial use.</td><td>2016 to 2025 averages</td><td>US model (weather columns)</td></tr>
+      <tr><td><b>FRED / US EIA</b></td><td>Public jet fuel and oil prices.</td><td>2026</td><td>US model (fuel columns)</td></tr>
+      <tr><td><b>python-holidays</b></td><td>A free list of public holidays.</td><td>All</td><td>US model (holiday columns)</td></tr>
+    </table></div>
+    <h3>Is it real or made up?</h3>
+    <p><b>The fares are real, but they are old and they are not live.</b> They were copied from public booking sites by other people and shared on Kaggle. They are not an airline's own feed. We did not make up or fill in any fare ourselves.</p>
+    <ul class="plain"><li>We downloaded a few other sets that looked artificial (one for Bangladesh and one linking oil and fares). We judged them synthetic and did not use them.</li>
+      <li>Because the India data is from 2022 and 2023, it still lists airlines that have stopped flying (GO FIRST, Vistara, AirAsia India). They are hidden by default.</li>
+      <li>Each India flight's price was recorded once per collection day. The model never saw one flight's price change over time.</li></ul>
+  </section>
+
+  <section class="block" id="inputs"><h2>What the model looks at</h2>
+    <p class="subtitle">This table lists the 18 facts the India model is given for every flight, and how much each one matters.</p>
+    <div class="tablewrap"><table class="ed" id="inTbl"><tr><th>Input</th><th>In plain words</th><th class="num">How much it matters</th></tr></table></div>
+    <p id="impNote" class="muted"></p>
+    <p class="muted small">"How much it matters" is found by scrambling one input and measuring how many accuracy points are lost. A bigger number means the model leans on that input more. It was measured on the first model.</p>
+    <p>Try it yourself on the <a href="/lab">Price Lab</a> page: change the typical price of a flight and watch the whole prediction move.</p>
+  </section>
+
+  <section class="block" id="fuel"><h2>Does fuel price matter?</h2>
+    <p class="subtitle">A short, honest answer.</p>
+    <ul class="plain">
+      <li><b>In the India model: no, it is not used.</b> We tested fuel and exchange-rate columns. They added nothing we could measure. The India data are single-day snapshots, so fuel cannot be told apart from everything else that changed between 2022 and 2023.</li>
+      <li><b>In the US model: yes, it is included, but its effect is tiny.</b> Taking fuel out changes accuracy by about 0.2 points at most, and we cannot say it is cause and effect.</li>
+      <li><b>In the real world: it matters.</b> Fuel is roughly a third of an airline's costs. It reaches fares with a delay, as higher base fares or fuel surcharges.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="learn"><h2>How the model learns</h2>
+    <p class="subtitle">Five steps, in plain words.</p>
+    <ol class="steps5">
+      <li><b>Collect.</b> Take hundreds of thousands of real flights, each with its facts and its price.</li>
+      <li><b>Hide some.</b> Keep a share of the flights back. The model never sees them while learning.</li>
+      <li><b>Learn rules.</b> The model builds many small "if this, then that" questions, like: is the typical price of this flight above ₹8,000? Is it 3 days before departure?</li>
+      <li><b>Fix mistakes.</b> Each new set of questions is built to correct the errors the earlier ones still make. This repeats thousands of times.</li>
+      <li><b>Test on the hidden flights.</b> Compare its prices with the real ones. That gives the accuracy score.</li>
+    </ol>
+    <svg class="diagram" viewBox="0 0 560 190" role="img" aria-label="A small decision tree, and many trees voting on one price">
+      <text x="10" y="16" class="mut">One small tree</text>
+      <rect class="bx" x="95" y="24" width="150" height="30" rx="3"/><text x="170" y="44" text-anchor="middle">Typical price over ₹8,000?</text>
+      <path class="ln" d="M130 54 L70 86 M210 54 L270 86"/><text x="78" y="76" class="mut">no</text><text x="248" y="76" class="mut">yes</text>
+      <rect class="bx" x="10" y="86" width="120" height="30" rx="3"/><text x="70" y="106" text-anchor="middle">Under 10 days left?</text>
+      <rect class="bx" x="210" y="86" width="120" height="30" rx="3"/><text x="270" y="106" text-anchor="middle">Business class?</text>
+      <path class="ln" d="M40 116 L20 146 M100 116 L120 146 M240 116 L220 146 M300 116 L320 146"/>
+      <rect class="lf" x="0" y="146" width="44" height="26" rx="3"/><text x="22" y="163" text-anchor="middle">₹4k</text>
+      <rect class="lf" x="98" y="146" width="44" height="26" rx="3"/><text x="120" y="163" text-anchor="middle">₹3k</text>
+      <rect class="lf" x="198" y="146" width="44" height="26" rx="3"/><text x="220" y="163" text-anchor="middle">₹9k</text>
+      <rect class="lf" x="298" y="146" width="44" height="26" rx="3"/><text x="320" y="163" text-anchor="middle">₹30k</text>
+      <text x="380" y="16" class="mut">Thousands of trees</text>
+      <g><rect class="lf" x="380" y="30" width="46" height="26" rx="3"/><text x="403" y="47" text-anchor="middle">₹5.1k</text><rect class="lf" x="432" y="30" width="46" height="26" rx="3"/><text x="455" y="47" text-anchor="middle">₹4.8k</text><rect class="lf" x="484" y="30" width="46" height="26" rx="3"/><text x="507" y="47" text-anchor="middle">₹5.3k</text></g>
+      <path class="ln" d="M455 62 V92 m-6 -8 l6 8 l6 -8"/>
+      <rect class="bx" x="395" y="96" width="120" height="36" rx="3"/><text x="455" y="112" text-anchor="middle">Add up / average</text><text x="455" y="126" text-anchor="middle" class="mut">their answers</text>
+      <path class="ln" d="M455 132 V150 m-6 -8 l6 8 l6 -8"/><text x="455" y="170" text-anchor="middle">One predicted price</text>
+    </svg>
+  </section>
+
+  <section class="block" id="score"><h2>The accuracy score, step by step</h2>
+    <p class="subtitle">Try it with two numbers. The first box is what a flight really cost. The second is what the model said.</p>
+    <div class="calc" id="calc">
+      <div class="row2"><div><label for="cA">Actual price (₹)</label><input type="number" id="cA" value="2000" min="1" step="1"></div><div><label for="cP">Predicted price (₹)</label><input type="number" id="cP" value="2050" min="0" step="1"></div></div>
+      <div class="out" aria-live="polite">
+        <div>The difference is <b id="cD">₹50</b>.</div>
+        <div>As a share of the real price that is <b id="cPct">2.5%</b> (the percentage miss).</div>
+        <div>This flight's score is 100 − 2.5 = <b id="cS">97.5</b>.</div>
+        <div>Within 10%? <b id="cW">yes</b>.</div>
+      </div>
+    </div>
+    <p>The overall score is this flight score <b>averaged over thousands of flights the model has not seen</b>. A few big misses pull the average down.</p>
+    <p><b>Why are there three scores?</b> They are three different tests, from easy to hard.</p>
+    <ul class="plain" id="scoreList"></ul>
+    <div class="note"><b>93% does not mean 93 of 100 flights are right.</b> It means the average miss is about 7%. Only about <span id="w10">78</span> of 100 flights land within 10% of the real price.</div>
+  </section>
+
+  <section class="block" id="algos"><h2>The algorithms</h2>
+    <p class="subtitle">Each card is one way of turning the 18 facts into a price. The scores are the same three tests as above (same period / small recent sample / unseen period).</p>
+    <div class="cards" id="cards"></div>
+    <h3>Why XGBoost is the default, and why HistGradientBoosting came first</h3>
+    <p>HistGradientBoosting was the first model because it comes ready-made inside scikit-learn, a common Python toolkit. XGBoost is the same family of method. On our tests it is ahead by a few tenths of a point in two of the three, so we switched to it. HistGradientBoosting stays as the back-up: if XGBoost cannot load on a computer, FareSight uses it and says so.</p>
+  </section>
+
+  <section class="block" id="approve"><h2>What is Approve?</h2>
+    <p>The original idea was a review step. A pricing manager looks at the model's price for a flight and approves it to replace the listed price.</p>
+    <p><b>In this demo, Approve only marks flights on your screen as a shortlist.</b> Nothing is booked, saved on a server or sent anywhere. The shortlist is forgotten when you close the browser tab.</p>
+  </section>
+
+  <section class="block" id="faq"><h2>Questions a client may ask</h2>
+    <dl class="faq">
+      <dt>Are these live prices?</dt><dd>No. India uses fares collected in 2022 and 2023. The US set is a snapshot from 30 September 2026. Nothing here is connected to a booking site.</dd>
+      <dt>How accurate is it?</dt><dd id="faqAcc">On flights from a period it has seen, about 93% accurate. On a period it has never seen, about 68%.</dd>
+      <dt>Which cities does it cover?</dt><dd id="faqCities">Seven Indian cities. The US market has 50 routes between major airports.</dd>
+      <dt>Does it use festivals, weather or fuel?</dt><dd>The India model does not. We tried them and they did not help. The US model includes holidays, weather averages and fuel, and they add very little.</dd>
+      <dt>Why do some flights show a big jump?</dt><dd>The listed fare is a fare copied from a booking site near that booking window. The model's price is for one day before departure. A big gap is mostly last-minute pricing in the data, not a forecast.</dd>
+      <dt>Can I trust a "May drop" or "Big save"?</dt><dd>Treat it as a hint. It means the model expects the price to settle lower. It is an estimate, not a promise.</dd>
+      <dt>What would make it better?</dt><dd>Prices captured every day for the same flights, so the model can watch a fare move, plus seat availability. Those two are what the current data lacks.</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+const r1 = v => (Math.round(Number(v) * 10 + 1e-7) / 10).toFixed(1);
+// the accuracy calculator
+function calc() {
+  const a = +$('cA').value, p = +$('cP').value;
+  if (!(a > 0) || !isFinite(p) || p < 0) { $('cD').textContent = '–'; $('cPct').textContent = '–'; $('cS').textContent = '–'; $('cW').textContent = 'type two positive numbers'; return; }
+  const d = Math.abs(p - a), pct = d / a * 100, score = Math.max(0, 100 - pct);
+  $('cD').textContent = inr(d); $('cPct').textContent = r1(pct) + '%'; $('cS').parentElement.innerHTML = `This flight's score is 100 − ${r1(pct)} = <b id="cS">${r1(score)}</b>${pct > 100 ? ' (shown as 0: a score is never below 0)' : ''}.`; $('cW').textContent = pct <= 10 ? 'yes' : 'no';
+}
+['cA', 'cP'].forEach(id => $(id).addEventListener('input', calc));
+
+const IN = [['te_flight', 'Typical price of this flight', 'The average fare the data shows for this flight number.'], ['te_route_airline', 'Typical price of this airline on the route', 'The average fare the data shows for this airline between these two cities.'],
+  ['days_left', 'Days before departure', 'How far ahead of the trip the price is for.'], ['duration_h', 'Journey time', 'Hours from take-off to landing.'], ['destination', 'Destination city', 'Where the flight lands.'], ['arr_hour', 'Arrival time', 'The hour the plane lands.'],
+  ['source', 'Origin city', 'Where the flight leaves.'], ['dep_hour', 'Departure time', 'The hour the plane leaves.'], ['distance_km', 'Distance', 'Straight-line kilometres between the two cities.'], ['airline', 'Airline', 'Which airline flies it.'],
+  ['route_supply', 'Flights on the route', 'How many different flights serve the route and class: a rough measure of competition.'], ['dow', 'Weekday of travel', 'Monday to Sunday.'], ['stops', 'Number of stops', '0, 1 or 2 or more.'], ['month', 'Month of travel', 'January to December.'],
+  ['dep_bucket', 'Departure time window', 'Morning, afternoon, evening or night.'], ['arr_bucket', 'Arrival time window', 'Morning, afternoon, evening or night.'], ['class', 'Class of travel', 'Economy, Premium Economy or Business.'], ['period', 'Which scrape the fare level comes from', '2022 or 2023. 2023 fares are about 55% higher.']];
+const CARDS = [
+  { k: 'median', t: 'Median lookup (the simple baseline)', idea: 'For a flight, look up the middle price of all past flights of the same airline on the same route and class, and say that. Like asking "what do these usually cost?" and not looking at anything else.', st: 'Easy to understand. A fair bar to beat.', wk: 'Ignores the date, the time of day and everything else.' },
+  { k: 'ridge', t: 'Ridge regression (a straight-line formula)', idea: 'Gives each fact a weight and adds them up, like a shopping bill: so much per hour of journey, so much for Business. The result is always a straight-line sum.', st: 'Very fast and tiny. Easy to read.', wk: 'Prices do not follow straight lines, so it misses a lot.' },
+  { k: 'tree', t: 'The decision tree idea', idea: 'A flow chart of yes/no questions that ends in a price, like a game of twenty questions. Every other tree-based algorithm below is built from many of these.', st: 'You can follow its reasoning.', wk: 'One tree on its own is fragile and easily fooled.' },
+  { k: 'random_forest', t: 'Random Forest', idea: 'Grow hundreds of trees, each on a random slice of the flights, then average their answers. Like asking a crowd and taking the middle answer.', st: 'Hard to fool with one odd flight. Little tuning needed.', wk: 'Big files. In this project it was weakest on a period it had not seen.' },
+  { k: 'extra_trees', t: 'Extra Trees', idea: 'Like a Random Forest, but each tree picks its questions more randomly. A crowd of even more independent voters.', st: 'Fast to build. Smooth answers.', wk: 'Less accurate than boosting here.' },
+  { k: 'hgb', t: 'Gradient boosting: HistGradientBoosting', idea: 'Build small trees one after another. Each new tree is trained on the mistakes the earlier ones left, like a student working through the questions they got wrong.', st: 'Accurate. Comes ready-made in scikit-learn.', wk: 'Many settings to tune. Mistakes can pile up if it is over-trained.' },
+  { k: 'xgboost', t: 'Gradient boosting: XGBoost', idea: 'The same correct-the-mistakes idea, built for speed and accuracy, with built-in guards against over-learning. The default here.', st: 'Top scores on known periods and on the unseen period here.', wk: 'Larger files than HistGradientBoosting.' },
+  { k: 'lightgbm', t: 'Gradient boosting: LightGBM', idea: 'Another boosting library. It grows each tree where the mistakes are biggest, which makes it quick to train.', st: 'Fast to train. Accurate on known periods.', wk: 'Weaker on the unseen period here.' },
+  { k: 'catboost', t: 'Gradient boosting: CatBoost', idea: 'Boosting that is especially good with categories such as airline or city, by handling them carefully so it does not peek at answers.', st: 'Good with categories. Small and quick to answer.', wk: 'About two points behind XGBoost on known periods.' },
+  { k: 'mlp', t: 'Neural net', idea: 'Layers of small calculators that pass numbers forward and adjust their weights, loosely like connected nerve cells. It finds its own combinations of the facts.', st: 'Can learn very flexible patterns with lots of data.', wk: 'Needs a lot of data and care. Here it gives odd prices.' }];
+function pill(a) { return a ? `${r1(a.A)}% / ${r1(a.E)}% / ${r1(a.C)}%` : 'not scored'; }
+function stackAll() { document.querySelectorAll('.how table.ed').forEach(t => { const h = t.rows[0]; if (!h || t.classList.contains('stack')) return; const ths = [...h.cells].map(c => c.textContent.trim()); t.classList.add('stack'); [...t.rows].slice(1).forEach(r => [...r.cells].forEach((c, i) => c.dataset.l = ths[i] || '')); }); }
+(async () => {
+  const f = await (await fetch('/api/facts')).json(), M = f.metrics, I = f.importance;
+  $('r2023').textContent = (f.rows.by_scrape[2023] || 0).toLocaleString('en-IN'); $('r2022').textContent = (f.rows.by_scrape[2022] || 0).toLocaleString('en-IN');
+  // inputs table with importance
+  const imp = Object.fromEntries((I ? I.features : []).map(x => [x.feature, x.accuracy_drop_pts])), total = (I ? I.features : []).reduce((n, x) => n + x.accuracy_drop_pts, 0);
+  $('inTbl').innerHTML = '<tr><th>Input</th><th>In plain words</th><th class="num">How much it matters</th></tr>' + IN.map(([k, l, d]) => `<tr><td><b>${esc(l)}</b></td><td>${esc(d)}</td><td class="num">${imp[k] != null ? imp[k].toFixed(1) + ' points' : '–'}</td></tr>`).join('');
+  if (I && total) { const v = k => (imp[k] != null ? imp[k].toFixed(0) : '–');
+    $('impNote').innerHTML = `<b>Two inputs matter far more than the rest:</b> the typical price of that flight and the typical price of that airline on that route. Hiding the first one makes the score fall by about ${v('te_flight')} points, hiding the second by about ${v('te_route_airline')}, and days before departure and duration by about ${v('days_left')} and ${v('duration_h')} each. Everything else costs under 5 points each. <span class="muted">These are points of accuracy lost when an input's values are scrambled. They do not add up to 100 and are not percentages.</span>`; }
+  // scores
+  const A = M.A_same_period_random_20pct, E = M.E_2022_plus_10pct_of_2023, C = M.C_train_2022_test_2023, x = (f.engines.find(e => e.key === 'xgboost') || {}).accuracy || null;
+  const use = x ? { A: x.A, E: x.E, C: x.C } : { A: A.accuracy_pct, E: E.accuracy_pct, C: C.accuracy_pct };
+  $('scoreList').innerHTML = `<li><b>Same period: ${r1(use.A)}%.</b> We hide a random 20% of the 2023 flights. The model has seen other days of the same flights, so this is the easiest test.</li>
+    <li><b>Small recent sample: ${r1(use.E)}%.</b> We teach it the 2022 data plus a small slice of 2023, then test on the rest of 2023. It is like having a little fresh information about the current market.</li>
+    <li><b>Unseen period: ${r1(use.C)}%.</b> We teach it only 2022 and test on all of 2023. Fares were about 55% higher in 2023, so this is the hardest and most honest test of predicting a new period.</li>
+    <li class="muted">These are the scores of the default engine (XGBoost), taken from the benchmark runs.</li>`;
+  $('w10').textContent = Math.round(x && f.engines.find(e => e.key === 'xgboost').within10 ? f.engines.find(e => e.key === 'xgboost').within10.A : A.within_10pct); $('faqAcc').textContent = `On flights from a period it has seen, about ${Math.round(use.A)}% accurate; with a small recent sample about ${Math.round(use.E)}%; on a period it has never seen, about ${Math.round(use.C)}%. Each flight's price was seen only once, so it cannot watch a fare move.`;
+  $('faqCities').textContent = `${f.rows.cities.length} Indian cities (${f.rows.cities.join(', ')}). The US market has ${f.us ? f.us.routes : 50} routes between major airports.`;
+  // algorithm cards
+  const byKey = Object.fromEntries(f.engines.map(e => [e.key, e]));
+  $('cards').innerHTML = CARDS.map(c => { let sc = 'Not scored as an engine.';
+    if (c.k === 'median' && f.median_lookup) { const s = f.median_lookup.scores; sc = `Scores: ${pill({ A: s.A.accuracy, E: s.E.accuracy, C: s.C.accuracy })}`; }
+    else if (byKey[c.k] && byKey[c.k].accuracy) sc = `Scores: ${pill(byKey[c.k].accuracy)}${byKey[c.k].available === false ? ' (not installed on this server)' : ''}`;
+    else if (c.k === 'tree') sc = 'Not used on its own.';
+    return `<div class="acard"><h3>${esc(c.t)}</h3><p>${esc(c.idea)}</p><p class="st"><b>Good at:</b> ${esc(c.st)}</p><p class="wk"><b>Weak at:</b> ${esc(c.wk)}</p><p class="sc">${esc(sc)}</p></div>`; }).join('');
+  calc(); stackAll();
+})();
+</script>
+{% endblock %}

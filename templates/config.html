@@ -9,8 +9,10 @@
   </div>
 
   <div class="chipbar" id="engChipBar" aria-live="polite"></div>
-  <div class="tabs" id="tabs" role="tablist" aria-label="Sections"></div>
+  <div class="tabgroups" id="tabs" role="tablist" aria-label="Sections"></div>
+  <p class="subtitle" id="tabSub"></p>
 
+  <div class="pane" id="p-start" role="tabpanel"></div>
   <div class="pane" id="p-settings" role="tabpanel">
     <div class="block" id="engineBlock"><h2>Prediction engine</h2><p class="muted">Loading the engines…</p></div>
     <div class="block">
@@ -65,17 +67,21 @@
 {% endblock %}
 {% block scripts %}
 <script>
-const TABS = [['settings','Settings'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources'],['algos','Algorithm comparison'],['us','United States']];
+const TABS = [['start','Start here'],['settings','Settings and engine'],['metrics','Metrics'],['how','How we got the score'],['model','Model & parameters'],['data','Data & sources'],['algos','Algorithm comparison'],['us','United States']];
+const GROUPS = [['Overview', ['start', 'settings']], ['For engineers', ['metrics', 'how', 'model', 'data', 'algos', 'us']]];
+const TAB_SUB = { start: 'A one-screen summary for anyone new: what the model is, how good it is, and what it learned from.', settings: 'Change how the search page behaves and choose which algorithm makes the India prices.',
+  metrics: 'This tab shows how accurate the model was on flights it had never seen.', how: 'This tab tells the story of how the first model was built, one improvement at a time.', model: 'This tab shows the technical details of the active algorithm.',
+  data: 'This tab shows the data the model learned from and the clean-up that was done.', algos: 'This tab compares several algorithms on the same three tests.', us: 'This tab covers the second market, the United States, which uses a different model.' };
 let M = null, A = null, ENG = null, engBusy = false;
 const $ = id => document.getElementById(id), tabs = $('tabs');
-tabs.innerHTML = TABS.map(([k, l]) => `<button role="tab" id="t-${k}" data-t="${k}" aria-controls="p-${k}">${esc(l)}</button>`).join('');
+tabs.innerHTML = GROUPS.map(([g, keys], i) => (i ? '<span class="sep"></span>' : '') + `<div class="grp"><span class="gl">${g}</span>${keys.map(k => `<button role="tab" id="t-${k}" data-t="${k}" aria-controls="p-${k}">${esc(TABS.find(t => t[0] === k)[1])}</button>`).join('')}</div>`).join('');
 function show(k) {
-  if (!TABS.some(t => t[0] === k)) k = 'settings';
+  if (!TABS.some(t => t[0] === k)) k = 'start';
   TABS.forEach(([t]) => { $('p-' + t).classList.toggle('on', t === k); const b = $('t-' + t); b.setAttribute('aria-selected', t === k); b.tabIndex = t === k ? 0 : -1; });
-  history.replaceState(null, '', '#' + k);
+  $('tabSub').textContent = TAB_SUB[k] || ''; history.replaceState(null, '', '#' + k);
 }
 tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.t); });
-show((location.hash || '#settings').slice(1));   // the first tab is visible straight away, before the data arrives
+show((location.hash || '#start').slice(1));   // the first tab is visible straight away, before the data arrives
 tabs.addEventListener('keydown', e => {
   const i = TABS.findIndex(t => t[0] === location.hash.slice(1)), n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
   if (n != null) { const k = TABS[(n + TABS.length) % TABS.length][0]; show(k); $('t-' + k).focus(); }
@@ -91,7 +97,7 @@ function stackify(root) {
   root.querySelectorAll('table.ed').forEach(t => {
     if (t.classList.contains('stack')) return;
     const head = t.rows[0]; if (!head || !head.querySelector('th')) return;
-    const ths = [...head.cells].map(c => c.textContent.trim()); t.classList.add('stack');
+    const ths = [...head.cells].map(c => ([...c.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() || c.textContent.trim())); t.classList.add('stack');
     [...t.rows].slice(1).forEach(r => [...r.cells].forEach((c, i) => c.dataset.l = ths[i] || ''));
   });
 }
@@ -111,6 +117,69 @@ async function post(body) {
 function note(ok, text) { const m = $('msg'); m.hidden = false; m.className = 'note ' + (ok ? 'ok' : 'bad'); m.innerHTML = text; }
 $('save').onclick = async () => { const [ok, j] = await post(readSettings()); ok ? (fillSettings(j.config), note(true, 'Saved. The next search uses these settings.')) : note(false, j.errors.map(esc).join('<br>')); };
 $('reset').onclick = async () => { const [ok, j] = await post({ reset: true }); fillSettings(j.config); note(true, 'Back to the defaults.'); };
+
+/* ---------- start here, subtitles and the ? explainers ---------- */
+function startHere() {
+  if (!M) return;
+  const sc = scores(), A_ = sc[SCEN_KEYS.A], E_ = sc[SCEN_KEYS.E], C_ = sc[SCEN_KEYS.C], e = activeEng(), d = M.data;
+  $('p-start').innerHTML = `
+    <div class="block"><h2>What is this?</h2>
+      <p class="lede2" style="font-size:18px;max-width:62ch">FareSight is a computer model that learned from hundreds of thousands of real flight fares. Give it the facts about a flight and it says what that flight should cost.</p>
+      <p class="muted">Right now the India prices come from <b>${esc(engName())}</b>, one of several algorithms. ${e && e.key === 'xgboost' ? 'It is the recommended one.' : ''}</p></div>
+    <div class="block"><h2>How good is it?</h2>
+      <p class="subtitle">Three tests, from easy to hard. Each number is a score out of 100 (100 means a perfect match).</p>
+      <div class="figs">
+        <div class="fig"><div class="k">Same period</div><div class="v">${r1(A_.accuracy_pct)}%</div><div class="s">On flights from a period it had already seen. The easy test.</div></div>
+        <div class="fig"><div class="k">Small recent sample</div><div class="v">${r1(E_.accuracy_pct)}%</div><div class="s">After seeing a little fresh data from the period being tested.</div></div>
+        <div class="fig"><div class="k">Unseen period</div><div class="v">${r1(C_.accuracy_pct)}%</div><div class="s">On a whole period it never saw. The hard, honest test.</div></div></div>
+      <p class="note"><b>93% does not mean 93 of 100 flights are right.</b> It means the average miss is small. About ${Math.round(A_.within_10pct)} of 100 flights land within 10% of the real price.</p></div>
+    <div class="block"><h2>What was it trained on?</h2>
+      <ul class="plain"><li><b>${d.total_rows.toLocaleString('en-IN')} real fares</b> for ${d.cities.length} Indian cities, copied from a public booking site in 2022 and 2023.</li>
+        <li><b>Not live.</b> These are old fares, not today's prices. No fare was made up by us.</li>
+        <li>Each flight's price was recorded once, so the model has never watched a fare change over time.</li></ul></div>
+    <div class="block"><h2>Where to next?</h2>
+      <p class="subtitle">Pick the one that fits what you want to do.</p>
+      <div class="btn-row"><a class="btn" href="/how">How it works, step by step</a><a class="btn line" href="/lab">Price Lab: change an input, watch the price</a><a class="btn line" href="/">Search flights</a></div>
+      <p class="muted small" style="margin-top:12px">The Settings tab lets you choose the algorithm. The tabs under "For engineers" hold the detailed tables.</p></div>`;
+  decorate(document);
+}
+const SUBS = [['Prediction engine', 'This table lists the algorithms that can make the India prices. Pick one and press the button.'], ['Search settings', 'These switches change how the search page works.'], ['How the "May drop"', 'Five rules decide which flights get the tag.'],
+  ['Held-out accuracy', 'These three scores show how close the predictions were on flights the model never saw.'], ['What each test means', 'This table explains how each of the three tests was set up.'], ['How the metrics are defined', 'This table explains in words how each score is worked out.'],
+  ['Reading these numbers', 'A few honest points about what these scores do and do not show.'], ['The path from', 'This list tells how the first model got better, step by step.'], ['How the first model', 'This list tells how the first model got better, step by step.'],
+  ['Step 1', 'This chart shows what each new input added to the score. Bars start at 75% so the differences are visible.'], ['Step 2', 'This table shows how making the model bigger and tuning it changed the score.'],
+  ['What the first model relied on', 'This chart shows which inputs the first model leaned on most.'], ['First-version tests', 'This table shows the earliest tests, kept for the record.'], ['Why not 95%', 'The reasons the score stops short of the 95% goal.'],
+  ['Model', 'This strip shows which algorithm is active and a few facts about it.'], ['Settings of', 'This table lists the tuning settings of the algorithm. Open Technical details to see it.'], ['Hyperparameters', 'This table lists the tuning settings of the algorithm.'],
+  ['Features used', 'This table lists the 18 inputs, in plain words, and how much the first model relied on each.'], ['Training details', 'A few facts about how the model was trained.'],
+  ['Training data', 'This table shows the data the model learned from, one row per collection.'], ['Sources', 'This table shows where each dataset came from and whether it was used.'], ['Rows per airline', 'This table shows how many flights each airline has in the data.'], ['Cleaning and assumptions', 'What was changed or assumed when the data was cleaned.'],
+  ['Algorithm comparison', 'This table ranks the algorithms by accuracy for the test you pick.'], ['Speed against accuracy', 'This chart shows which algorithms are both fast and accurate: the best sit towards the top left.'], ['Training time and size', 'This table shows how long each algorithm took to train and how big it is.'],
+  ['United States market', 'A short summary of the second market and its honest limits.'], ['Accuracy, next to the naive baselines', 'This strip compares the model with two simple rules that need no model.'], ['inputs, by family', 'This table groups the US model\'s inputs into families.'],
+  ['Accuracy by prediction horizon', 'This table shows how accuracy changes when the model looks further ahead.'], ['Data sources and licences', 'This table lists where the US data came from and the rules for using it.'], ['How the search page uses', 'How the US results connect to the rest of the app.']];
+const GLOSS = [[/^accuracy$|^accuracy,/i, 'A score out of 100: 100 minus the average percentage miss between the predicted and the real price.'], [/mape|average percentage error/i, 'The average size of the miss, as a percentage of the real price. A 5% error on a ₹10,000 fare is ₹500.'],
+  [/within ±10%/i, 'The share of flights where the prediction is no more than 10% away from the real price.'], [/average miss|\bmae\b/i, 'On average, how many rupees the prediction is away from the real price.'],
+  [/rounds fitted|max_iter/i, 'How many small trees the model built, one after another.'], [/learning_rate/i, 'How big a step each new tree takes. Small steps are slower but steadier.'], [/max_leaf_nodes|max_leaves/i, 'How many end points one tree may have. More means a more detailed tree.'],
+  [/l2_regularization|reg_lambda/i, 'A gentle penalty that stops the model from memorising the training flights.'], [/early_stopping/i, 'Stops building trees when the score on held-back flights stops improving.'],
+  [/^same period/i, 'A random 20% of the 2023 flights were hidden. The model has seen other days of the same flights.'], [/^recalibrated|small recent sample/i, 'The model learned 2022 plus a small slice of 2023, then was tested on the rest of 2023.'],
+  [/^unseen period/i, 'The model learned only 2022 and was tested on all of 2023. Fares were about 55% higher in 2023.'], [/^importance/i, 'How many accuracy points are lost when this input is scrambled. Bigger means the model relies on it more.'],
+  [/naive/i, 'A simple rule with no model, such as repeating the last price.'], [/^size and speed/i, 'Size is the file size. Speed is how many milliseconds it takes to price 1,000 flights.'], [/^predicts$/i, 'What the model outputs. It works on the logarithm of the price, which treats a ₹500 miss on a cheap fare as bigger than on a dear one.']];
+function decorate(root) {
+  root.querySelectorAll('th, .fig .k, .block > h2, td > code, .tabgroups .gl').forEach(el => {
+    if (el.dataset.qd || el.closest('.tabgroups') || el.tagName === 'H2') return;
+    const t = el.textContent.trim(); const g = GLOSS.find(([re]) => re.test(t)); if (!g) return;
+    el.dataset.qd = '1'; const b = document.createElement('button'); b.type = 'button'; b.className = 'q'; b.textContent = '?'; b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-label', 'What does this mean?'); b.dataset.q = g[1]; el.appendChild(b);
+  });
+  root.querySelectorAll('.block > h2').forEach(h => {
+    if (h.nextElementSibling && h.nextElementSibling.classList.contains('subtitle')) return;
+    const t = h.textContent.trim(), m = SUBS.find(([k]) => t.includes(k)); if (!m) return;
+    const nx = h.nextElementSibling; if (nx && nx.classList.contains('lede')) return;   // blocks that already open with an explanatory line keep it
+    const p = document.createElement('p'); p.className = 'subtitle'; p.textContent = m[1]; h.after(p);
+  });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.q'); if (!b) return;
+  const open = b.getAttribute('aria-expanded') === 'true', host = b.parentElement;
+  document.querySelectorAll('.qtext').forEach(n => n.remove()); document.querySelectorAll('.q[aria-expanded=true]').forEach(n => n.setAttribute('aria-expanded', 'false'));
+  if (!open) { b.setAttribute('aria-expanded', 'true'); const t = document.createElement('span'); t.className = 'qtext'; t.setAttribute('role', 'note'); t.textContent = b.dataset.q; (host.tagName === 'TH' || host.tagName === 'TD' ? host : host).appendChild(t); }
+});
 
 /* ---------- prediction engine ---------- */
 const ENG_SCEN = [['A', 'Same period', 'a random 20% of 2023 held out'], ['E', 'Recalibrated', '2022 plus 10% of 2023 in training'], ['C', 'Unseen period', 'trained on 2022 only, tested on all of 2023']];
@@ -194,7 +263,7 @@ function scores() {
 }
 const engName = () => { const e = activeEng(); return e ? e.label.replace(/\s*\(.*\)\s*$/, '') : 'the deployed model'; };
 const isHgb = () => { const e = activeEng(); return !e || e.key === 'hgb'; };
-function rerenderModelTabs() { metrics(); how(); model(); if (A) algos(); }
+function rerenderModelTabs() { metrics(); how(); model(); if (A) algos(); startHere(); }
 
 /* ---------- metrics ---------- */
 const SCEN = [
@@ -464,7 +533,7 @@ $('p-algos').addEventListener('click', e => {
   if (s) { ST.scen = s.dataset.scen; algos(); } if (t) { ST.set = t.dataset.set; algos(); }
 });
 
-new MutationObserver(() => stackify(document)).observe(document.querySelector('main'), { childList: true, subtree: true });
+new MutationObserver(() => { stackify(document); decorate(document); }).observe(document.querySelector('main'), { childList: true, subtree: true });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (M && $('p-algos').classList.contains('on')) algos(); }, 200); });
 (async () => {
   M = await (await fetch('/api/meta')).json();
@@ -473,7 +542,7 @@ let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() 
   $('c_sort').innerHTML = M.sorts.map(s => `<option value="${s}">${SORT_LABEL[s] || s}</option>`).join('');
   try { ENG = await (await fetch('/api/engines')).json(); } catch (e) { ENG = null; }
   fillSettings(M.config); engines(); metrics(); how(); model(); data(); algos(); usTab();
-  show((location.hash || '#settings').slice(1));
+  startHere(); show((location.hash || '#start').slice(1));
 })();
 </script>
 {% endblock %}

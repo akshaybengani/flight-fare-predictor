@@ -263,6 +263,71 @@ def test_defunct_airlines():
     out = run_defunct_invariants(); assert out["hidden"].endswith("0 from airlines that no longer operate"), out
 
 
+def test_display_code():
+    """The display code repairs the damaged 2022 IndiGo codes and never changes the stored key."""
+    import app as A
+    assert A.display_code("6.00E-152") == "6E-152"
+    assert A.display_code("6E-152") == "6E-152" and A.display_code("UK-955") == "UK-955"
+    assert A.display_code("0.00E+00") is None            # no recoverable number
+    assert A.display_code(None) is None and A.display_code("") is None
+
+
+def run_display_code_search():
+    import app as A
+    c = A.app.test_client()
+    r = c.post("/api/search", json={"source": "Delhi", "destination": "Mumbai", "date": "2026-12-17", "class": "Economy"})
+    assert r.status_code == 200, r.get_data(as_text=True)[:200]
+    fl = r.get_json()["flights"]
+    assert all("display_code" in f and "period_hint" in f for f in fl)
+    assert not any(f["display_code"] and "." in f["display_code"] for f in fl), "a damaged code is still displayed"
+    assert len({f["code"] for f in fl}) == len(fl), "stored code must stay unique"
+    seen = {}
+    for f in fl:
+        seen.setdefault(f["display_code"], []).append(f)
+    for dc, g in seen.items():
+        if dc and len(g) > 1:                              # same shown number twice: the older record must say so
+            assert sum(1 for f in g if f["period_hint"]) == len(g) - sum(1 for f in g if f["code"] == dc), dc
+    return f"{len(fl)} flights, {sum(1 for g in seen.values() if len(g) > 1)} repeated numbers hinted"
+
+
+def run_whatif_tests():
+    """Price Lab: /api/whatif returns steps that add up to the price, clean errors for bad values, never NaN."""
+    import json as _json
+    import app as appmod
+    client = appmod.app.test_client()
+    spec = client.get("/api/lab/spec").get_json(); ref = spec["reference"]
+    assert len(spec["inputs"]) == 18, len(spec["inputs"])
+    done = {}
+    for e in appmod.engine_list():
+        if not e.get("available", True):
+            continue
+        vals = dict(ref); vals["days_left"] = 3; vals["flight_price_level_inr"] = 9000.0
+        r = client.post("/api/whatif", json={"values": vals, "original": ref, "engine": e["key"]})
+        assert r.status_code == 200, (e["key"], r.get_json())
+        text = r.get_data(as_text=True); assert "NaN" not in text and "Infinity" not in text, e["key"]
+        j = r.get_json()
+        assert len(j["steps"]) == 18 and j["engine"]["key"] == e["key"], e["key"]
+        gap = abs(j["base_price"] + sum(s["effect"] for s in j["steps"]) - j["price"])
+        assert gap < 0.5, f"steps do not add up to the price for {e['key']}: off by {gap}"     # effects are rounded to 2 decimals each
+        assert j["price"] > 0 and j["original_price"] > 0 and abs(j["difference"] - (j["price"] - j["original_price"])) < 0.02, e["key"]
+        assert j["biggest"] and j["moves"], e["key"]
+        same = client.post("/api/whatif", json={"values": ref, "original": ref, "engine": e["key"]}).get_json()
+        assert same["difference"] == 0 and not same["moves"], (e["key"], same["difference"])
+        done[e["key"]] = f"{j['method']}, price {round(j['price'])}, steps add up (gap {gap:.2f})"
+    bad = [({"values": {"airline": "Nope"}}, "Airline must be one of"), ({"values": {"days_left": "abc"}}, "must be a number"), ({"values": {"duration_h": "nan"}}, "real number"),
+           ({"values": {"source": "Delhi", "destination": "Delhi"}}, "two different cities"), ({"values": "x"}, "object"), ({}, "object"), ({"values": {"stops": None}}, "needs a number")]
+    for body, msg in bad:
+        r = client.post("/api/whatif", json=body); assert r.status_code == 400 and msg in r.get_json()["error"], (body, r.status_code, r.get_json())
+    r = client.post("/api/whatif", json={"values": {"days_left": 999, "duration_h": -5}}); j = r.get_json()
+    assert r.status_code == 200 and len(j["warnings"]) == 2 and j["values"]["days_left"] == 50, j      # out-of-range values are clamped and explained
+    r = client.post("/api/whatif", data="not json", content_type="application/json"); assert r.status_code == 400
+    return done
+
+
+def test_whatif_endpoint():
+    assert run_whatif_tests()
+
+
 def test_invariants_for_every_engine():
     assert run_engine_invariants()
 
@@ -274,12 +339,14 @@ def test_invariants_on_real_app():
 
 if __name__ == "__main__":
     fails = 0
-    for name, fn in [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and n not in ("test_invariants_on_real_app", "test_invariants_for_every_engine", "test_defunct_airlines")]:
+    for name, fn in [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and n not in ("test_invariants_on_real_app", "test_invariants_for_every_engine", "test_defunct_airlines", "test_whatif_endpoint")]:
         try:
             fn(); print("ok  ", name)
         except AssertionError as e:
             fails += 1; print("FAIL", name, e)
     try:
+        print("ok   display codes in search", run_display_code_search())
+        print("ok   Price Lab what-if", run_whatif_tests())
         print("ok   defunct airlines hidden / shown", run_defunct_invariants())
         print("ok   invariants for every loadable engine", run_engine_invariants())
         st = run_invariants(); print("ok   invariants on the real app", st)

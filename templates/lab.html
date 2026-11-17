@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}FareSight · Price Lab{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Price Lab</div>
+    <h1>Change one input. Watch the price move.</h1>
+    <p class="lede">The model turns 18 facts about a flight into one price. This page shows all 18 in one table. Edit any value and the predicted price updates, with the effect of each input in rupees.</p>
+  </div>
+
+  <div class="block">
+    <h2>1. Pick a flight to start from</h2>
+    <p class="subtitle">Choose a route and date, then one flight from the results. Or start from a typical flight.</p>
+    <form class="lab-pick" id="pick" autocomplete="off">
+      <div><label for="pFrom">From</label><select id="pFrom">{% for c in cities %}<option>{{ c }}</option>{% endfor %}</select></div>
+      <div><label for="pTo">To</label><select id="pTo">{% for c in cities %}<option {% if loop.index==2 %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+      <div><label for="pDate">Travel date</label><input id="pDate" type="date"></div>
+      <div><label for="pCls">Class</label><select id="pCls">{% for c in classes %}<option>{{ c }}</option>{% endfor %}</select></div>
+      <div><button class="btn" id="pGo" type="submit">Find flights</button></div>
+    </form>
+    <div class="lab-pick flightrow">
+      <div><label for="pFlight">Flight</label><select id="pFlight" disabled><option>Search first</option></select></div>
+      <div><button class="btn line" id="pLoad" type="button" disabled>Load this flight</button></div>
+      <div><button class="btn text" id="pTypical" type="button">Start from a typical flight</button></div>
+    </div>
+    <p class="muted small" id="pMsg" aria-live="polite"></p>
+  </div>
+
+  <div class="block">
+    <h2>2. The 18 inputs <span id="loaded" class="muted" style="font:400 16px var(--sans)"></span></h2>
+    <p class="subtitle">This table shows what the model is given, in plain words. Change the values in the third column. The last column says how many rupees that input adds to or takes off the price, compared with an average fare.</p>
+    <div class="btn-row"><button class="btn line sm" id="reset" type="button">Reset to this flight</button><span class="muted small" id="engineLine"></span></div>
+    <div class="tablewrap"><table class="ed lab stack" id="tbl"><tr><th>Input</th><th>Your value</th><th>What it means</th><th class="num">Effect on price</th></tr></table></div>
+  </div>
+
+  <div class="block" id="resultBlock">
+    <h2>3. The predicted price</h2>
+    <p class="subtitle">This updates a moment after you stop editing.</p>
+    <div class="readout" id="readout" aria-live="polite">
+      <div class="cell"><div class="k">Predicted price</div><div class="big" id="rPrice">–</div></div>
+      <div class="cell"><div class="k">Original price</div><div class="big" id="rOrig">–</div></div>
+      <div class="cell"><div class="k">Difference</div><div class="big" id="rDiff">–</div></div>
+    </div>
+    <div class="helper" id="helper" hidden></div>
+    <h3 style="font:600 12px var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 6px">How the price is built up</h3>
+    <p class="subtitle">It starts at the base fare (an average flight), then each input adds or subtracts, until it reaches the predicted price. The biggest effects are shown.</p>
+    <div id="wf"></div>
+    <div class="note" style="margin-top:16px"><b>Honest note.</b> The effects are the model's estimates for this one flight, not rules of the airline. <span id="methodNote"></span></div>
+    <div id="warn" class="note bad" hidden></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+let SPEC = [], REF = {}, ORIG = null, CUR = {}, STEPS = {}, seq = 0, timer = null, FLIGHTS = [], search = null, BIG = null;
+const sgn = n => (n > 0 ? '+' : n < 0 ? '−' : '') + inr(Math.abs(n));
+const fmtVal = (sp, v) => v == null ? 'not known' : sp.type === 'select' ? (sp.options.find(o => o.value === v) || {}).label : sp.widget === 'money' ? inr(v) : Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+function buildTable() {
+  const t = $('tbl'); t.innerHTML = '<tr><th>Input</th><th>Your value</th><th>What it means</th><th class="num">Effect on price</th></tr>';
+  SPEC.forEach(sp => {
+    let w;
+    if (sp.type === 'select') w = `<select data-k="${sp.key}" aria-label="${esc(sp.label)}">${sp.options.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>`;
+    else { const slider = ['days_left', 'duration_h', 'stops', 'dep_hour', 'arr_hour'].includes(sp.key);
+      w = `<input type="number" data-k="${sp.key}" min="${sp.min}" max="${sp.max}" step="${sp.step}" inputmode="decimal" aria-label="${esc(sp.label)}" ${sp.nullable ? 'placeholder="not known"' : ''}>` + (slider ? `<input type="range" data-r="${sp.key}" min="${sp.min}" max="${sp.max}" step="${sp.step}" aria-label="${esc(sp.label)} slider">` : ''); }
+    const tr = document.createElement('tr'); tr.dataset.row = sp.key;
+    tr.innerHTML = `<td><b>${esc(sp.label)}</b></td><td class="val" data-l="Your value">${w}${sp.derived ? '<div class="derived-note">Calculated from past data; edit to see how strongly the model relies on it.</div>' : ''}</td><td data-l="What it means">${esc(sp.help)}</td><td class="num" data-l="Effect on price"><span class="eff" data-e="${sp.key}">–</span></td>`;
+    t.appendChild(tr);
+  });
+}
+function writeInputs() {
+  SPEC.forEach(sp => { const el = document.querySelector(`[data-k="${sp.key}"]`), v = CUR[sp.key]; if (!el) return; el.value = v == null ? '' : v; const r = document.querySelector(`[data-r="${sp.key}"]`); if (r) r.value = v == null ? sp.min : v; });
+}
+function readInputs() {
+  const out = {};
+  SPEC.forEach(sp => { const el = document.querySelector(`[data-k="${sp.key}"]`); let v = el.value;
+    if (sp.type === 'select') out[sp.key] = sp.options.some(o => typeof o.value === 'number') ? Number(v) : v; else out[sp.key] = v === '' ? null : Number(v); });
+  return out;
+}
+async function ask() {
+  const my = ++seq; $('readout').classList.add('busy');
+  try {
+    const r = await fetch('/api/whatif', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: CUR, original: ORIG }) });
+    const j = await r.json(); if (my !== seq) return;
+    if (!r.ok) { $('warn').hidden = false; $('warn').textContent = j.error || 'That did not work. Try other values.'; $('readout').classList.remove('busy'); return; }
+    $('warn').hidden = !(j.warnings && j.warnings.length); $('warn').textContent = (j.warnings || []).join(' ');
+    if (j.values) { Object.assign(CUR, j.values); writeInputs(); }
+    show(j);
+  } catch (e) { if (my === seq) { $('warn').hidden = false; $('warn').textContent = "We couldn't reach the service. Please try again in a moment."; } }
+  $('readout').classList.remove('busy');
+}
+function show(j) {
+  $('rPrice').textContent = inr(j.price); $('rOrig').textContent = j.original_price != null ? inr(j.original_price) : '–';
+  const d = j.difference; $('rDiff').innerHTML = d == null ? '–' : `<span class="eff ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" style="font:inherit">${d === 0 ? 'none' : sgn(d)}</span>`;
+  $('engineLine').textContent = `Engine: ${j.engine.label}${j.engine.fallback ? ' (the chosen engine was not available)' : ''}.`;
+  $('methodNote').textContent = j.method === 'shap' ? 'This engine (XGBoost) gives an exact breakdown (a method called SHAP).' : 'This engine gives an approximate breakdown, found by trying many orders of switching each input from an average flight to this one.';
+  STEPS = Object.fromEntries(j.steps.map(s => [s.key, s.effect]));
+  SPEC.forEach(sp => { const e = document.querySelector(`[data-e="${sp.key}"]`), v = STEPS[sp.key]; e.textContent = v == null ? '–' : (Math.abs(v) < 1 ? '₹0' : sgn(v)); e.className = 'eff ' + (v > 0.5 ? 'up' : v < -0.5 ? 'down' : ''); });
+  const changed = new Set((j.moves || []).map(m => m.key)); BIG = j.biggest && Math.abs(j.biggest.delta) >= 1 ? j.biggest.key : null;
+  document.querySelectorAll('#tbl tr[data-row]').forEach(tr => { tr.classList.toggle('changed', changed.has(tr.dataset.row)); tr.classList.toggle('biggest', tr.dataset.row === BIG); });
+  const h = $('helper');
+  if (j.biggest && BIG) { const sp = SPEC.find(s => s.key === BIG), m = j.biggest;
+    h.hidden = false; h.innerHTML = `<b>Biggest change:</b> changing <b>${esc(sp.label)}</b> from ${esc(fmtVal(sp, m.from))} to ${esc(fmtVal(sp, m.to))} moved the price by <b>${sgn(m.delta)}</b> on its own.`; }
+  else h.hidden = true;
+  waterfall(j);
+}
+function waterfall(j) {
+  const steps = j.steps.slice().sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect)), top = steps.slice(0, 8), rest = steps.slice(8).reduce((n, s) => n + s.effect, 0);
+  const rows = [{ label: 'Base fare (an average flight)', kind: 'base', v: j.base_price }].concat(top.map(s => ({ label: s.label, kind: s.effect >= 0 ? 'up' : 'down', v: s.effect })));
+  if (Math.abs(rest) >= 1) rows.push({ label: 'All other inputs', kind: rest >= 0 ? 'up' : 'down', v: rest });
+  rows.push({ label: 'Predicted price', kind: 'total', v: j.price });
+  let cum = 0; const pos = rows.map(r => { if (r.kind === 'base') { cum = r.v; return { ...r, a: 0, b: r.v }; } if (r.kind === 'total') return { ...r, a: 0, b: r.v }; const a = cum; cum += r.v; return { ...r, a, b: cum }; });
+  const max = Math.max(...pos.map(p => Math.max(p.a, p.b)), 1) * 1.08, W = Math.min(innerWidth - 40, 720), narrow = W < 520, L = narrow ? 4 : Math.min(230, W * 0.4), R = 90, rh = narrow ? 46 : 28, H = pos.length * rh + 10, sx = v => L + v / max * (W - L - R);
+  $('wf').innerHTML = `<svg class="wf" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="How the price is built up from the base fare">` + pos.map((p, i) => {
+    const y = i * rh + 4, x0 = sx(Math.min(p.a, p.b)), x1 = sx(Math.max(p.a, p.b)), w = Math.max(2, x1 - x0), val = p.kind === 'base' || p.kind === 'total' ? inr(p.v) : sgn(p.v), lab = narrow ? p.label : (p.label.length > 34 ? p.label.slice(0, 33) + '…' : p.label);
+    const ly = narrow ? y + 12 : y + 17, by = narrow ? y + 18 : y + 3, bh = narrow ? 18 : rh - 9, vy = narrow ? y + 32 : y + 17;
+    return `<text x="${narrow ? L : L - 8}" y="${ly}" text-anchor="${narrow ? 'start' : 'end'}">${esc(lab)}</text><rect class="bar ${p.kind}" x="${x0}" y="${by}" width="${w}" height="${bh}"></rect><text class="vtxt" x="${Math.min(x1 + 6, W - R + 40)}" y="${vy}">${val}</text>`; }).join('') + '</svg>';
+}
+function schedule() { clearTimeout(timer); timer = setTimeout(() => { CUR = readInputs(); ask(); }, 300); }
+
+function loadValues(vals, label) {
+  ORIG = { ...vals }; CUR = { ...vals }; writeInputs(); $('loaded').textContent = label ? '· ' + label : ''; ask();
+}
+function fromFlight(x) {
+  const i = x.inputs, dow = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].indexOf(i.weekday), [src, dst] = i.route.split(' to ');
+  return { airline: i.airline, source: src, destination: dst, class: i.class, dep_bucket: i.dep_bucket, arr_bucket: i.arr_bucket, stops: i.stops, duration_h: i.duration_h, days_left: i.days_left, dow, month: i.month, period: i.period,
+    dep_hour: i.dep_hour, arr_hour: i.arr_hour, distance_km: i.distance_km, route_supply: i.route_supply, flight_price_level_inr: i.flight_price_level_inr, route_airline_price_level_inr: i.route_airline_price_level_inr };
+}
+const code = x => x.display_code ? String(x.display_code).replace(/-/g, ' ') + (x.period_hint ? ` (${x.period_hint})` : '') : 'number not available';
+async function findFlights(pre) {
+  $('pMsg').textContent = 'Searching…'; $('pGo').disabled = true;
+  try {
+    const r = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: $('pFrom').value, destination: $('pTo').value, date: $('pDate').value, class: $('pCls').value }) });
+    const j = await r.json();
+    if (!r.ok) { $('pMsg').textContent = j.error || 'No flights found for that search.'; return; }
+    search = j; FLIGHTS = j.flights.slice().sort((a, b) => a.listed - b.listed);
+    $('pFlight').innerHTML = FLIGHTS.map((x, k) => `<option value="${k}">${esc(x.airline)} ${esc(code(x))} · ${esc(x.dep)}${x.stops ? ', ' + x.stops + ' stop' : ', non-stop'} · listed ${inr(x.listed)}</option>`).join('');
+    $('pFlight').disabled = false; $('pLoad').disabled = false; $('pMsg').textContent = `${FLIGHTS.length} flights found. Pick one and press Load.`;
+    if (pre) { const k = FLIGHTS.findIndex(x => x.code === pre); if (k >= 0) { $('pFlight').value = k; loadFlight(); } }
+  } catch (e) { $('pMsg').textContent = "We couldn't reach the service. Please try again in a moment."; } finally { $('pGo').disabled = false; }
+}
+function loadFlight() { const x = FLIGHTS[+$('pFlight').value]; if (!x) return; loadValues(fromFlight(x), `${x.airline} ${code(x)}, ${search.source} to ${search.destination}`); $('tbl').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+
+$('pick').addEventListener('submit', e => { e.preventDefault(); findFlights(); });
+$('pLoad').onclick = loadFlight;
+$('pTypical').onclick = () => loadValues(REF, 'a typical flight');
+$('reset').onclick = () => { if (ORIG) { CUR = { ...ORIG }; writeInputs(); ask(); } };
+$('tbl').addEventListener('input', e => {
+  const k = e.target.dataset.k, r = e.target.dataset.r;
+  if (r) { document.querySelector(`[data-k="${r}"]`).value = e.target.value; }
+  if (k) { const rg = document.querySelector(`[data-r="${k}"]`); if (rg && e.target.value !== '') rg.value = e.target.value; }
+  schedule();
+});
+(async () => {
+  const d = new Date(); d.setDate(d.getDate() + 30); $('pDate').value = d.toISOString().slice(0, 10); $('pDate').min = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+  const j = await (await fetch('/api/lab/spec')).json(); SPEC = j.inputs; REF = j.reference; buildTable();
+  const q = new URLSearchParams(location.search);
+  if (q.get('from') && q.get('to') && q.get('date')) { $('pFrom').value = q.get('from'); $('pTo').value = q.get('to'); $('pDate').value = q.get('date'); if (q.get('cls')) $('pCls').value = q.get('cls'); loadValues(REF, 'a typical flight'); await findFlights(q.get('flight')); }
+  else loadValues(REF, 'a typical flight');
+})();
+</script>
+{% endblock %}
