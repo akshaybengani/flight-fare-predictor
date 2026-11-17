@@ -290,6 +290,47 @@ def run_display_code_search():
     return f"{len(fl)} flights, {sum(1 for g in seen.values() if len(g) > 1)} repeated numbers hinted"
 
 
+def test_toy_reproduces_hand_calculation():
+    """The Walkthrough toy (src/toy.py mirrors templates/walkthrough.html) gives the hand-worked numbers for the defaults."""
+    import toy
+    start, rounds, guess = toy.fit(toy.DEFAULT_ROWS, 0.5, 3)
+    assert start == 5800
+    assert [(b["kind"], b["arg"]) for b in rounds] == [("class", "Business"), ("days", 10), ("stops", 1)]
+    assert round(rounds[0]["my"]) == 5200 and round(rounds[0]["mn"], 2) == -1733.33
+    assert round(rounds[1]["my"]) == 1350 and round(rounds[1]["mn"]) == -1350
+    assert round(rounds[2]["my"], 2) == -1133.33 and round(rounds[2]["mn"], 2) == 377.78
+    p, path = toy.predict(start, rounds, ("Economy", 3, 1, 0), 0.5)
+    assert [round(x, 2) for x in path] == [5800, 4933.33, 5608.33, 5041.67], path
+    assert round(toy.predict(start, rounds, ("Business", 20, 0, 0))[1][1], 2) == 8400.0
+    abs_err = [sum(abs(r[3] - g) for r, g in zip(toy.DEFAULT_ROWS, toy.fit(toy.DEFAULT_ROWS, 0.5, k)[2])) for k in (1, 2, 3)]
+    assert abs_err[0] > abs_err[1] > abs_err[2], abs_err      # the total miss shrinks each round
+
+
+def run_trace_tests():
+    import app as A
+    c = A.app.test_client()
+    ref = c.get("/api/lab/spec").get_json()["reference"]
+    r = c.post("/api/trace", json={"values": ref, "engine": "xgboost"}); j = r.get_json()
+    assert r.status_code == 200 and j["available"], j
+    assert abs(j["cumulative"][-1]["price"] - j["breakdown"]["price"]) <= 1.0, "trace end differs from the normal prediction"
+    assert abs(j["price"] - j["breakdown"]["price"]) <= 1.0
+    assert j["cumulative"][-1]["trees"] == j["n_trees"] and j["trees"] and j["questions_used"]["features"]
+    first5 = [t for t in j["trees"] if t["tree_number"] <= 5]
+    assert abs(first5[-1]["price_after"] - next(x["price"] for x in j["cumulative"] if x["trees"] == 5)) <= 1.0
+    # an edit moves the price and the trace with it
+    v2 = dict(ref); v2["days_left"] = max(1, int(ref["days_left"]) - 20)
+    j2 = c.post("/api/trace", json={"values": v2, "engine": "xgboost"}).get_json()
+    assert j2["available"] and abs(j2["cumulative"][-1]["price"] - j2["breakdown"]["price"]) <= 1.0
+    # an engine without a trace: clean message, breakdown still there
+    o = c.post("/api/trace", json={"values": ref, "engine": "hgb"}).get_json()
+    assert o["available"] is False and "XGBoost" in o["reason"] and o["breakdown"]["price"] > 0
+    # bad input is rejected cleanly
+    for bad in ({"values": {"airline": "Nope"}}, "nope", {"values": None}):
+        rr = c.post("/api/trace", json=bad)
+        assert rr.status_code == 400 and rr.get_json().get("error"), bad
+    return f"{j['n_trees']} trees, end {j['cumulative'][-1]['price']} = whatif {j['breakdown']['price']}"
+
+
 def run_whatif_tests():
     """Price Lab: /api/whatif returns steps that add up to the price, clean errors for bad values, never NaN."""
     import json as _json
@@ -346,6 +387,7 @@ if __name__ == "__main__":
             fails += 1; print("FAIL", name, e)
     try:
         print("ok   display codes in search", run_display_code_search())
+        print("ok   /api/trace", run_trace_tests())
         print("ok   Price Lab what-if", run_whatif_tests())
         print("ok   defunct airlines hidden / shown", run_defunct_invariants())
         print("ok   invariants for every loadable engine", run_engine_invariants())

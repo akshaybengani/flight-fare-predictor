@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}FareSight · How the price is calculated{% endblock %}
+{% block content %}
+<div class="wrap how walk">
+  <div class="page-head">
+    <div class="eyebrow">How the price is calculated</div>
+    <h1>Watch the calculation, one step at a time.</h1>
+    <p class="lede">First you run a tiny version of the method yourself, with eight made-up flights and plain arithmetic. Then you see the real model do the same thing on a real flight. Change any number and the working changes with it.</p>
+    <nav class="toc" aria-label="On this page">
+      <a href="#toy">Part 1: Try it yourself</a><a href="#real">Part 2: The real model on a real flight</a><a href="/lab">Price Lab</a><a href="/how">How it works</a>
+    </nav>
+  </div>
+
+  <!-- ===================== PART 1 ===================== -->
+  <section class="block" id="toy"><h2>Part 1: Try the algorithm yourself</h2>
+    <p class="lede2">The real model is a method called <b>gradient boosting</b>. It starts with a plain guess, then makes many small corrections. Each correction is a tiny tree: one yes/no question. This toy does exactly that, with only a few trees, so you can follow every sum.</p>
+
+    <h3>1. The past flights the toy learns from</h3>
+    <p class="subtitle">These eight flights are made up. Change any cell, add a flight (up to 12) or delete one. The working below updates at once.</p>
+    <div class="tablewrap"><table class="ed walkin" id="rowsTbl"></table></div>
+    <div class="btn-row"><button class="btn line sm" id="addRow" type="button">Add a flight</button><button class="btn text" id="resetToy" type="button">Reset to the example</button></div>
+    <p class="note bad" id="rowsMsg" hidden></p>
+
+    <h3>2. The new flight to price, and two dials</h3>
+    <p class="subtitle">The new flight is not in the table. The toy will guess its price using only what it learned.</p>
+    <div class="lab-pick">
+      <div><label for="nfClass">Class</label><select id="nfClass"><option>Economy</option><option>Business</option></select></div>
+      <div><label for="nfDays">Days before departure</label><input type="number" id="nfDays" min="0" max="365" step="1" value="3"></div>
+      <div><label for="nfStops">Stops</label><input type="number" id="nfStops" min="0" max="3" step="1" value="1"></div>
+    </div>
+    <div class="lab-pick">
+      <div><label for="rate">Learning rate <b id="rateV">0.5</b></label><input type="range" id="rate" min="0.1" max="1" step="0.05" value="0.5" style="width:100%"><p class="muted small">How big a step each tree takes. The real model uses 0.05.</p></div>
+      <div><label for="trees">Number of trees <b id="treesV">3</b></label><input type="range" id="trees" min="1" max="6" step="1" value="3" style="width:100%"><p class="muted small">How many corrections to make. The real model makes thousands.</p></div>
+    </div>
+
+    <div id="working" aria-live="polite"></div>
+
+    <h3>6. Check the score</h3>
+    <p class="subtitle">Type what the new flight really cost to see how close the toy was. This is the same sum as on <a href="/how#score">How it works</a>.</p>
+    <div class="calc" id="chk">
+      <div class="row2"><div><label for="kActual">Real price of the new flight (₹)</label><input type="number" id="kActual" min="1" step="1" placeholder="e.g. 5000"></div><div><label>Toy's price</label><div class="big-n" id="kPred">–</div></div></div>
+      <div class="out" id="kOut" aria-live="polite"><div class="muted">Enter a real price above.</div></div>
+    </div>
+
+    <h3>Two other ways to guess, on the same eight flights</h3>
+    <p class="subtitle">For comparison. Same data, same new flight. These are simplified so you can follow them.</p>
+    <div id="others"></div>
+  </section>
+
+  <!-- ===================== PART 2 ===================== -->
+  <section class="block" id="real"><h2>Part 2: The real model on a real flight</h2>
+    <p class="lede2">The toy used 3 trees. The real model (XGBoost, the default) adds up thousands of them. Here is one real flight, worked through the same way.</p>
+    <h3>A. The flight, with every input editable</h3>
+    <p class="subtitle" id="realFrom">Loading the flight…</p>
+    <div class="btn-row"><button class="btn line sm" id="rTypical" type="button">Start from a typical flight</button><a class="btn text" href="/lab">Pick a real flight in Price Lab</a></div>
+    <p class="note bad" id="rWarn" hidden></p>
+    <div class="tablewrap"><table class="ed lab" id="rTbl"></table></div>
+    <div class="readout" aria-live="polite"><div class="cell"><div class="k">Predicted price</div><div class="big" id="rPrice">–</div></div><div class="cell"><div class="k">Engine</div><div class="big" id="rEngine" style="font-size:24px;padding-top:12px">–</div></div></div>
+    <div id="realOut"></div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ============================ Part 1: the toy, all in the browser ============================ */
+const $ = id => document.getElementById(id);
+const MINUS = '−';
+const num = x => (Math.round(x) < 0 ? MINUS : '') + Math.abs(Math.round(x)).toLocaleString('en-IN');
+const sgn = x => (Math.round(x) < 0 ? MINUS : '+') + Math.abs(Math.round(x)).toLocaleString('en-IN');
+const mil = x => (x / 1e6).toFixed(x < 1e7 ? 2 : 1) + ' million';
+const inrN = x => '₹' + num(x);
+const EXAMPLE = [['Economy', 30, 0, 3000], ['Economy', 20, 0, 3200], ['Economy', 5, 0, 4600], ['Economy', 2, 0, 6000], ['Economy', 25, 1, 2600], ['Economy', 3, 1, 5000], ['Business', 20, 0, 9000], ['Business', 3, 0, 13000]];
+const LET = 'ABCDEFGHIJKL';
+let ROWS = EXAMPLE.map(r => ({ cls: r[0], days: r[1], stops: r[2], price: r[3] }));
+
+/* The questions the toy may ask. Same rules as src/toy.py (which the tests check):
+   Business?, then "under N days" for N = 10, 20, 30 ..., then 1 stop?, 0 stops?, then any other stop counts.
+   Questions that split the flights into the same two groups count once; one-sided questions are skipped; a question is used at most once. */
+function questions(rows) {
+  const qs = [{ id: 'class', text: 'Is it Business?', f: r => r.cls === 'Business' }];
+  const top = Math.max(...rows.map(r => r.days));
+  for (let n = 10; n <= top; n += 10) qs.push({ id: 'days' + n, n, text: `Under ${n} days before departure?`, f: r => r.days < n });
+  const sv = [1, 0, ...[...new Set(rows.map(r => r.stops))].filter(s => s > 1).sort((a, b) => a - b)];
+  sv.forEach(s => qs.push({ id: 'stops' + s, text: s === 0 ? 'Is it non-stop (0 stops)?' : `Is it ${s} stop${s === 1 ? '' : 's'}?`, f: r => r.stops === s }));
+  const seen = new Set(), out = [];
+  qs.forEach(q => { const sig = rows.map(r => q.f(r) ? 1 : 0).join(''); if (!/0/.test(sig) || !/1/.test(sig) || seen.has(sig)) return; seen.add(sig); out.push(q); });
+  return out;
+}
+const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+function fit(rows, rate, T) {
+  const n = rows.length, start = avg(rows.map(r => r.price)); let guess = Array(n).fill(start);
+  const rounds = [], used = new Set(), qs = questions(rows);
+  for (let t = 0; t < T; t++) {
+    const res = rows.map((r, i) => r.price - guess[i]), tried = []; let best = null;
+    qs.forEach(q => {
+      if (used.has(q.id)) return;
+      const yes = [], no = []; rows.forEach((r, i) => (q.f(r) ? yes : no).push(i));
+      const my = avg(yes.map(i => res[i])), mn = avg(no.map(i => res[i]));
+      const err = yes.reduce((s, i) => s + (res[i] - my) ** 2, 0) + no.reduce((s, i) => s + (res[i] - mn) ** 2, 0);
+      const e = { q, yes, no, my, mn, err }; tried.push(e); if (!best || err < best.err - 1e-9) best = e;
+    });
+    if (!best) break;
+    used.add(best.q.id); tried.forEach(e => e.chosen = e === best);
+    const stepYes = rate * best.my, stepNo = rate * best.mn;
+    guess = guess.map((g, i) => g + (best.yes.includes(i) ? stepYes : stepNo));
+    rounds.push({ res, tried, best, stepYes, stepNo, guess: guess.slice(), abs: rows.reduce((s, r, i) => s + Math.abs(r.price - guess[i]), 0) });
+  }
+  return { start, rounds, startAbs: rows.reduce((s, r) => s + Math.abs(r.price - start), 0) };
+}
+const names = idx => idx.map(i => LET[i]).join(', ');
+const listNums = (a, f = sgn) => a.map(f).join(a.length > 2 ? ', ' : ' and ');
+function tableHtml(head, body, cls = '') { return `<div class="tablewrap"><table class="ed ${cls}"><tr>${head.map(h => `<th${Array.isArray(h) && h[1] ? ` class="${h[1]}"` : ''}>${Array.isArray(h) ? h[0] : h}</th>`).join('')}</tr>${body}</table></div>`; }
+function stackAll(root) { (root || document).querySelectorAll('table.ed').forEach(t => { const h = t.rows[0]; if (!h) return; const ths = [...h.cells].map(c => c.textContent.trim()); t.classList.add('stack'); [...t.rows].slice(1).forEach(r => [...r.cells].forEach((c, i) => { c.dataset.l = ths[i] || ''; })); }); }
+
+/* ---- the editable table ---- */
+function drawRows() {
+  $('rowsTbl').innerHTML = '<tr><th>Flight</th><th>Class</th><th>Days before departure</th><th>Stops</th><th>Real price (₹)</th><th></th></tr>' + ROWS.map((r, i) => `<tr>
+    <td><b>${LET[i]}</b></td>
+    <td><select data-i="${i}" data-k="cls" aria-label="Class of flight ${LET[i]}"><option${r.cls === 'Economy' ? ' selected' : ''}>Economy</option><option${r.cls === 'Business' ? ' selected' : ''}>Business</option></select></td>
+    <td><input type="number" data-i="${i}" data-k="days" min="0" max="365" step="1" value="${r.days}" aria-label="Days before departure of flight ${LET[i]}"></td>
+    <td><input type="number" data-i="${i}" data-k="stops" min="0" max="3" step="1" value="${r.stops}" aria-label="Stops of flight ${LET[i]}"></td>
+    <td><input type="number" data-i="${i}" data-k="price" min="1" step="50" value="${r.price}" aria-label="Real price of flight ${LET[i]}"></td>
+    <td><button class="btn text" data-del="${i}" type="button" aria-label="Delete flight ${LET[i]}">Delete</button></td></tr>`).join('');
+  stackAll($('rowsTbl').parentNode);
+  $('addRow').disabled = ROWS.length >= 12;
+}
+$('rowsTbl').addEventListener('input', e => { const t = e.target, i = +t.dataset.i; if (isNaN(i)) return; const k = t.dataset.k; ROWS[i][k] = k === 'cls' ? t.value : (t.value === '' ? NaN : +t.value); run(); });
+$('rowsTbl').addEventListener('click', e => { const d = e.target.dataset.del; if (d == null) return; ROWS.splice(+d, 1); drawRows(); run(); });
+$('addRow').onclick = () => { if (ROWS.length < 12) { ROWS.push({ cls: 'Economy', days: 10, stops: 0, price: 4000 }); drawRows(); run(); } };
+$('resetToy').onclick = () => { ROWS = EXAMPLE.map(r => ({ cls: r[0], days: r[1], stops: r[2], price: r[3] })); $('nfClass').value = 'Economy'; $('nfDays').value = 3; $('nfStops').value = 1; $('rate').value = .5; $('trees').value = 3; $('kActual').value = ''; drawRows(); run(); };
+['nfClass', 'nfDays', 'nfStops', 'rate', 'trees', 'kActual'].forEach(id => $(id).addEventListener('input', run));
+
+function problems() {
+  const p = [];
+  if (ROWS.length < 3) p.push('Keep at least 3 flights so there is something to learn from.');
+  ROWS.forEach((r, i) => { if (!(r.price > 0)) p.push(`Flight ${LET[i]} needs a real price above 0.`); if (!(r.days >= 0 && r.days <= 365 && Number.isInteger(r.days))) p.push(`Flight ${LET[i]} needs whole days between 0 and 365.`); if (!(r.stops >= 0 && r.stops <= 3 && Number.isInteger(r.stops))) p.push(`Flight ${LET[i]} needs 0 to 3 stops.`); });
+  const nf = newFlight(); if (!(nf.days >= 0 && nf.days <= 365 && Number.isInteger(nf.days))) p.push('The new flight needs whole days between 0 and 365.'); if (!(nf.stops >= 0 && nf.stops <= 3 && Number.isInteger(nf.stops))) p.push('The new flight needs 0 to 3 stops.');
+  return p;
+}
+const newFlight = () => ({ cls: $('nfClass').value, days: $('nfDays').value === '' ? NaN : +$('nfDays').value, stops: $('nfStops').value === '' ? NaN : +$('nfStops').value });
+
+/* ---- the working ---- */
+let LAST = null;
+function run() {
+  const rate = +$('rate').value, T = +$('trees').value; $('rateV').textContent = rate.toFixed(2).replace(/0$/, ''); $('treesV').textContent = T;
+  const pr = problems(), msg = $('rowsMsg');
+  if (pr.length) { msg.hidden = false; msg.textContent = pr[0]; $('working').innerHTML = ''; $('others').innerHTML = ''; LAST = null; $('kPred').textContent = '–'; return; }
+  msg.hidden = true;
+  const F = fit(ROWS, rate, T), nf = newFlight(), n = ROWS.length; let h = '';
+  // start
+  h += `<h3>3. The start: a plain average</h3>
+    <p class="calcline"><b>Start:</b> (${ROWS.map(r => num(r.price)).join(' + ')}) ÷ ${n} = <b>${num(F.start)}</b></p>
+    <p class="caption">With no other information, the best single guess is the average of the real prices. Every flight starts at ${inrN(F.start)}. Its total miss, adding up every flight's difference (ignoring plus or minus), is ${inrN(F.startAbs)}.</p>`;
+  // rounds
+  h += `<h3>4. The corrections, one tree at a time</h3>`;
+  if (!F.rounds.length) h += '<p class="note bad">No question splits these flights into two groups. Change the table so the flights differ in class, days or stops.</p>';
+  F.rounds.forEach((R, k) => {
+    const b = R.best, prevGuess = k ? F.rounds[k - 1].guess : Array(n).fill(F.start);
+    const trows = R.tried.map(e => `<tr${e.chosen ? ' class="winner"' : ''}><td>${e.q.text}${e.chosen ? ' <b>← chosen</b>' : ''}</td><td>${names(e.yes)}</td><td>${names(e.no)}</td><td class="num">${mil(e.err)}</td></tr>`).join('');
+    const side = (idx, avgv, step, label) => `<p class="calcline">${label} <b>${names(idx)}</b>: leftover errors ${listNums(idx.map(i => R.res[i]))}, average <b>${sgn(avgv)}</b>, step ${(+$('rate').value).toString()} × ${sgn(avgv)} = <b>${sgn(step)}</b></p>`;
+    h += `<div class="round"><h4>Round ${k + 1}</h4>
+      <p class="calcline"><b>Leftover error</b> = real price − current guess. ${ROWS.map((r, i) => `${LET[i]}: ${num(r.price)} − ${num(prevGuess[i])} = ${sgn(R.res[i])}`).join('; ')}.</p>
+      <p class="caption">The toy now tries every possible question and checks how much leftover error would remain if each side were corrected by its own average. Smaller is better. Questions that would split the flights in exactly the same way are shown once. If two are equally good, the first in the list wins (Business, then days, then stops).</p>
+      ${tableHtml(['Question tried', 'Yes side', 'No side', ['Error left (sum of squared misses)', 'num']], trows)}
+      <p class="calcline"><b>Round ${k + 1} question: ${b.q.text}</b></p>
+      ${side(b.yes, b.my, R.stepYes, 'Yes, flights')}${side(b.no, b.mn, R.stepNo, 'No, flights')}
+      <p class="caption">Each side moves toward its own average leftover error, but only by ${(+$('rate').value).toString()} of the way. Small steps keep one tree from over-correcting. Total miss after this round: <b>${inrN(R.abs)}</b>.</p></div>`;
+  });
+  // running table
+  if (F.rounds.length) {
+    const head = [['Flight'], ['Real price', 'num'], ['Start', 'num'], ...F.rounds.map((_, k) => [`After round ${k + 1}`, 'num'])];
+    const body = ROWS.map((r, i) => `<tr><td><b>${LET[i]}</b> ${r.cls}, ${r.days} d, ${r.stops} stop${r.stops === 1 ? '' : 's'}</td><td class="num">${num(r.price)}</td><td class="num">${num(F.start)}</td>${F.rounds.map(R => `<td class="num">${num(R.guess[i])}</td>`).join('')}</tr>`).join('')
+      + `<tr class="cur"><td><b>Total miss</b> (add up each flight's difference)</td><td class="num"></td><td class="num"><b>${num(F.startAbs)}</b></td>${F.rounds.map(R => `<td class="num"><b>${num(R.abs)}</b></td>`).join('')}</tr>`;
+    h += `<h3>5. Each flight's guess after every round</h3><p class="subtitle">Each guess moves toward the real price, so the total miss at the bottom shrinks.</p>${tableHtml(head, body)}`;
+    // new flight
+    let p = F.start; const steps = [], eq = [num(F.start)];
+    F.rounds.forEach(R => { const yes = R.best.q.f(nf), st = yes ? R.stepYes : R.stepNo; steps.push({ R, yes, st, before: p, after: p + st }); p += st; eq.push(`${st < 0 ? MINUS : '+'} ${num(Math.abs(st))}`); });
+    const body2 = `<tr><td><b>Start</b></td><td>The average of the real prices</td><td></td><td class="num">${num(F.start)}</td><td class="num">${num(F.start)}</td></tr>`
+      + steps.map((s, k) => `<tr><td><b>Round ${k + 1}</b></td><td>${s.R.best.q.text}</td><td>${s.yes ? 'Yes' : 'No'}</td><td class="num">${sgn(s.st)}</td><td class="num">${num(s.after)}</td></tr>`).join('')
+      + `<tr class="cur"><td><b>Predicted price</b></td><td></td><td></td><td class="num"></td><td class="num"><b>${num(p)}</b></td></tr>`;
+    h += `<h3>Pricing your new flight</h3><p class="subtitle">The new flight (${nf.cls}, ${nf.days} days before departure, ${nf.stops} stop${nf.stops === 1 ? '' : 's'}) answers each question and collects that side's step.</p>
+      ${tableHtml(['Step', 'Question', 'Your flight', ['Change (₹)', 'num'], ['Price so far (₹)', 'num']], body2)}
+      <p class="calcline big-eq"><b>${eq.join(' ')} = ${num(p)}</b></p>
+      <p class="caption">Each step is shown to the nearest rupee, so the sum can differ from the total by ₹1. The exact total is ${p.toFixed(2)}. This is the toy's predicted price. It is made-up data, not a real fare.</p>`;
+    LAST = { pred: p };
+    $('kPred').textContent = inrN(p);
+  } else { LAST = null; $('kPred').textContent = '–'; }
+  $('working').innerHTML = h; stackAll($('working'));
+  check(); others(nf);
+}
+
+function check() {
+  const out = $('kOut'), a = $('kActual').value;
+  if (!LAST) { out.innerHTML = '<div class="muted">The toy has no price yet. Fix the table above first.</div>'; return; }
+  if (a === '' || !(+a > 0)) { out.innerHTML = '<div class="muted">Enter a real price above.</div>'; return; }
+  const A = +a, P = LAST.pred, d = P - A, pct = Math.abs(d) / A * 100;
+  out.innerHTML = `<div>The toy said ${inrN(P)}, the real price was ${inrN(A)}. The miss is <b>${inrN(Math.abs(d))}</b> ${d > 0 ? 'too high' : d < 0 ? 'too low' : '(exact)'}.</div>
+    <div>As a share of the real price: ${num(Math.abs(d))} ÷ ${num(A)} = <b>${pct.toFixed(1)}%</b> miss.</div>
+    <div>Score = 100 − ${pct.toFixed(1)} = <b>${Math.max(0, 100 - pct).toFixed(1)}</b>.</div>
+    <div>Within 10%? <b>${pct <= 10 ? 'yes' : 'no'}</b>.</div>`;
+}
+
+/* ---- two simplified comparisons ---- */
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function bestStump(rows) { // a one-question tree that predicts the price directly: each side answers with its own average price
+  let best = null; questions(rows).forEach(q => { const y = rows.filter(q.f), nn = rows.filter(r => !q.f(r)); if (!y.length || !nn.length) return;
+    const my = avg(y.map(r => r.price)), mn = avg(nn.map(r => r.price)), err = y.reduce((s, r) => s + (r.price - my) ** 2, 0) + nn.reduce((s, r) => s + (r.price - mn) ** 2, 0);
+    if (!best || err < best.err - 1e-9) best = { q, my, mn, err, ny: y.length, nn: nn.length }; });
+  return best;
+}
+function solve(A, y) { const n = A.length, M = A.map((r, i) => [...r, y[i]]);
+  for (let c = 0; c < n; c++) { let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; if (Math.abs(M[p][c]) < 1e-9) return null; [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; } }
+  return M.map((r, i) => r[n] / r[i]); }
+function others(nf) {
+  let h = '';
+  // random forest: 3 trees, each on a random 5-flight subset (fixed seed), answers averaged
+  const rnd = mulberry(7), k = Math.min(5, ROWS.length - 1), trees = [];
+  for (let t = 0; t < 3; t++) { const idx = ROWS.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    const sub = idx.slice(0, k).sort((a, b) => a - b), tr = bestStump(sub.map(i => ROWS[i])); if (tr) trees.push({ sub, tr }); }
+  if (trees.length) {
+    const ans = trees.map(t => t.tr.q.f(nf) ? t.tr.my : t.tr.mn), rf = avg(ans);
+    h += `<h4>Random forest: many independent trees, then average</h4>
+      <p class="caption">Each tree sees a random ${k} of the ${ROWS.length} flights (the draw is fixed, so the page does not change on reload) and gives a price straight from its one question. Their answers are averaged. Trees do not correct each other, unlike boosting.</p>
+      ${tableHtml(['Tree', 'Flights it saw', 'Its question', 'Your flight', ['Its answer (₹)', 'num']], trees.map((t, i) => `<tr><td><b>Tree ${i + 1}</b></td><td>${names(t.sub)}</td><td>${t.tr.q.text}</td><td>${t.tr.q.f(nf) ? 'Yes' : 'No'}</td><td class="num">${num(ans[i])}</td></tr>`).join('') + `<tr class="cur"><td><b>Forest answer</b></td><td colspan="3">(${ans.map(num).join(' + ')}) ÷ ${ans.length}</td><td class="num"><b>${num(rf)}</b></td></tr>`)}`;
+  }
+  // straight line: ordinary least squares
+  const X = r => [1, r.cls === 'Business' ? 1 : 0, r.days < 10 ? 1 : 0, r.stops], cols = ['Starting price', 'Business', 'Under 10 days', 'Each stop'];
+  const XtX = cols.map((_, a) => cols.map((_, b) => ROWS.reduce((s, r) => s + X(r)[a] * X(r)[b], 0))), Xty = cols.map((_, a) => ROWS.reduce((s, r) => s + X(r)[a] * r.price, 0));
+  const w = solve(XtX, Xty);
+  if (w) { const x = X(nf), val = x.reduce((s, v, i) => s + v * w[i], 0);
+    h += `<h4>Straight line: one weight for each fact, added up</h4>
+      <p class="caption">Ordinary least squares picks the four weights that make the line's guesses closest to the real prices (smallest sum of squared misses). It cannot ask "if this, then that". It can only add.</p>
+      ${tableHtml(['Part', ['Weight (₹)', 'num'], 'Your flight has', ['Adds (₹)', 'num']], cols.map((c, i) => `<tr><td>${c}</td><td class="num">${sgn(w[i]).replace('+', i ? '+' : '')}</td><td>${i ? (i === 3 ? x[i] + ' stop' + (x[i] === 1 ? '' : 's') : x[i] ? 'yes (1)' : 'no (0)') : ''}</td><td class="num">${num(w[i] * x[i])}</td></tr>`).join('') + `<tr class="cur"><td><b>Straight-line price</b></td><td></td><td></td><td class="num"><b>${num(val)}</b></td></tr>`)}
+      <p class="calcline">${num(w[0])} ${w.slice(1).map((v, i) => `${v * x[i + 1] < 0 ? MINUS : '+'} ${num(Math.abs(v * x[i + 1]))}`).join(' ')} = <b>${num(val)}</b></p>`;
+  } else h += '<h4>Straight line</h4><p class="caption">These flights do not give the line enough variety to work out all four weights (for example every flight has the same stops). Change the table to see it.</p>';
+  if (LAST) h += `<p class="caption">Boosting (above) gave <b>${inrN(LAST.pred)}</b> for the same flight. Three different methods, three different answers: none can know the true price from eight flights.</p>`;
+  $('others').innerHTML = h; stackAll($('others'));
+}
+
+drawRows(); run();
+
+/* ============================ Part 2: the real model, server-backed ============================ */
+let SPEC = [], CURV = {}, rTimer = null, rSeq = 0;
+const LS_KEY = 'fs-lab-values';
+function lsGet() { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; } }
+function lsSet(v) { try { localStorage.setItem(LS_KEY, JSON.stringify(v)); } catch (e) {} }
+function buildR() {
+  const t = $('rTbl'); t.innerHTML = '<tr><th>Input</th><th>Your value</th></tr>';
+  SPEC.forEach(sp => {
+    let w;
+    if (sp.type === 'select') w = `<select data-rk="${sp.key}" aria-label="${esc(sp.label)}">${sp.options.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>`;
+    else w = `<input type="number" data-rk="${sp.key}" min="${sp.min}" max="${sp.max}" step="${sp.step}" inputmode="decimal" aria-label="${esc(sp.label)}" ${sp.nullable ? 'placeholder="not known"' : ''}>`;
+    const tr = document.createElement('tr'); tr.innerHTML = `<td><b>${esc(sp.label)}</b><div class="muted small">${esc(sp.help)}</div></td><td class="val" data-l="Your value">${w}${sp.derived ? '<div class="derived-note">Calculated from past data; edit to see how strongly the model relies on it.</div>' : ''}</td>`; t.appendChild(tr);
+  });
+  stackAll(t.parentNode);
+}
+const rEl = k => document.querySelector(`[data-rk="${k}"]`);
+function writeR() { SPEC.forEach(sp => { const el = rEl(sp.key), v = CURV[sp.key]; if (el) el.value = v == null ? '' : v; }); }
+function readR() { const o = {}; SPEC.forEach(sp => { const v = rEl(sp.key).value; o[sp.key] = sp.type === 'select' ? (sp.options.some(x => typeof x.value === 'number') ? Number(v) : v) : (v === '' ? null : Number(v)); }); return o; }
+$('rTbl').addEventListener('input', () => { clearTimeout(rTimer); rTimer = setTimeout(() => { CURV = readR(); askTrace(); }, 300); });
+async function askTrace() {
+  const my = ++rSeq;
+  try {
+    const r = await fetch('/api/trace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: CURV }) });
+    const j = await r.json(); if (my !== rSeq) return;
+    if (!r.ok) { $('rWarn').hidden = false; $('rWarn').textContent = j.error || 'That did not work. Try other values.'; return; }
+    $('rWarn').hidden = !(j.breakdown && j.breakdown.warnings && j.breakdown.warnings.length); $('rWarn').textContent = ((j.breakdown || {}).warnings || []).join(' ');
+    if (j.breakdown && j.breakdown.values) { CURV = { ...CURV, ...j.breakdown.values }; writeR(); lsSet(CURV); }
+    drawReal(j);
+  } catch (e) { if (my === rSeq) { $('rWarn').hidden = false; $('rWarn').textContent = "We couldn't reach the service. Please try again in a moment."; } }
+}
+const rup = x => '₹' + Math.abs(Math.round(x)).toLocaleString('en-IN');
+const rsg = x => (Math.round(x) < 0 ? MINUS : '+') + rup(x);
+function pathHtml(t) {
+  const steps = t.steps.map(s => {
+    const val = s.row_value_display != null ? String(s.row_value_display).replace(/^[\d.]+ \(about (₹[\d,]+)\)$/, 'about $1') : (typeof s.row_value === 'number' ? s.row_value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : s.row_value);
+    const ans = s.answer === 'yes' ? 'yes' : s.answer === 'no' ? 'no' : 'missing, so the model follows its default branch';
+    let q = String(s.question).replace(/below [\d.]+ \(about (₹[\d,]+)\)/, 'below about $1');
+    if (s.kind === 'category' && Array.isArray(s.categories)) { const c = s.categories, list = c.length > 4 ? `${c.slice(0, 3).join(', ')} and ${c.length - 3} more` : c.join(', '); q = `Is ${s.label} ${c.length === 1 ? c[0] : 'one of ' + list}?`; }
+    return `<li><span class="tq">${esc(q)}</span> <span class="ta">Your flight: ${esc(val)}, so <b>${ans}</b>.</span></li>`; }).join('');
+  return `<ol class="treepath">${steps}<li class="leaf"><b>End of the path.</b> This tree adds <b>${rsg(t.effect_inr)}</b> (the price goes from ${rup(t.price_before)} to ${rup(t.price_after)}).</li></ol>`;
+}
+function chartSvg(cum, start) {
+  const pts = [{ k: 0, p: start }].concat(cum.map(c => ({ k: c.trees, p: c.price }))), W = Math.max(320, Math.min(innerWidth - 40, 760)), H = 260, L = 64, R = 24, T = 26, B = 46;
+  const ys = pts.map(p => p.p), lo = Math.min(...ys), hi = Math.max(...ys), pad = (hi - lo) * .15 || 100, y0 = lo - pad, y1 = hi + pad;
+  const x = i => L + i / (pts.length - 1) * (W - L - R), y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(p.p).toFixed(1)}`).join(' ');
+  const lab = (i, dy) => `<text class="vt" x="${x(i)}" y="${y(pts[i].p) + dy}" text-anchor="${i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}">${rup(pts[i].p)}</text>`;
+  const ticks = [y0 + pad * .3, (y0 + y1) / 2, y1 - pad * .3];
+  return `<svg class="kchart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="The predicted price after 1, 2, 3 and more trees, settling at the final price">
+    ${ticks.map(v => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${rup(v)}</text>`).join('')}
+    <path class="ln2" d="${line}" fill="none"/>
+    ${pts.map((p, i) => `<circle class="dot${i === pts.length - 1 ? ' fin' : ''}" cx="${x(i)}" cy="${y(p.p)}" r="${i === pts.length - 1 ? 5 : 3.5}"/><text class="ax" x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${i === 0 ? 'start' : p.k.toLocaleString('en-IN')}</text>`).join('')}
+    ${lab(0, 24)}${lab(1, -12)}${lab(2, 24)}${lab(3, -12)}${lab(pts.length - 1, -12)}
+    <text class="ax" x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">number of trees added so far (spaced evenly, not to scale)</text></svg>`;
+}
+function drawReal(j) {
+  const bd = j.breakdown || {}; $('rPrice').textContent = rup(bd.price); $('rEngine').textContent = (bd.engine || {}).label || '–';
+  if (!j.available) {
+    $('realOut').innerHTML = `<div class="note"><b>${esc(j.reason || 'The tree-by-tree view is not available.')}</b> Switch the engine to XGBoost on <a href="/config">Model &amp; Insights</a> to see it. The breakdown from Price Lab is still available: see <a href="/lab">Price Lab</a>.</div>`; return;
+  }
+  const cum = j.cumulative, n = j.n_trees, price = j.price, trees = j.trees;
+  const first3 = trees.filter(t => t.tree_number <= 3), shown = new Set(first3.map(t => t.tree_number));
+  const bigs = trees.filter(t => t.roles.some(r => r.startsWith('biggest'))).sort((a, b) => parseInt((a.roles.find(r => r.startsWith('biggest')) || '#9').split('#')[1]) - parseInt((b.roles.find(r => r.startsWith('biggest')) || '#9').split('#')[1]));
+  const big = bigs.find(t => !shown.has(t.tree_number));
+  const first5 = trees.filter(t => t.tree_number <= 5).sort((a, b) => a.tree_number - b.tree_number);
+  const afterFirst = first5.length ? first5[first5.length - 1].price_after : j.start.price_inr, restSum = price - afterFirst, more = n - first5.length;
+  const qu = j.questions_used, feats = (qu.features || []).slice(0, 8), mx = Math.max(...feats.map(f => f.share_of_questions_pct), 1);
+  let h = `<h3>B. Step 1: the starting price</h3>
+    <p class="calcline"><b>Start:</b> exp(${j.start.log.toFixed(3)}) = <b>${rup(j.start.price_inr)}</b></p>
+    <p class="caption">Before it looks at your flight, the model starts from ${rup(j.start.price_inr)}, about the average fare in its training data. (It works with the logarithm of the price, so you will see exp(…) here. exp is just the button on a calculator that turns the logarithm back into rupees.) In the toy, this was the plain average of the real prices.</p>
+    <h3>C. Step 2: thousands of small decisions</h3>
+    <p class="subtitle">${esc(j.summary_sentence)}</p>
+    ${chartSvg(cum, j.start.price_inr)}
+    <p class="caption">Each tree nudges the price up or down a little, so the line wanders before it settles. Each dot is the price after that many trees. The big dot is the final answer.</p>
+    <h3>D. Step 3: look inside some trees</h3>
+    <p class="subtitle">Each tree asks a chain of yes/no questions about your flight until it reaches an end point. Each end point adds or subtracts a small amount of rupees. These are the first three trees${big ? ` and tree ${big.tree_number}, one of the three that matter most for this flight` : ''}.</p>`;
+  first3.forEach(t => { h += `<div class="round"><h4>Tree ${t.tree_number}</h4>${pathHtml(t)}</div>`; });
+  if (big) h += `<div class="round"><h4>Tree ${big.tree_number}: one of the most influential for this flight</h4>${pathHtml(big)}</div>`;
+  h += `<h3>E. Step 4: what the model asked about the most</h3>
+    <p class="subtitle">Across all ${n.toLocaleString('en-IN')} trees the model asks ${qu.total_questions.toLocaleString('en-IN')} questions in total. This shows how often each fact is used, and how much of the model's improvement came from questions about it.</p>
+    <div class="bars">${feats.map(f => `<div class="brow"><span class="bl">${esc(f.label)}</span><span class="bt"><i style="width:${(f.share_of_questions_pct / mx * 100).toFixed(1)}%"></i></span><span class="bv">${f.share_of_questions_pct.toFixed(1)}% of questions, ${f.gain_share_pct.toFixed(0)}% of the improvement</span></div>`).join('')}</div>
+    <p class="caption">A question can be asked often yet matter little, or asked rarely yet matter a lot. Both numbers are shown.</p>
+    <h3>F. Step 5: adding it up</h3>
+    <p class="calcline big-eq"><b>${rup(j.start.price_inr)} ${first5.map(t => `${t.effect_inr < 0 ? MINUS : '+'} ${rup(t.effect_inr).slice(1)}`).join(' ')} ${restSum < 0 ? MINUS : '+'} ${rup(restSum).slice(1)} (the other ${more.toLocaleString('en-IN')} trees) = ${rup(price)}</b></p>
+    <details><summary>and ${more.toLocaleString('en-IN')} more small steps</summary><p class="caption">The other trees follow the same pattern: each asks its questions about your flight and adds a small amount. Together they add ${rsg(restSum)}, which takes the price from ${rup(afterFirst)} (after ${first5.length} trees) to <b>${rup(price)}</b>. Amounts are shown to the nearest rupee, so a sum can be ₹1 out.</p></details>
+    <p class="caption">${rup(price)} is the same price the app shows everywhere else for this flight on this engine.</p>
+    <h3>G. The toy and the real model, side by side</h3>
+    ${tableHtml(['', 'The toy (Part 1)', 'The real model'], `<tr><td>Trees</td><td>3</td><td>${n.toLocaleString('en-IN')}</td></tr><tr><td>Size of each step</td><td>0.5 of the correction</td><td>${j.learning_rate} of the correction</td></tr><tr><td>Questions in one tree</td><td>1</td><td>up to 511 end points per tree, so many questions in a chain</td></tr><tr><td>Facts it looks at</td><td>3</td><td>18</td></tr><tr><td>Flights it learned from</td><td>8 made-up flights</td><td>745,375 real, old fares</td></tr>`)}
+    <p class="caption">The idea is the same: start from an average, then add many small corrections, each from a few yes/no questions. The real model just does it thousands of times with much smaller steps.</p>`;
+  $('realOut').innerHTML = h; stackAll($('realOut'));
+}
+async function loadReal(fromTypical) {
+  if (!SPEC.length) { const sp = await (await fetch('/api/lab/spec')).json(); SPEC = sp.inputs; window.REFV = sp.reference; buildR(); }
+  const saved = fromTypical ? null : lsGet();
+  CURV = saved && SPEC.every(sp => sp.key in saved) ? saved : { ...window.REFV };
+  $('realFrom').textContent = saved && !fromTypical ? 'This is the flight you had open in Price Lab. Change any value and the working below recalculates.' : 'This is a typical flight. Open a real one in Price Lab and come back, or change any value here.';
+  writeR(); askTrace();
+}
+$('rTypical').onclick = () => loadReal(true);
+loadReal(false);
+</script>
+{% endblock %}

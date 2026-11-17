@@ -42,6 +42,7 @@
       <div class="cell"><div class="k">Difference</div><div class="big" id="rDiff">–</div></div>
     </div>
     <div class="helper" id="helper" hidden></div>
+    <p class="note"><a href="/walkthrough#real">See how this price is calculated, step by step</a>. It takes the flight you have open here and shows the model's working, tree by tree.</p>
     <h3 style="font:600 12px var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 6px">How the price is built up</h3>
     <p class="subtitle">It starts at the base fare (an average flight), then each input adds or subtracts, until it reaches the predicted price. The biggest effects are shown.</p>
     <div id="wf"></div>
@@ -86,6 +87,7 @@ async function ask() {
     if (!r.ok) { $('warn').hidden = false; $('warn').textContent = j.error || 'That did not work. Try other values.'; $('readout').classList.remove('busy'); return; }
     $('warn').hidden = !(j.warnings && j.warnings.length); $('warn').textContent = (j.warnings || []).join(' ');
     if (j.values) { Object.assign(CUR, j.values); writeInputs(); }
+    try { localStorage.setItem('fs-lab-values', JSON.stringify(CUR)); } catch (e) {}
     show(j);
   } catch (e) { if (my === seq) { $('warn').hidden = false; $('warn').textContent = "We couldn't reach the service. Please try again in a moment."; } }
   $('readout').classList.remove('busy');

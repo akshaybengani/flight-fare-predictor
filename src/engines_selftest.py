@@ -82,6 +82,76 @@ def explain_checks(df, ENC):
     return fails
 
 
+def _replay_ok(step, row_value):
+    """re-evaluate one printed question by hand from the printed threshold / categories and the row's value"""
+    if np.isnan(row_value):
+        return step["answer"] == "missing"
+    if step["kind"] == "number":
+        return step["answer"] == ("yes" if np.float32(row_value) < np.float32(step["threshold"]) else "no")
+    names = step["categories"]
+    return True if names is None else None  # categories are checked by name below
+
+
+def trace_checks(df, ENC):
+    """trace(): cumulative ends at the prediction, printed paths replay to the printed leaf, no NaN, fast, other engines say 'not available'."""
+    import time as _t
+    import xgboost as xgb
+    fails = 0
+    try:
+        e = engines.list_engines()
+        if not next(x for x in e if x["key"] == "xgboost")["available"]:
+            print("\ntrace SKIPPED (xgboost engine not available)")
+            return 0
+        eng = engines.load_engine("xgboost")
+        info = {f["name"]: f for f in engines.reference_values()["features"]}
+        rows = ENC.transform(add_basic(df.sample(20, random_state=11)))
+        booster = eng.model.get_booster()
+        engines.trace("xgboost", rows.iloc[[0]])
+        ts = []
+        for i in range(len(rows)):
+            one = rows.iloc[[i]]
+            t = _t.perf_counter()
+            out = engines.trace("xgboost", one)
+            ts.append(_t.perf_counter() - t)
+            price = float(np.exp(eng.predict(one)[0]))
+            assert out["available"] and abs(out["cumulative"][-1]["price"] - price) <= 1.0, "cumulative end differs from predict"
+            assert out["cumulative"][-1]["trees"] == out["n_trees"]
+            flat = [out["start"]["log"], out["price"], out["learning_rate"]] + [c["price"] for c in out["cumulative"]] \
+                + [t_["leaf_value"] for t_ in out["trees"]] + [t_["effect_inr"] for t_ in out["trees"]]
+            assert np.isfinite(flat).all(), "NaN/inf in trace"
+            assert [t_["tree_number"] for t_ in out["trees"] if "first" in t_["roles"]] == [1, 2, 3, 4, 5]
+            assert sum(1 for t_ in out["trees"] if any(r.startswith("biggest #") for r in t_["roles"])) == 3
+            row = one.iloc[0].astype(float)
+            for t_ in out["trees"]:
+                for s in t_["steps"]:
+                    v = float(row[s["feature"]])
+                    if s["kind"] == "category":
+                        names = info[s["feature"]]["categories"]
+                        inside = (not np.isnan(v)) and names[int(v)] in s["categories"]
+                        assert s["answer"] == ("missing" if np.isnan(v) else ("yes" if inside else "no")), f"category step wrong: {s}"
+                    else:
+                        assert _replay_ok(s, v), f"numeric step wrong: {s}"
+                # the printed leaf equals what that single tree adds to the log price (float32 tolerance)
+                k = t_["tree_number"] - 1
+                m0 = float(booster.predict(__import__("xgboost").DMatrix(engines._xgb_frame(one[eng.features], eng.cat_sizes), enable_categorical=True),
+                                           output_margin=True, iteration_range=(0, k))[0]) if k else out["start"]["log"]
+                m1 = float(booster.predict(__import__("xgboost").DMatrix(engines._xgb_frame(one[eng.features], eng.cat_sizes), enable_categorical=True),
+                                           output_margin=True, iteration_range=(0, k + 1))[0])
+                assert abs((m1 - m0) - t_["leaf_value"]) < 2e-4, f"leaf {t_['leaf_value']} != margin change {m1 - m0}"
+            q = out["questions_used"]["features"]
+            assert abs(sum(r["gain_share_pct"] for r in q) - 100) < 0.1 and abs(sum(r["share_of_questions_pct"] for r in q) - 100) < 0.1
+        assert float(np.median(ts)) <= 0.3, f"trace too slow: median {np.median(ts) * 1000:.0f} ms"
+        other = engines.trace("hgb", rows.iloc[[0]])
+        assert other["available"] is False and other["reason"]
+        print(f"\ntrace OK: 20 rows, cumulative == predict, printed paths replay to the printed leaf (first 5 + biggest trees), "
+              f"median {np.median(ts) * 1000:.0f} ms/row; other engines report 'not available'")
+        print("  " + out["summary_sentence"])
+    except Exception as ex:
+        fails += 1
+        print(f"\ntrace FAILED: {type(ex).__name__}: {ex}")
+    return fails
+
+
 def main():
     bundle = joblib.load(ROOT / "models/fare_model.joblib")
     ENC = bundle["enc"]
@@ -139,6 +209,7 @@ def main():
             print(f"{key:14} {'FAILED':8} {'':>7} {'':>8} {'':>10} {'':>8}  {type(ex).__name__}: {ex}")
     # ---- explain() and reference_values()
     fails += explain_checks(df, ENC)
+    fails += trace_checks(df, ENC)
     # cache bound check
     engines.clear_cache()
     for e in engines.list_engines():

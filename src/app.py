@@ -738,6 +738,11 @@ def lab_page():
     return render_template("lab.html", page="lab", cities=CITIES, classes=CLASSES)
 
 
+@app.get("/walkthrough")
+def walkthrough_page():
+    return render_template("walkthrough.html", page="walk")
+
+
 @app.get("/how")
 def how_page():
     return render_template("how.html", page="how")
@@ -826,6 +831,31 @@ def whatif_api():
     except Exception:
         app.logger.exception("whatif failed")
         return jsonify(error="The what-if calculation failed on the server. Try different values."), 500
+
+
+@app.post("/api/trace")
+def trace_api():
+    """The XGBoost calculation for one edited flight, tree by tree, plus the normal what-if breakdown.
+    Same body as /api/whatif ({values, engine}). Other engines get available=false and the breakdown only."""
+    rv = whatif_api()
+    resp, status = (rv if isinstance(rv, tuple) else (rv, 200))
+    if status != 200:
+        return rv
+    wi = resp.get_json()
+    out = {"available": False, "engine": wi["engine"]["key"], "breakdown": wi}
+    try:
+        import engines as _eng
+        t = _eng.trace(wi["engine"]["key"], lab_frame(wi["values"]))
+        out.update(t)
+        out["breakdown"] = wi
+        if t.get("available") and abs(t["price"] - wi["price"]) > 1.0:
+            app.logger.error("trace %s and whatif %s disagree", t["price"], wi["price"])
+    except Exception as e:
+        app.logger.warning("trace unavailable: %s", e)
+        out["reason"] = "The XGBoost trace could not be built on this server. The breakdown below still works."
+    if not out.get("available") and wi["engine"]["key"] != "xgboost":
+        out["reason"] = "The tree-by-tree view is only available for the XGBoost engine. The breakdown below still works."
+    return jsonify(finite_json(out))
 
 
 def _warm_default_engine():

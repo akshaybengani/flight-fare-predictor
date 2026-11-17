@@ -216,3 +216,5 @@ The code is MIT licensed. **The datasets are not redistributed here**; `scripts/
 3. **Demand features:** route frequency from the schedule data and DGCA city-pair passenger counts.
 4. **Sparse flights:** a model that does not lean on per-flight history, to handle brand-new flights.
 5. **Offer logic:** turn predictions into a booking-price recommendation with an explicit risk margin.
+
+- `POST /api/trace`: tree-by-tree XGBoost calculation plus the what-if breakdown. The page `/walkthrough` ("How the price is calculated") shows a hands-on toy first, then the real model on a real flight.

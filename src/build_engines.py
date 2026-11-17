@@ -402,12 +402,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--patch-clip", action="store_true")
     ap.add_argument("--build-reference", action="store_true")
+    ap.add_argument("--build-trace-cache", action="store_true", help="xgboost leaf table + question counts used by engines.trace()")
     ap.add_argument("--december-check", action="store_true")
     ap.add_argument("--only", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--assemble-only", action="store_true")
     a = ap.parse_args()
     keys = [k for k in a.only.split(",") if k] or KEYS
+    if a.build_trace_cache:
+        print(engines.build_trace_cache()); log("DONE"); return
     if a.build_reference:
         build_reference(); log("DONE"); return
     if a.patch_clip:

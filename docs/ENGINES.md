@@ -100,3 +100,30 @@ rv  = reference_values()                    # per-feature facts for building edi
 `reference_values()` returns `{"order_note", "target", "reference_sample", "features": [...]}` with the 18 features **in the order the model receives them** (`ENC.features`). Each has `name`, `order`, `label` (plain English), `description` (one sentence; read from `FEATURE_DOCS` in `src/app.py` at build time, read-only), `type` (`"number"` or `"category"`), `derived`, and for categories `categories` (names; the frame holds the position in this list as the code) and `typical` (most common); for numbers `min`, `max`, `typical` (median) and `integer`. The derived features are `te_flight`, `te_route_airline` and `route_supply` (typical price levels and route supply computed from the training data, not something a traveller types); the `te_*` ones also carry `typical_price_inr`, `min_price_inr`, `max_price_inr`. Built with `python src/build_engines.py --build-reference`; the self-test checks the order against `ENC.features`.
 
 The self-test also checks, for every available engine and 20 random rows: steps add up to the price (1 rupee tolerance, actual error below 1e-10), no NaN, ordering, speed (XGBoost under 100 ms, others under 500 ms), and that booking 30 days ahead is not more expensive than 3 days ahead (about 0.8x for every engine).
+
+## Showing the calculation tree by tree: `trace()` (XGBoost only)
+
+```python
+from engines import trace
+out = trace("xgboost", feats_one_row, first_n=5)     # same one-row frame as explain(); about 30 ms
+trace("hgb", feats_one_row)                          # -> {"available": False, "reason": "...only available for the XGBoost engine..."}
+```
+
+**Formula:** predicted price = `exp(start_log + sum of every tree's leaf value)`. The model starts from its base score (`start.log` 9.54, `start.price_inr` about ₹13,905) and each of the 3,500 trees adds a leaf value to that log price (the learning rate 0.05 is already inside the leaf values). HistGradientBoosting is not supported (its trees are in `model._predictors` with a different node layout; not done).
+
+Returned fields: `available`, `engine`, `n_trees`, `learning_rate`, `price`, `start {log, price_inr, formula, note}`; `cumulative` (price after 1, 2, 3, 5, 10, 25, 50, 100, 250, 500, 1000, 2000 and all trees; computed with `iteration_range=(0, k)`; the last value must equal the engine's normal prediction and the call asserts that to within ₹1); `trees`; `questions_used`; `summary_sentence`.
+
+- **`trees`**: the first `first_n` trees (role `"first"`), the 3 trees whose leaf for this row is largest in absolute value (`"biggest #1..3"`), and the 3 biggest after the first 5 (`"biggest after the first 5 #1..3"`). Boosting front-loads the large corrections, so the overall biggest three are usually among the first five; the "after" ones add variety. Per tree: `tree_number` (1-based), `roles`, `steps`, `leaf_value` (log), `price_before`, `price_after`, `effect_inr` (what adding this tree does to the running price when it is added in its turn). Each step: `feature`, plain `label`, `kind` (`number`/`category`), `question` in words, `threshold` + `threshold_display` or the category set (`categories`, names), the row's own value (`row_value`, `row_value_display` for the price-level features), `answer` (`yes`/`no`/`missing`) and `next_node`. XGBoost's convention: the **yes** branch is taken when value < threshold (compared as float32, as xgboost does); for a category split, **yes** when the category is in the listed set; a missing value follows the tree's default branch.
+- **`questions_used`**: over all 3,500 trees, per feature `times_asked`, `share_of_questions_pct` (how often it is used as a question) and `gain_share_pct` (xgboost `total_gain`, normalised to 100%), in plain labels, plus `total_questions` (1,785,000 here). It is computed once from `models/engines/xgboost_trace.joblib` (29 MB, git-ignored like the engines; rebuild with `python src/build_engines.py --build-trace-cache`, about 15 s and 1 GB of memory). If the file is missing, the first call computes the same thing in memory (about 15 s).
+- Speed: about 30 ms per row after the first call.
+- Verified by the self-test for 20 random rows: the cumulative end equals the prediction, every printed question re-evaluates by hand to the printed answer, each printed leaf equals what that single tree adds to the log price, no NaN, shares sum to 100%, under 300 ms.
+
+Example, Delhi to Mumbai, Economy, 2026-12-10 (21 days ahead), the same AirAsia flight as the `explain()` example:
+
+> The model starts at ₹13,905. 3,500 small decision trees each add or subtract a little. After 100 trees the price is ₹5,787, after 1,000 it is ₹5,093, and after all 3,500 it settles at ₹5,024.
+
+Cumulative: 1 tree ₹13,465; 3 trees ₹12,624; 10 trees ₹10,423; 25 trees ₹8,021; 50 trees ₹6,483; 100 trees ₹5,787; 500 trees ₹5,227; 1,000 trees ₹5,093; 2,000 trees ₹4,998; 3,500 trees ₹5,024.
+
+Tree 1 path (leaf value −0.0322 in log price, price ₹13,905 → ₹13,465, effect −₹440): usual price of this flight below 9.88 (about ₹19,529)? row 8.81 (about ₹6,673): yes; month of travel below 3? row 12: no; departure hour below 23.17? row 4.92: yes; usual price of this flight below 9.06 (about ₹8,624)? yes; journey time below 2.17 h? row 14.67: no; distance below 1,254 km? row 1,147: yes; usual price of this flight below 8.70 (about ₹5,974)? no; is "From" one of [Bangalore, Chennai]? row Delhi: no; usual price of this flight below 8.96 (about ₹7,782)? yes; is "To" one of [Bangalore, Chennai, Delhi, Hyderabad, Mumbai]? row Mumbai: yes; distance below 879 km? row 1,147: no; leaf.
+
+Most used question: "usual price level of this flight" is 14.5% of all questions and 77.5% of the total gain; then month of travel (0.7% of questions, 5.8% of gain), usual price of this airline on this route (8.8%, 5.2%), journey time (10.7%, 4.0%), days before departure (20.5%, 1.8%).

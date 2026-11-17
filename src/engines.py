@@ -368,3 +368,171 @@ def explain(engine_key, feats):
     w = np.abs(raw)
     adj = raw + gap * (w / w.sum() if w.sum() > 0 else np.full(len(raw), 1.0 / len(raw)))
     return _finish("sensitivity", base, price, list(zip(eng.features, map(float, adj))), info, X)
+
+
+# ------------------------------------------------------------------------------------------------ tree-by-tree trace (XGBoost)
+TRACE_FILE = ENGINE_DIR / "xgboost_trace.joblib"  # built by `python src/build_engines.py --build-trace-cache` (git-ignored like the engines)
+TRACE_SPREAD = (1, 2, 3, 5, 10, 25, 50, 100, 250, 500, 1000, 2000)
+_NODE_BITS = 14  # leaf table key = (tree << 14) + node id; xgboost node ids stay far below 16,384 here
+_f32 = np.float32
+
+
+def _compute_trace_cache(booster):
+    """One pass over ALL trees (about 15 s, 1 GB): leaf values by (tree, node) and how often / how useful each feature is as a question."""
+    d = booster.trees_to_dataframe()
+    leaves = d[d.Feature == "Leaf"]
+    keys = (leaves.Tree.values.astype(np.int64) << _NODE_BITS) + leaves.Node.values.astype(np.int64)
+    vals = leaves.Gain.values.astype(np.float64)
+    o = np.argsort(keys)
+    inner = d[d.Feature != "Leaf"]
+    q = {f: {"splits": int(n), "total_gain": float(g)} for f, n, g in
+         inner.groupby("Feature").agg(n=("Gain", "size"), g=("Gain", "sum")).itertuples()}
+    return {"keys": keys[o], "vals": vals[o], "questions": q, "n_trees": int(d.Tree.max()) + 1, "n_nodes": int(len(d))}
+
+
+def build_trace_cache(path=None):
+    """Compute and save the XGBoost trace cache (needs the xgboost engine loadable)."""
+    eng = load_engine("xgboost")
+    cache = _compute_trace_cache(eng.model.get_booster())
+    joblib.dump(cache, path or TRACE_FILE)
+    return {k: (v if k in ("n_trees", "n_nodes") else "...") for k, v in cache.items()}
+
+
+def _trace_cache(eng):
+    with _lock:
+        c = getattr(eng, "_trace", None)
+        if c is None:
+            c = joblib.load(TRACE_FILE) if TRACE_FILE.exists() else _compute_trace_cache(eng.model.get_booster())
+            cfg = json.loads(eng.model.get_booster().save_config())["learner"]
+            c["base_log"] = float(str(cfg["learner_model_param"]["base_score"]).strip("[]"))
+            c["learning_rate"] = float(eng.model.get_params().get("learning_rate") or 0.05)
+            eng._trace = c
+        return c
+
+
+def _money(x):
+    return f"₹{x:,.0f}"
+
+
+def _path(node_index, root, row, info, cat_names):
+    """Follow `row` down one tree dump. xgboost convention: numeric split -> 'yes' branch when value < threshold (compared as
+    float32, as xgboost does), otherwise 'no'; a missing value follows the node's 'missing' child; categorical split -> 'yes'
+    branch when the category is in the listed set."""
+    n, steps = root, []
+    while "leaf" not in n:
+        f, cond = n["split"], n["split_condition"]
+        v = float(row[f])
+        i = info[f]
+        s = {"feature": f, "label": i["label"], "row_value": _display(i, v) if not np.isnan(v) else None}
+        if f.startswith("te_") and not np.isnan(v):
+            s["row_value_display"] = f"{v:.2f} (about ₹{np.exp(v):,.0f})"
+        if isinstance(cond, list):
+            names = [cat_names[f][c] for c in cond if 0 <= c < len(cat_names[f])]
+            s.update(kind="category", categories=names, question=f"Is {i['label']} one of {names}?")
+            nxt, ans = (n["missing"], "missing") if np.isnan(v) else ((n["yes"], "yes") if int(v) in cond else (n["no"], "no"))
+        else:
+            thr = f"{cond:.2f} (about ₹{np.exp(cond):,.0f})" if f.startswith("te_") else f"{cond:g}"
+            s.update(kind="number", threshold=float(cond), threshold_display=thr, question=f"Is {i['label']} below {thr}?")
+            if np.isnan(v):
+                nxt, ans = n["missing"], "missing"
+            else:
+                nxt, ans = (n["yes"], "yes") if _f32(v) < _f32(cond) else (n["no"], "no")
+        s["answer"] = ans
+        s["next_node"] = nxt
+        steps.append(s)
+        n = node_index[nxt]
+    return steps, n
+
+
+def _index_nodes(n, d):
+    d[n["nodeid"]] = n
+    for c in n.get("children", []):
+        _index_nodes(c, d)
+    return d
+
+
+def trace(engine_key, feats, first_n=5):
+    """Show the XGBoost calculation for ONE row (same `feats` frame as explain()), tree by tree.
+
+    predicted price = exp(start_log + sum of every tree's leaf value). Returns
+      available, engine, start {log, price_inr, formula, note}, n_trees, learning_rate, price,
+      cumulative [{trees, price, log}] (price after k trees, k in 1,2,3,5,10,25,50,100,250,500,1000,2000,n_trees; the last equals
+        the engine's normal prediction, asserted to within 1 rupee),
+      trees [{tree_number (1-based), roles ['first'] and/or ['biggest #n'], steps [{feature, label, kind, question, threshold /
+        categories, row_value, answer 'yes'|'no'|'missing', next_node}], leaf_value (log), price_before, price_after, effect_inr}]
+        for the first `first_n` trees, the 3 trees whose leaf for this row is largest in absolute value (roles 'biggest #n'; boosting
+        front-loads, so these are usually among the first few) and the 3 biggest after the first `first_n` (roles 'biggest after ...'),
+      questions_used {total_questions, total_gain, features:[{feature, label, times_asked, share_of_questions_pct, gain_share_pct}]}
+        over ALL trees (computed once, cached in the engine object / models/engines/xgboost_trace.joblib),
+      summary_sentence.
+    Only the XGBoost engine is supported: other engines get {"available": False, "reason": ...}. (HistGradientBoosting's trees
+    could be read from model._predictors but its node/bitset layout differs; not done.)"""
+    eng = load_engine(engine_key)
+    if eng.kind != "xgboost":
+        return {"available": False, "engine": engine_key,
+                "reason": "tree-by-tree trace is only available for the XGBoost engine; use explain() for this engine"}
+    import xgboost as xgb
+    info = {f["name"]: f for f in reference_values()["features"]}
+    cat_names = {f: i["categories"] for f, i in info.items() if i["type"] == "category"}
+    cache = _trace_cache(eng)
+    booster = eng.model.get_booster()
+    X = feats[eng.features].iloc[[0]].reset_index(drop=True)
+    dm = xgb.DMatrix(_xgb_frame(X, eng.cat_sizes), enable_categorical=True)
+    bi = getattr(eng.model, "best_iteration", None)
+    n_it = int(bi) + 1 if bi is not None else int(booster.num_boosted_rounds())
+    base = cache["base_log"]
+    margins = {0: base}
+
+    def margin(k):
+        if k not in margins:
+            margins[k] = float(booster.predict(dm, output_margin=True, iteration_range=(0, k))[0])
+        return margins[k]
+
+    ks = sorted({k for k in TRACE_SPREAD if k < n_it} | {n_it})
+    cumulative = [{"trees": k, "price": round(float(np.exp(margin(k))), 2), "log": round(margin(k), 5)} for k in ks]
+    price = float(np.exp(eng.predict(X)[0]))
+    assert abs(cumulative[-1]["price"] - price) <= 1.0, f"trace ({cumulative[-1]['price']}) disagrees with predict ({price})"
+
+    leaf_nodes = booster.predict(dm, pred_leaf=True, iteration_range=(0, n_it))[0].astype(np.int64)
+    k_arr = (np.arange(n_it, dtype=np.int64) << _NODE_BITS) + leaf_nodes
+    pos = np.searchsorted(cache["keys"], k_arr)
+    leaf_vals = cache["vals"][pos]
+    assert (cache["keys"][pos] == k_arr).all(), "trace cache does not match this model (rebuild with --build-trace-cache)"
+    big = [int(i) for i in np.argsort(-np.abs(leaf_vals))[:3]]
+    chosen = {}
+    for t in range(min(first_n, n_it)):
+        chosen.setdefault(t, []).append("first")
+    for rank, t in enumerate(big, 1):
+        chosen.setdefault(t, []).append(f"biggest #{rank}")
+    # boosting front-loads the big corrections, so the overall biggest trees are usually among the first few;
+    # also show the 3 biggest trees AFTER the first `first_n`, which are more varied
+    later = first_n + np.argsort(-np.abs(leaf_vals[first_n:]))[:3] if n_it > first_n else []
+    for rank, t in enumerate(later, 1):
+        chosen.setdefault(int(t), []).append(f"biggest after the first {first_n} #{rank}")
+    trees = []
+    for t in sorted(chosen):
+        root = json.loads(booster[t:t + 1].get_dump(dump_format="json", with_stats=True)[0])
+        steps, leaf = _path(_index_nodes(root, {}), root, X.iloc[0], info, cat_names)
+        assert leaf["nodeid"] == int(leaf_nodes[t]), "path replay disagrees with xgboost's leaf for this row"
+        before, after = float(np.exp(margin(t))), float(np.exp(margin(t + 1)))
+        trees.append({"tree_number": t + 1, "roles": chosen[t], "steps": steps, "leaf_node": leaf["nodeid"],
+                      "leaf_value": float(leaf["leaf"]), "price_before": round(before, 2), "price_after": round(after, 2),
+                      "effect_inr": round(after - before, 2)})
+    q = cache["questions"]
+    tot_n, tot_g = sum(v["splits"] for v in q.values()), sum(v["total_gain"] for v in q.values())
+    qs = sorted(({"feature": f, "label": info[f]["label"], "times_asked": v["splits"],
+                  "share_of_questions_pct": round(100 * v["splits"] / tot_n, 2), "gain_share_pct": round(100 * v["total_gain"] / tot_g, 2)}
+                 for f, v in q.items()), key=lambda r: -r["gain_share_pct"])
+    at = {c["trees"]: c["price"] for c in cumulative}
+    mid = [k for k in (100, 1000) if k in at and k < n_it]
+    sentence = (f"The model starts at {_money(np.exp(base))}. {n_it:,} small decision trees each add or subtract a little. "
+                + (" ".join(f"After {k:,} trees the price is {_money(at[k])}," for k in mid[:-1]) + (" " if len(mid) > 1 else "")
+                   + (f"after {mid[-1]:,} it is {_money(at[mid[-1]])}, and " if mid and len(mid) > 1 else
+                      (f"After {mid[-1]:,} trees it is {_money(at[mid[-1]])}, and " if mid else ""))
+                   + f"after all {n_it:,} it settles at {_money(price)}."))
+    return {"available": True, "engine": engine_key, "n_trees": n_it, "learning_rate": cache["learning_rate"], "price": round(price, 2),
+            "start": {"log": round(base, 5), "price_inr": round(float(np.exp(base)), 2),
+                      "formula": "predicted price = exp(start_log + sum of every tree's leaf value)",
+                      "note": "start_log is the model's base score (about the average log price); each tree's leaf value already includes the learning rate"},
+            "cumulative": cumulative, "trees": trees,
+            "questions_used": {"total_questions": tot_n, "total_gain": tot_g, "features": qs}, "summary_sentence": sentence}
